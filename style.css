@@ -1,0 +1,286 @@
+
+/* FIXME: this code needs clean up and remove useless bits. */
+
+body {
+	background: #A6B4A6;
+	color: black;
+	font-family: helvetica;
+	font-size: 10pt;
+	overflow: hidden;
+	margin: 0 0 0 0;
+}
+
+h2 {
+	margin: 5px 0 8px 0;
+}
+
+
+/* hr {
+	border: 0;
+   height: 1px;
+   background: #333;
+} */
+
+/* http://css-tricks.com/examples/hrs/ */
+.type_hr {
+	background: #f1c661;
+	border: 0;
+	height: 2px; 
+}
+
+.underline_error {
+	position: absolute;
+	margin: -2px 0 0 0px;
+	border-bottom: 2px solid red; 
+}
+
+select {
+	width: 100%;
+	/* margin: 5px 0 0px 0;
+	padding: 5px 5px 5px 5px; */	
+}
+
+.exbuttong{
+	width: 45px;
+	margin: 1px 0 1px 0;
+	background-color: #dcdcdc;
+	border: 1px solid #dcdcdc; /*#666; */
+	color: #000;
+	text-decoration: none;
+	padding: 2px 2px;
+	border-radius: 3px;
+}
+
+.exbuttong:hover {
+	background-color: #cccccc;
+	font-weight: bold;
+	border: 2px solid #666;
+	padding: 1px 1px;
+}
+
+.action{
+	margin: 0 25px 0 10px;
+}
+
+#info {
+	box-sizing: border-box;
+	overflow: scroll;
+	position: absolute;
+	top: 0px;
+	height: 100%;
+	border-right-color: gray;
+	border-right-style: solid;
+	border-right-width: 1px;
+	padding: 5px 5px;
+}
+
+#cursor-position{
+	float: right;
+	font-family: monospace;
+	font-weight: bold;
+	vertical-align:bottom;
+	/* remember to match exbuttong: */
+	padding: 2px 2px;
+	margin: 1px 0 1px 0;
+}
+
+#editor {
+	box-sizing: border-box; /* this is a god-send... */
+	position: absolute;
+	top: 0px;
+	/*
+	border-left-color: gray;
+	border-left-style: solid; */
+	display: block;
+}
+
+#output {
+	box-sizing: border-box;
+	font-family: monospace;
+	font-size: 10pt;
+	background: #EEEEEE;
+	position: absolute;
+	overflow: scroll;
+	white-space: pre-wrap;
+	padding: 5px 5px;
+	/* display:block;
+	/*border-top-color: gray;
+	border-top-style: solid;
+	border-top-width: 1px;*/
+}
+
+#controls{
+	box-sizing: border-box;
+	position: absolute;
+	background-color: #dcdcdc;
+	/* border-style: solid;
+	border-color: gray; */
+	font-size: 9pt;
+	font-family: sans-serif;
+	z-index: 1000;
+	/* z-index: 10000; /* is this enough? */
+}
+
+#typing{
+	display:none; /* initially invisible */
+	box-sizing: border-box;
+	border: 2px solid #f1c661;
+	/* margin: 2px 2px; */
+	padding: 5px 10px;
+	position: absolute;
+	z-index: 10000; /* is this enough? */
+	/* -webkit-filter: blur(3px); */
+   /* background: #ffe580; */
+   /* box-shadow: 2px 2px 2px #888888; */
+	border-radius: 5px;
+	background: #fde570;
+	/* background: -webkit-linear-gradient(left, #fde570, #ffe580); */
+	font-family: monospace;
+   font-size: 10pt;    
+   color: black;
+   opacity: 0.95;
+   overflow:scroll;
+}
+
+.typing_tmp{
+    overflow: hidden;
+    word-wrap: normal;
+    white-space: pre;
+}
+
+.typing_style{
+	white-space: pre-wrap;
+   word-wrap: break-word;
+}
+
+.bad {
+	font-weight: bold;
+	color: #C4061F;
+}
+
+a {
+	font-weight: bold;
+	text-decoration: none;
+	color: black;
+}
+
+a:hover {
+	text-decoration: underline;
+}
+a:visited {
+}
+
+/* ----- */
+
+.heading {
+	margin: 10px 0 10px 0;
+	padding: 2px 2px;
+	/* cursor: pointer; */
+	/*
+	border-radius: 3px;
+	*/
+	border: 1px solid gray;
+	background-color: #dcdcdc;
+	box-shadow: 2px 2px 2px #888888;
+}
+
+.heading-title {
+	font-weight: bold;
+	font-size: 8pt;
+}
+
+.heading-title:hover:after {
+	content: ' (press to expand/collapse) ';
+	font-weight: normal;
+}
+
+.button {
+	width: 100%;
+	margin: 1px 0 1px 0;
+	background-color: #dcdcdc;
+	border: 1px solid #dcdcdc; /*#666; */
+	color: #000;
+	text-decoration: none;
+	padding: 5px 5px 5px 5px;
+	/*
+	border-radius: 3px;
+	*/
+}
+
+.button_load {
+	background:#dcdcdc url('lib/ajax-loader.gif') no-repeat right top;
+}
+
+.button:hover {
+	background-color: #cdcdcd;
+	font-weight: bold;
+	border: 2px solid #acacac;
+	padding: 4px 4px 4px 4px;
+}
+
+.footnote {
+	font-size: 8pt;
+	text-align: justify;
+}
+
+
+/* Style for Output Console */
+.type_location {
+	color: blue;
+}
+
+.type_fun {
+	/* font-size: 12pt; //TODO multimap symbol is messed up */
+}
+
+.typing_conformance tr:hover {
+	background-color:#d4f161;
+}
+.typing_conformance, tr, td {
+	border-collapse:collapse;
+	border:1px solid #f1a261;
+	padding: 3px;
+	text-align: center;
+}
+.typing_conformance th {
+	background-color:#f1c661;
+}
+
+.type_variable{
+	color: green;
+}
+
+.type_definition{
+	/* font-weight: bold; */
+	text-decoration:underline;
+	font-style: italic,underline;
+}
+
+.type_tag{
+	color: #FF6633;
+	font-weight: bold;
+}
+
+.type_name{
+	color: #8B0000;
+}
+
+.type_field{
+	color: purple;
+}
+
+
+
+.chrome_show{
+	font-size: 8pt;
+	text-align: center;
+	border: 2px solid #FF0000;
+	background: #EE5757;
+	border-radius: 5px;
+	padding: 2px;
+	margin: 5px;
+}
+
+.chrome_hide{
+	display:none;
+}

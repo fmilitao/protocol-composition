@@ -1,0 +1,11 @@
+# sharing examples
+sharing.txt
+busy-wait.txt
+simple-counter.txt
+pipe.txt
+monotonic-tree.txt
+shared-stack.txt
+spaghetti-stack.txt
+shared-bundle.txt
+some-splits.txt
+iterative-sharing.txt

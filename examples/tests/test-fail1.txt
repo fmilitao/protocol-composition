@@ -1,0 +1,11 @@
+//FAIL Invalid assign
+//FAIL Cannot assign, no capability to 't'
+open <t,x> = new {} in
+	let y = x in
+		x := 1;
+		y := !x;
+		delete x;
+		y ; // valid to obtain some address even if it was deleted
+		y := 1 // no capability to p, WRONG assign.
+	end
+end

@@ -1,0 +1,10 @@
+//OK 1
+//OK !int
+
+// simple test ensures opening works
+open<tx,x> = new {} in
+	x := x; // just copies the reference, not its content
+    x := !(!x); // note the cycle
+    x := 1;
+    delete x
+end

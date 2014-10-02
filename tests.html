@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Prototype - Unit Tests</title>
+  <link rel="stylesheet" href="lib/qunit.css">
+  <script src="lib/jison.js" type="text/javascript" charset="utf-8"></script>
+  <!-- <script src="grammar.js" type="text/javascript" charset="utf-8"></script> -->
+  <script src="lib/jquery.js" type="text/javascript" charset="utf-8"></script>
+  <script src="lib/qunit.js"></script>
+  
+  <!--
+  <script src="code/parser.js"></script>
+  <script src="code/interpreter.js"></script>
+  <script src="code/typechecker.js"></script>
+  <script src="code/tests.js"></script>
+  -->
+  
+  <script src="code/parser.js" data-cover></script>
+  <script src="code/interpreter.js" data-cover></script>
+  <script src="code/typechecker.js" data-cover></script>
+  <script src="code/tests.js" data-cover></script>
+  <script src="lib/blanket.min.js" ></script>
+</head>
+<body>
+  <div id="qunit"> </div>
+  <div id="qunit-fixture"> </div>
+</body>
+</html>

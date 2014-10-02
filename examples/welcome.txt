@@ -1,0 +1,26 @@
+/* WELCOME!
+
+ Deaf-Parrot is a prototype implementation of our language written entirely
+ in javascript and should run directly in a modern web-browser (Google Chrome
+ preferred).
+
+ Parsing and typechecking errors should be flagged on-the-fly.
+
+ NOTES:
+  - allows C-style comments.
+  - the languages uses a few (very simple) IDIOMS for convenience,
+  (see 'idioms' example file, on OLD EXAMPLES tab).
+  - recursive types are only possible through recursive type definitions (this
+  makes them easier to read and use). All typedefs can be mutually recursive.
+  - sharing support is still EXPERIMENTAL (i.e. work in progress).
+*/
+
+import println
+import add
+
+let x = { a = 2, b = "Hello World!", c = false } in
+	println[!int] (add 40 2);
+	
+	// functional value and application
+	fun( _ : [] ).(x.b) {}
+end

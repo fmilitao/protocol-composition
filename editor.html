@@ -1,0 +1,66 @@
+<!DOCTYPE HTML>
+<html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
+        <title> Prototype </title>
+        <link rel="stylesheet" type="text/css" href="style.css">
+        <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
+        <script src="lib/jquery.js" type="text/javascript" charset="utf-8"></script>
+        <script src="setup.js" type="text/javascript" charset="utf-8"></script>
+    </head>
+
+<body>
+
+<div id="info">
+<h2>
+	Deaf Parrot.
+	<div class="footnote">
+		Experimental code. Research prototype.
+	</div>
+	<div class="footnote">
+		<a href="https://code.google.com/p/deaf-parrot/" target="_blank">Project Page.</a>
+		<a href="tests.html" target="_blank">Unit Tests.</a>
+	</div>
+	<div id='chrome_warn' class="chrome_hide">WARNING: designed for <a href="http://www.google.com/chrome" target="_blank">Google Chrome</a></div>
+	</h2>
+	
+	<div class="heading">
+    	<div class="heading-title" id="examples-button" 
+    		title="press to collapse/expand">Sharing Examples</div>
+    	<div id="examples" > </div>
+	</div>
+	
+	<div class="heading">
+    	<div class="heading-title" id="old-examples-button" 
+    		title="press to collapse/expand">Old Examples</div>
+    	<div id="old-examples" > </div>
+	</div>
+	
+	<select id="test-file">
+		<option value="">-- Load Test File --</option>
+	</select>
+	
+	<select id="editor-style">
+		<option value="">-- Change Style --</option>
+	</select>
+	
+	<br/>
+	<br/>
+</div>
+
+<div id="controls">
+   	<span class="action">Autorun: <button class="exbuttong" id="autorun" title="Autorun may crash tab/browser if your code does not terminate."><b>ON</b></button></span>
+	<span class="action">Re-Start Worker: <button class="exbuttong" id="reset" title="If code does not terminate, you may need to manually reset the worker thread."><b>RESET</b></button></span>
+	<span class="action">Typing Information: <button class="exbuttong" id="typeinfo" title="Type information is shown when the cursor is placed at the beginning of a construct."><b>SHOW</b></button></span>
+	<span id="cursor-position">1:0</span>
+</div>
+
+<div id="editor">"These are not the droids you're looking for."</div>
+
+<div id="output">Initializing worker thread...</div>
+
+<div id="typing" class="typing_style">Initializing...</div>
+
+</body>
+</html>
