@@ -94,6 +94,11 @@ var receiver = new function(){
 	
 			ast = parser( data );
 
+//FIXME ---
+console.debug('ALL GOOD!');
+send('updateAnnotations', null);
+return; //FIXME!
+
 			send('println', '<b>Type</b>: '+
 				toHTML( checker( ast , typeinfo, libTyper ) ) );
 

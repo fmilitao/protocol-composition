@@ -13,7 +13,6 @@
   - recursive types are only possible through recursive type definitions (this
   makes them easier to read and use). All typedefs can be mutually recursive.
   - sharing support is still EXPERIMENTAL (i.e. work in progress).
-*/
 
 import println
 import add
@@ -24,3 +23,16 @@ let x = { a = 2, b = "Hello World!", c = false } in
 	// functional value and application
 	fun( _ : [] ).(x.b) {}
 end
+*/
+
+typedef A<a> = int
+
+subtype A <: forall A.B
+
+share A as A || B
+
+subtype A <: B
+
+share A as A || B
+
+ 

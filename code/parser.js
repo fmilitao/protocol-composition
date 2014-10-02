@@ -85,6 +85,7 @@ var AST = new function(){
 		'DELETE',
 		'FUN',
 		'SHARE',
+		'SUBTYPE',
 		'FOCUS',
 		'DEFOCUS',
 		'TUPLE',
@@ -116,6 +117,9 @@ var AST = new function(){
 	}
 	this.makeShare = function(t,a,b,info){
 		return aux( this.kinds.SHARE, {type:t,a:a,b:b}, info);
+	}
+	this.makeSubtype = function(a,b,info){
+		return aux( this.kinds.SUBTYPE, {a:a,b:b}, info);
 	}
 	
 	// expressions

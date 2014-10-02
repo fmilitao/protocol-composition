@@ -12,42 +12,25 @@
 "int"                 return 'INT_TYPE'
 "boolean"             return 'BOOLEAN_TYPE'
 "string"              return 'STRING_TYPE'
-"let"                 return 'LET'
-"open"                return 'OPEN'
-"in"                  return 'IN'
-"end"                 return 'END'
-"new"                 return 'NEW'
-"delete"              return 'DELETE'
-"fun"                 return 'FUN'
-"true"                return 'BOOLEAN'
-"false"               return 'BOOLEAN'
-"case"                return 'CASE'
-"of"                  return 'OF'
-"focus"               return 'FOCUS'
-"defocus"             return 'DEFOCUS'
 "share"               return 'SHARE'
+"subtype"             return 'SUBTYPE'
 "as"                  return 'AS'
 "typedef"             return 'TYPEDEF'
-"import"              return 'IMPORT'
 "none"                return 'NONE'
-"use"                 return 'USE'
 "(+)"                 return '(+)'
 "&"                   return '&'
 "||"                  return '||'
-"|"                   return '|'
 "#"                   return '#'
 "("                   return '('
 ")"                   return ')'
+"<:"                  return '<:'
 "<"                   return '<'
 ">"                   return '>'
-"{"                   return '{'
-"}"                   return '}'
 "+"                   return '+'
 "*"                   return '*'
 "."                   return '.'
 ","                   return ','
 ";"                   return ';'
-":="                  return ':='
 "::"                  return '::'
 ":"                   return ':'
 "=>"                  return '=>'
@@ -56,15 +39,11 @@
 "["                   return '['
 "]"                   return ']'
 "-o"                  return '-o'
-"->"                  return '->'
 "rw"                  return 'RW'
-"rec"                 return 'REC'
 "ref"                 return 'REF'
 "exists"              return 'EXISTS'
 "forall"              return 'FORALL'
-[0-9]+                return 'NUMBER'
 [a-zA-Z0-9_]+         return 'IDENTIFIER'
-\"[^"\r\n]*\"         return 'STRING'
 <<EOF>>               return 'EOF'
 /lex
 
@@ -137,8 +116,6 @@ type :
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| BOOLEAN_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
-	| STRING_TYPE
-	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| NONE
 		{ $$ = AST.makeNoneType(@$); }
 	;
@@ -200,24 +177,8 @@ field_types :
 program :
 	  sequence
 	  	{ $$ = AST.makeProgram(null,null,$1,@$); }
-	| imports typedefs sequence
-		{ $$ = AST.makeProgram($1,$2,$3,@$); }
-	| imports sequence
-		{ $$ = AST.makeProgram($1,null,$2,@$); }
 	| typedefs sequence
 		{ $$ = AST.makeProgram(null,$1,$2,@$); }
-	;
-
-imports :
-	import
-		{ $$ = [$1]; }
-	| import imports // only allow one.
-		{ $$ = [$1].concat($2); }
-	;
-
-import :
-	IMPORT IDENTIFIER
-		{ $$ = AST.makeImport($2,@$); }
 	;
 
 typedefs :
@@ -228,9 +189,9 @@ typedefs :
 	;
 
 typedef :
-	  TYPEDEF IDENTIFIER "=" type_root
+	  TYPEDEF IDENTIFIER "=" type
 		{ $$ = AST.makeTypedef($2,$4,null,@$); }
-	| TYPEDEF IDENTIFIER typedef_pars "=" type_root
+	| TYPEDEF IDENTIFIER typedef_pars "=" type
 		{ $$ = AST.makeTypedef($2,$5,$3,@$); }
 	;
 
@@ -238,21 +199,39 @@ typedef_pars :
 	'<' ids_list '>'
 		{ $$ = $2; }
 	;
-	
+
+sequence :
+	  share
+	| subtype
+	| share sequence
+	| subtype sequence
+	;
+
+share :
+	SHARE type_root AS type_root '||' type_root
+	 { $$ = AST.makeShare($2,$4,$6,@$); }
+	;
+
+subtype :
+	SUBTYPE type_root '<:' type_root
+	 { $$ = AST.makeSubtype($2,$4,@$); }
+	;
+
+ids_list :
+	IDENTIFIER
+		{ $$ = [$1]; }
+	| IDENTIFIER ',' ids_list
+		{ $$ = [$1].concat($3); }
+	;
+
+
+// ========================
+
+/*
 sequence :
 	sharing
 	| sharing ';' sequence
 		{ $$ = AST.makeLet(null,$1,$3,@$); }
-	;
-
-sharing :
-	nonsequence
-	| DEFOCUS
-		{ $$ = AST.makeDefocus(@$); }
-	| FOCUS sharing_type_list
-		{ $$ = AST.makeFocus($2,@$); }
-	| SHARE type_root AS type '||' type
-		{ $$ = AST.makeShare($2,$4,$6,@$); }
 	;
 
 sharing_type_list :
@@ -364,12 +343,6 @@ parameter :
 		{ $$ = AST.makeParameters($1,$3,@$); }
 	;
 
-ids_list :
-	IDENTIFIER
-		{ $$ = [$1]; }
-	| IDENTIFIER ',' ids_list
-		{ $$ = [$1].concat($3); }
-	;
 
 value :
       IDENTIFIER 
@@ -402,3 +375,5 @@ fields :
 	| field ',' fields
 		{ $$ = [$1].concat($3); }
 	;
+
+	*/
