@@ -2,4 +2,3 @@ Protocol Conformance Checker
 ============================
 
 Grammar is limited to only check 'subtype' and 'share', as well as 'typedef' for convenience.
-
