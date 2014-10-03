@@ -78,10 +78,9 @@ not subtype int => boolean <: boolean => int
 <X><Y> not subtype Y <: X 
 
 
-// FIXME: these crash!?
-//    subtype forall X.X <: forall Y.Y
-//not subtype forall X.X <: forall Z.!Z
-//    subtype forall Z.!Z <: forall X.X
+    subtype forall X.X <: forall Y.Y
+    subtype forall Z.!Z <: forall X.X
+not subtype forall X.X <: forall Z.!Z
 
     subtype exists X.X <: exists Y.Y
 not subtype exists X.X <: exists Z.!Z

@@ -1,4 +1,4 @@
-// Copyright (C) 2013-2014 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 /* lexical grammar */
@@ -120,6 +120,8 @@ type :
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| BOOLEAN_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
+	| STRING_TYPE
+	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| NONE
 		{ $$ = AST.makeNoneType(@$); }
 	;
@@ -217,12 +219,12 @@ sequence :
 	;
 
 forall :
-     '<' IDENTIFIER '>' forall
-		{ $$ = [AST.makeForall($2,$4,@$)]; }
+      '<' IDENTIFIER '>' forall
+		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
     | '<' IDENTIFIER '>' share
-		{ $$ = [AST.makeForall($2,$4,@$)]; }
+		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
 	| '<' IDENTIFIER '>' subtype
-		{ $$ = [AST.makeForall($2,$4,@$)]; }
+		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
 	;
 
 share :
@@ -245,157 +247,3 @@ ids_list :
 	| IDENTIFIER ',' ids_list
 		{ $$ = [$1].concat($3); }
 	;
-
-
-// ======================== //
-// dead code follows
-/*
-sequence :
-	sharing
-	| sharing ';' sequence
-		{ $$ = AST.makeLet(null,$1,$3,@$); }
-	;
-
-sharing_type_list :
-	type
-		{ $$ = [$1]; }
-	| type ',' sharing_type_list
-		{ $$ = [$1].concat($3); }
-	;
-
-nonsequence :
-	expression
-	| nonsequence "." IDENTIFIER
-		{ $$ = AST.makeSelect($1,$3,@$); }
-	| nonsequence ":=" expression
-		{ $$ = AST.makeAssign($1,$3,@$); }
-	| nonsequence expression
-		{ $$ = AST.makeCall($1,$2,@$); }
-	| nonsequence '[' type_root ']'
-		{ $$ = AST.makeTypeApp($1,$3,@$); }
-	| nonsequence '::' type
-		{ $$ = AST.makeCapStack($1,$3,@$); }
-	;
-
-expression :
-	  value
-	| "!" expression
-		{ $$ = AST.makeDeRef($2,@$); }
-	| NEW expression
-		{ $$ = AST.makeNew($2,@$); }
-	| '<' IDENTIFIER '>' expression
-		{ $$ = AST.makeForall($2,$4,@$); }
-	| '<' type_root ',' sequence '>'
-		{ $$ = AST.makePack($2,null,$4,@$); }
-	| '<' type_root ':' IDENTIFIER ',' sequence '>'
-		{ $$ = AST.makePack($2,$4,$6,@$); }
-	| DELETE expression
-		{ $$ = AST.makeDelete($2,@$); }
-	| USE type_root IN sequence END
-		{ $$ = AST.makeUse($2,$4,@$); }
-	| LET IDENTIFIER '=' sequence IN sequence END
-		{ $$ = AST.makeLet($2,$4,$6,@$); }
-	| LET '[' ids_list ']' '=' sequence IN sequence END
-		{ $$ = AST.makeLetTuple($3,$6,$8,@$); }
-	| OPEN '<'IDENTIFIER ',' IDENTIFIER'>' '=' sequence IN sequence END
-		{ $$ = AST.makeOpen($3,$5,$8,$10,@$); }
-	| "(" sequence ")"
-		{ $$ = $2; }
-	| IDENTIFIER '#' expression
-		{ $$ = AST.makeTagged($1,$3,@$); }
-	| CASE nonsequence OF branches END
-		{ $$ = AST.makeCase($2,$4,@$); }
-	| '{' tuple '}'
-		{ $$ = AST.makeTuple($2,@$); }
-    ;
-
-branches :
-	  branch
-	  	{ $$ = [$1]; }
-	| branch '|' branches
-		{ $$ = [$1].concat($3); }
-	;
-
-branch :
-	IDENTIFIER '#' IDENTIFIER '->' sequence
-		{ $$ = AST.makeBranch($1,$3,$5,@$); }
-	;
-
-tuple :
-	nonsequence
-		{ $$ = [$1]; }
-	| nonsequence ',' tuple
-		{ $$ = [$1].concat($3); }
-	;
-
-function :
-	FUN IDENTIFIER '(' parameter ends_with_type
-		{ $$ = AST.makeFunction( $2, $4, $5.exp, $5.result, null, @$ ); }
-	| FUN IDENTIFIER quantification '(' parameter ends_with_type
-		{ $$ = AST.makeFunction( $2, $5, $6.exp, $6.result, $3, @$ ); }
-	| FUN '(' parameter ends_without_type
-		{ $$ = AST.makeFunction( null, $3, $4.exp, $4.result, null, @$ ); }
-	;
-
-ends_with_type :
-	')' ':' type_root '.' expression
-		{ $$ = { result : $3, exp : $5 }; }
-	| ',' parameter ends_with_type
-		{ $$ = { result : AST.makeFunType($2.type,$3.result),
-			exp : AST.makeFunction( null , $2, $3.exp, $3.result, null, @$ ) }; }
-	;
-
-ends_without_type :
-	')' '.' expression
-		{ $$ = { result : null, exp : $3 }; }
-	| ',' parameter ends_without_type
-		{ $$ = { result : AST.makeFunType($2.type,$3.result),
-			exp : AST.makeFunction( null , $2, $3.exp, $3.result, null, @$ ) }; }
-	;
-
-quantification :
-	  '<' IDENTIFIER '>'
-	  	{ $$ = [$2]; }
-	| '<' IDENTIFIER '>' quantification
-		{ $$ = [$2].concat($4); }
-	;
-	
-parameter : 
-	IDENTIFIER  ':' type_root
-		{ $$ = AST.makeParameters($1,$3,@$); }
-	;
-
-
-value :
-      IDENTIFIER 
-      	{ $$ = AST.makeID(yytext,@$); }
-    | NUMBER
-		{ $$ = AST.makeNumber(yytext,@$); }
-    | BOOLEAN
-		{ $$ = AST.makeBoolean(yytext,@$); }
-    | STRING
-		{ $$ = AST.makeString(yytext,@$); }
-    | record
-    | function
- 	;
-	
-record :
-	  '{' '}'
-	  	{ $$ = AST.makeRecord([],@$); }
-	| '{' fields '}'
-		{ $$ = AST.makeRecord($2,@$); }
-	;
-	
-field :
-	IDENTIFIER '=' value
-		{ $$ = AST.makeField($1,$3,@$); }
-	;
-
-fields :
-	  field
-	  	{ $$ = [$1]; }
-	| field ',' fields
-		{ $$ = [$1].concat($3); }
-	;
-
-	*/

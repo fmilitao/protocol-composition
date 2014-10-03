@@ -2224,8 +2224,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				e.setType( id, variable );
 
-				// note that ast.exp should have size 1, always.
-				return new ForallType( variable, check( ast.exp[0], e ) );
+				return new ForallType( variable, check( ast.exp, e ) );
 			};
 			
 			case AST.kinds.RECURSIVE_TYPE: 
