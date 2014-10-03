@@ -94,11 +94,6 @@ var receiver = new function(){
 	
 			ast = parser( data );
 
-//FIXME ---
-console.debug('ALL GOOD!');
-send('updateAnnotations', null);
-return; //FIXME!
-
 			send('println', '<b>Type</b>: '+
 				toHTML( checker( ast , typeinfo, libTyper ) ) );
 
@@ -107,11 +102,13 @@ return; //FIXME!
 				console.debug( 'checked in: '+typeinfo.diff+' ms' );
 			}
 
+/*
 			if( autorun ){
 				send('println', '<b>Result</b>: '+
 					interpreter( ast,
 						function(msg){ send('println',msg.toString()) } ) );
 			}
+			*/
 			
 			// no errors!
 			send('updateAnnotations', null);
@@ -121,6 +118,7 @@ return; //FIXME!
 	};
 	
 	this.AUTO = function(auto){
+//FIXME: this should be removed
 		try{
 			autorun = auto;
 			if( autorun && ast !== null ){

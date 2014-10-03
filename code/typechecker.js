@@ -2667,6 +2667,16 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	var setupAST = function( kind ) {
 		
 		switch( kind ) {
+
+			case AST.kinds.SUBTYPE:
+			return function( ast, env ){
+				var left = check( ast.a, env );
+				var right = check( ast.b, env );
+				var s = subtypeOf(left,right);
+				assert( s==ast.value || ('Unexpected Result, got '+s+' expecting '+ast.value), ast );
+				return left;
+			};
+
 			
 			// EXPRESSIONS
 			case AST.kinds.LET: 
@@ -3227,7 +3237,26 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return rec;
 			};
 			
+			
 			case AST.kinds.SHARE: 
+			return function( ast, env ){
+				var cap = check( ast.type, env );
+								
+				var left = check( ast.a, env );
+				var right = check( ast.b, env );
+				
+				/* Protocol conformance, goes through all possible "alias
+				 * interleaving" and ensure all those possibilities are considered
+				 * in both protocols.
+				 */
+				checkProtocolConformance(cap, left, right, ast);
+				
+				assert( ast.value || ('Unexpected Result, got '+true+' expecting '+ast.value) , ast);
+				// returns unit
+				return new BangType(new RecordType());
+			};
+			
+/*			case AST.kinds.SHARE: 
 			return function( ast, env ){
 				var cp = check( ast.type, env );
 				
@@ -3256,17 +3285,13 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
 				
-				/* Protocol conformance, goes through all possible "alias
-				 * interleaving" and ensure all those possibilities are considered
-				 * in both protocols.
-				 */
 				checkProtocolConformance(cap, left, right, ast);
 				
 				env.setCap( unAll(left, false, true) );
 				env.setCap( unAll(right, false, true) );
 				// returns unit
 				return new BangType(new RecordType());
-			};
+			}; */
 			
 			case AST.kinds.FOCUS: 
 			return function( ast, env ){
@@ -3364,6 +3389,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new ExistsType( variable, check( ast.type, e ) );
 			};
 			
+			case AST.kinds.FORALL:
 			case AST.kinds.FORALL_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
@@ -3377,7 +3403,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				e.setType( id, variable );
 
-				return new ForallType( variable, check( ast.exp, e ) );
+				// note that ast.exp should have size 1, always.
+				return new ForallType( variable, check( ast.exp[0], e ) );
 			};
 			
 			case AST.kinds.RECURSIVE_TYPE: 
@@ -3728,20 +3755,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			typedef.reset();
 			var env = new Environment(null);
 				
-			if( ast.imports !== null ){
-			 	// loader does not need to be provided, but all imports are errors
-				error( loader !== undefined || 'Missing import loader' );
-				
-				var libs = ast.imports;
-				for( var i=0; i<libs.length; ++i ){
-					var lib = libs[i];
-					var import_type = loader( lib.id, exports );
-					assert( import_type !== undefined || ("Invalid import: "+lib.id), lib );
-					assert( env.set( lib.id, import_type ) ||
-						('Identifier '+ lib.id +' already in scope'), lib );
-				}
-			}
-				
 			if( ast.typedefs !== null ){
 
 				// first phase - extract all argument definitions, note that
@@ -3790,7 +3803,12 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				// ok to allow unfoldings
 				typedef.endRecDefs();
 			}
-			return check( ast.exp, env );
+
+			var exps = ast.exp;
+			for( var i=0; i<exps.length; ++i ){
+				check( exps[i], env );
+			}
+			return NoneType;
 		} finally {
 			if( typeinfo ){
 				typeinfo.diff = (new Date().getTime())-start;

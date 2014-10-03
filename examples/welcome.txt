@@ -1,38 +1,19 @@
-/* WELCOME!
 
- Deaf-Parrot is a prototype implementation of our language written entirely
- in javascript and should run directly in a modern web-browser (Google Chrome
- preferred).
+typedef A = int
 
- Parsing and typechecking errors should be flagged on-the-fly.
+typedef H<p> =
+			( rw p !(Empty#[]) => rw p !(Empty#[]) ; H[p] ) (+)
+			( rw p !(Closed#[]) => none ) (+) 
+			( rw p (Node#[int,exists q.(!ref q :: (H[q]) )]) => none )
 
- NOTES:
-  - allows C-style comments.
-  - the languages uses a few (very simple) IDIOMS for convenience,
-  (see 'idioms' example file, on OLD EXAMPLES tab).
-  - recursive types are only possible through recursive type definitions (this
-  makes them easier to read and use). All typedefs can be mutually recursive.
-  - sharing support is still EXPERIMENTAL (i.e. work in progress).
+typedef T<p> =  rw p !(Empty#[]) =>
+	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: (H[q]))])) )
 
-import println
-import add
 
-let x = { a = 2, b = "Hello World!", c = false } in
-	println[!int] (add 40 2);
-	
-	// functional value and application
-	fun( _ : [] ).(x.b) {}
-end
-*/
+subtype int <: !int
+not subtype int <: boolean
 
-typedef A<a> = int
+share A as A => none ; none || none
 
-subtype A <: forall A.B
+<l>share (rw l !(Empty#![])) as (H[l]) || (T[l])
 
-share A as A || B
-
-subtype A <: B
-
-share A as A || B
-
- 

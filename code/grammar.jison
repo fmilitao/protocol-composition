@@ -17,6 +17,7 @@
 "as"                  return 'AS'
 "typedef"             return 'TYPEDEF'
 "none"                return 'NONE'
+"not"                 return 'NOT'
 "(+)"                 return '(+)'
 "&"                   return '&'
 "||"                  return '||'
@@ -189,9 +190,9 @@ typedefs :
 	;
 
 typedef :
-	  TYPEDEF IDENTIFIER "=" type
+	  TYPEDEF IDENTIFIER "=" type_root
 		{ $$ = AST.makeTypedef($2,$4,null,@$); }
-	| TYPEDEF IDENTIFIER typedef_pars "=" type
+	| TYPEDEF IDENTIFIER typedef_pars "=" type_root
 		{ $$ = AST.makeTypedef($2,$5,$3,@$); }
 	;
 
@@ -204,17 +205,27 @@ sequence :
 	  share
 	| subtype
 	| share sequence
+	 { $$ = $1.concat($2); }
 	| subtype sequence
+	 { $$ = $1.concat($2); }
+	| '<' IDENTIFIER '>' share
+		{ $$ = [AST.makeForall($2,$4,@$)]; }
+	| '<' IDENTIFIER '>' subtype
+		{ $$ = [AST.makeForall($2,$4,@$)]; }
 	;
 
 share :
 	SHARE type_root AS type_root '||' type_root
-	 { $$ = AST.makeShare($2,$4,$6,@$); }
+	 { $$ = [AST.makeShare(true,$2,$4,$6,@$)]; }
+	| NOT SHARE type_root AS type_root '||' type_root
+	 { $$ = [AST.makeShare(false,$3,$5,$7,@$)]; }
 	;
 
 subtype :
 	SUBTYPE type_root '<:' type_root
-	 { $$ = AST.makeSubtype($2,$4,@$); }
+	 { $$ = [AST.makeSubtype(true,$2,$4,@$)]; }
+	| NOT SUBTYPE type_root '<:' type_root
+	 { $$ = [AST.makeSubtype(false,$3,$5,@$)]; }
 	;
 
 ids_list :

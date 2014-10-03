@@ -115,11 +115,11 @@ var AST = new function(){
 	this.makeDefocus = function(info){
 		return aux( this.kinds.DEFOCUS, { }, info);
 	}
-	this.makeShare = function(t,a,b,info){
-		return aux( this.kinds.SHARE, {type:t,a:a,b:b}, info);
+	this.makeShare = function(v,t,a,b,info){
+		return aux( this.kinds.SHARE, {value:v,type:t,a:a,b:b}, info);
 	}
-	this.makeSubtype = function(a,b,info){
-		return aux( this.kinds.SUBTYPE, {a:a,b:b}, info);
+	this.makeSubtype = function(v,a,b,info){
+		return aux( this.kinds.SUBTYPE, {value:v,a:a,b:b}, info);
 	}
 	
 	// expressions
