@@ -3746,7 +3746,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		// stats gathering
 		var start = new Date().getTime();
 		type_info = [];
-		
 		try{
 			error( (ast.kind === AST.kinds.PROGRAM) || 'Unexpected AST node' );
 				

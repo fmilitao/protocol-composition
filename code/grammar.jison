@@ -52,7 +52,10 @@
 
 %% /* language grammar */
 
-file : program EOF { return $1; };
+file : 
+	EOF { return AST.makeProgram(null,null,[],@$); }
+  | program EOF { return $1; }
+  ;
 
 // TYPES
 

@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 //
@@ -28,12 +28,11 @@ if( isWorker ){
 
 	// libs
 	importScripts('../lib/jison.js');
-	importScripts('parser.js','interpreter.js','typechecker.js');
+	importScripts('parser.js','typechecker.js');
 
 }
 
 var parser = Parser( (isWorker?'':'code/') + 'grammar.jison' );
-var interpreter = function(ast){ return Interpreter.run(ast,libLoader); };
 var types = TypeChecker.types;
 var checker = TypeChecker.check;
 
@@ -95,20 +94,12 @@ var receiver = new function(){
 			ast = parser( data );
 
 			send('println', '<b>Type</b>: '+
-				toHTML( checker( ast , typeinfo, libTyper ) ) );
+				toHTML( checker( ast , typeinfo ) ) );
 
 			if( !isWorker ){
 				// some debug information
 				console.debug( 'checked in: '+typeinfo.diff+' ms' );
 			}
-
-/*
-			if( autorun ){
-				send('println', '<b>Result</b>: '+
-					interpreter( ast,
-						function(msg){ send('println',msg.toString()) } ) );
-			}
-			*/
 			
 			// no errors!
 			send('updateAnnotations', null);
@@ -119,6 +110,7 @@ var receiver = new function(){
 	
 	this.AUTO = function(auto){
 //FIXME: this should be removed
+/*
 		try{
 			autorun = auto;
 			if( autorun && ast !== null ){
@@ -129,6 +121,7 @@ var receiver = new function(){
 		}catch(e){
 			handleError(e);
 		}
+*/
 	};
 	
 	this.CHECKER = function(pos){
@@ -154,119 +147,6 @@ if( !isWorker ){
 	var WORKER_HANDLER = receiver;
 }
 
-//
-// Quick and Dirty Standard Lib for basic arithm.
-//
-
-var libLoader = function( file, ctx ){
-	var v = ctx.factory;
-
-	// println: forall T.( T -o T )
-	if( file === 'println' ){
-		var println = new v.Function();
-		println.call = function(msg){
-			send('println',msg.toString());
-			return msg;
-		};
-		return println;
-	}
-	
-	// add: int -o int -o !int
-	if( file === 'add' ){	
-		var add = new v.Function();
-		add.call = function(msg){
-			var tmp = new v.Function();
-			tmp.call = function(arg){ return msg+arg; }
-			return tmp;
-		};
-		return add;
-	}
-	
-	// concat: int -o int -o !int
-	if( file === 'concat' ){	
-		var add = new v.Function();
-		add.call = function(msg){
-			var tmp = new v.Function();
-			tmp.call = function(arg){ return msg+arg; }
-			return tmp;
-		};
-		return add;
-	}
-	
-	if( file === 'abort' ){
-		var abort = new v.Function();
-		abort.call = function(msg){
-			//FIXME this is not clean, using RangeError just like stack overflow
-			// error is considerer a horrible hack and you should be ashamed.
-			throw new RangeError(msg);
-		};
-		return abort;
-	}
-	
-	// others are unknown
-	return undefined;
-};
-
-var libTyper = function( file, ctx ){
-	var v = ctx.factory;
-
-	// println: !(forall T.( T -o T ))
-	if( file === 'println' ){
-		return new v.BangType(
-			new v.ForallType(
-				new v.TypeVariable('T'),
-				new v.FunctionType(
-					new v.TypeVariable('T'),
-					new v.TypeVariable('T') 
-					)
-			) 
-		);
-	}
-		
-	// add: !(int -o int -o !int)
-	if( file === 'add' ){
-		return new v.BangType(
-			new v.FunctionType(
-				new v.PrimitiveType('int'),
-				new v.FunctionType(
-					new v.PrimitiveType('int'),
-					new v.BangType(new v.PrimitiveType('int'))
-					) 
-			)
-		);
-	}
-	
-	// concat: !(string -o string -o !string)
-	if( file === 'concat' ){
-		return new v.BangType(
-			new v.FunctionType(
-				new v.PrimitiveType('string'),
-				new v.FunctionType(
-					new v.PrimitiveType('string'),
-					new v.BangType(new v.PrimitiveType('string'))
-					) 
-			)
-		);
-	}
-	
-	if( file === 'abort' ){
-		return new v.BangType(
-			new v.ForallType(
-				new v.TypeVariable('T'),
-				new v.FunctionType(
-					new v.StackedType(
-						new v.PrimitiveType('string'),
-						new v.TypeVariable('T')
-						),
-					new v.BangType(new v.RecordType())
-				)
-			)
-		);
-	}
-	
-	// others are unknown
-	return undefined;
-};
 
 //
 // Printing Type Information

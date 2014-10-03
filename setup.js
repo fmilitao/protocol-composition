@@ -1,4 +1,4 @@
-// Copyright (C) 2013 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 var DEBUG_MSG = true;
@@ -16,20 +16,14 @@ if( parameters.length > 1 ){
     		var option = tmp[0];
     		var value = tmp[1];
     		switch( option ){
-    			case 'file': // load file
+    			case 'file': // loads file
     				default_file = value;
-    				/*
-    				filegiven = true;
-	    			$.get( value , function(data) {
-						setEditor(data);
-						//console.log(data);
-					})
-					*/;
     				break;
     			case 'worker':
+					// compares given string with 'true' string.
     				worker_enabled = (value.toLowerCase() === 'true');
     				break;
-    			default: // not other options for now.
+    			default: // no other options, just ignores
     				break;
     		}
     	}
@@ -45,7 +39,6 @@ if( !worker_enabled ){
 	console.log('importing scripts to run locally...');
 	importScript('lib/jison.js');
 	importScript('code/parser.js');
-	importScript('code/interpreter.js');
 	importScript('code/typechecker.js');
 	importScript('code/worker.js');
 	console.log('done.');
@@ -72,7 +65,7 @@ var _TYPEINFO_ = '#'+TYPEINFO;
 var _TYPING_ = '#'+TYPING;
 var _RESET_ = '#reset';
 
-var _OLD_EXAMPLES_ = "#old-examples";
+//var _OLD_EXAMPLES_ = "#old-examples";
 
 var TYPE_INFO_WIDTHS = null;
 
@@ -222,6 +215,7 @@ $(document).ready(function() {
 	        $("#examples").slideToggle(100);
 	    });
 	    
+	    /*
 	    var addOldExample = function(file,name){
 			name = name.replace('.txt','');
 			var button = $('<button/>', {
@@ -253,7 +247,7 @@ $(document).ready(function() {
 	        $(_OLD_EXAMPLES_).slideToggle(100);
 	    });
 		$(_OLD_EXAMPLES_).hide();
-	    
+	    */
 	    // --- END OLD EXAMPLES ---
 	    
 		// setup editor with default file.
