@@ -65,8 +65,6 @@ var _TYPEINFO_ = '#'+TYPEINFO;
 var _TYPING_ = '#'+TYPING;
 var _RESET_ = '#reset';
 
-//var _OLD_EXAMPLES_ = "#old-examples";
-
 var TYPE_INFO_WIDTHS = null;
 
 $(document).ready(function() {
@@ -214,41 +212,6 @@ $(document).ready(function() {
 	    $("#examples-button").click(function() {
 	        $("#examples").slideToggle(100);
 	    });
-	    
-	    /*
-	    var addOldExample = function(file,name){
-			name = name.replace('.txt','');
-			var button = $('<button/>', {
-				class: 'button',
-	        	text: name,
-	        	click: function(){
-	        		//button.text(name+' (Loading...)');
-	        		button.addClass('button_load');
-	        		
-	        		$.get( file , function(data) {
-						setEditor(data);
-						//button.text(name);
-						button.removeClass('button_load');
-					});
-				}
-	    	});
-			$(_OLD_EXAMPLES_).append(button);
-		}
-		
-		$.get( "examples/old-examples-list" , function(data) {
-			var examples = data.split('\n');
-			for( var i=0 ; i<examples.length ; ++i ){
-				if( examples[i][0] != '#' ) // ignore commented stuff
-					addOldExample( 'examples/'+examples[i] , examples[i] );
-			}
-		});
-		
-	    $("#old-examples-button").click(function() {
-	        $(_OLD_EXAMPLES_).slideToggle(100);
-	    });
-		$(_OLD_EXAMPLES_).hide();
-	    */
-	    // --- END OLD EXAMPLES ---
 	    
 		// setup editor with default file.
 		$.get( default_file , function(data) { setEditor(data); });

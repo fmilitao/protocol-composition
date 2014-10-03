@@ -207,11 +207,13 @@ typedef_pars :
 sequence :
 	  share
 	| subtype
+	| forall
 	| share sequence
 	 { $$ = $1.concat($2); }
 	| subtype sequence
 	 { $$ = $1.concat($2); }
-	| forall
+	| forall sequence
+	 { $$ = $1.concat($2); }
 	;
 
 forall :
@@ -245,8 +247,8 @@ ids_list :
 	;
 
 
-// ========================
-
+// ======================== //
+// dead code follows
 /*
 sequence :
 	sharing

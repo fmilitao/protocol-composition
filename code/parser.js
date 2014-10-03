@@ -1,5 +1,7 @@
-// Copyright (C) 2013 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
+
+//TODO clean-up: remove dead code
 
 /* 
  * GLOBALS defined:
