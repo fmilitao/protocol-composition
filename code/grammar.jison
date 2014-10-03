@@ -208,7 +208,13 @@ sequence :
 	 { $$ = $1.concat($2); }
 	| subtype sequence
 	 { $$ = $1.concat($2); }
-	| '<' IDENTIFIER '>' share
+	| forall
+	;
+
+forall :
+     '<' IDENTIFIER '>' forall
+		{ $$ = [AST.makeForall($2,$4,@$)]; }
+    | '<' IDENTIFIER '>' share
 		{ $$ = [AST.makeForall($2,$4,@$)]; }
 	| '<' IDENTIFIER '>' subtype
 		{ $$ = [AST.makeForall($2,$4,@$)]; }
