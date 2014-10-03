@@ -1,0 +1,104 @@
+/* === SUBTYPING TESTS === */
+
+    subtype int <: int
+    subtype boolean <: boolean
+not subtype int <: boolean
+
+    subtype !int <: int
+    subtype !boolean <: boolean
+    subtype int <: !int
+    subtype boolean <: !boolean
+
+not subtype int <: none
+not subtype none <: int
+
+    subtype [a:int,b:int] <: [a:int]
+not subtype [a:int] <: [a:int,b:int]
+not subtype [a:int,b:int] <: [a:int,b:boolean]
+not subtype [a:int,b:boolean] <: [a:int,b:int]
+
+not subtype ![] <: none
+not subtype ![] <: int
+not subtype [a:!int,b:!boolean] <: ![] // FIXME?? 
+
+subtype !int <: ![]
+subtype !boolean <: ![]
+
+   <p>     subtype ref p <: ref p
+<p><q> not subtype ref p <: ref q 
+<p><q> not subtype ref q <: ref p
+
+
+not subtype int -o boolean <: boolean -o int
+not subtype boolean -o int <: int -o boolean
+
+subtype !int -o boolean <: int -o boolean
+subtype int -o boolean <: !int -o boolean
+
+// contra-variant
+not subtype [] -o boolean <: [a:int] -o boolean
+    subtype [a:int] -o boolean <: [a:int,b:int] -o boolean
+
+// co-variant
+    subtype int -o ![a:int] <: int -o [a:int]
+not subtype int -o [a:int] <: int -o ![a:int]
+
+// tuples
+    subtype [] <: []
+not subtype [] <: [int]
+not subtype [int] <: []
+not subtype [int,boolean] <: [boolean,int]
+not subtype [boolean,int] <: [int,boolean]
+
+    subtype l#int <: l#int
+    subtype l#int <: l#int + k#boolean
+not subtype l#int + k#boolean <: l#int
+
+   <p>     subtype rw p int <: rw p int
+<q><p> not subtype rw p int <: rw q int
+<q><p> not subtype rw q int <: rw p int
+
+
+    subtype int::boolean <: int::boolean
+    subtype boolean::int <: boolean::int
+not subtype boolean::int <: int::boolean
+not subtype int::boolean <: boolean::int
+
+subtype int * boolean <: boolean * int
+subtype boolean * int <: int * boolean
+
+not subtype int * boolean * int <: int * boolean
+not subtype int * boolean <: int * int * boolean
+
+    subtype int => boolean <: int => boolean
+not subtype int => boolean <: boolean => int 
+
+<X>        subtype X <: X
+<X><Y> not subtype X <: Y
+<X><Y> not subtype Y <: X 
+
+
+// FIXME: these crash!?
+//    subtype forall X.X <: forall Y.Y
+//not subtype forall X.X <: forall Z.!Z
+//    subtype forall Z.!Z <: forall X.X
+
+    subtype exists X.X <: exists Y.Y
+not subtype exists X.X <: exists Z.!Z
+    subtype exists Z.!Z <: exists Z.Z
+
+<X><Y><Z>     subtype X (+) Y (+) Z <: X (+) Z (+) Y
+<X><Y><Z>     subtype X (+) Y <: X (+) Z (+) Y
+<X><Y><Z> not subtype X (+) Y <: X
+
+<t> not subtype rw t int <: rw t boolean 
+
+
+<X><Y><Z>     subtype X & Y & Z <: X & Z
+<X><Y><Z> not subtype X <: X & Z
+<Z><X>    not subtype X <: X & Z
+
+/* === CONFORMANCE TESTS === */
+
+share none as none || none
+

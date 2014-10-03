@@ -229,6 +229,7 @@ var _printEnvironment = function(env){
 		delta.push('<span class="type_name">'+id+'</span>'+": "+toHTML(val));
 	});
 
+/*
 	var e = env;
 	while( e !== null ){
 		if( e.$defocus_guarantee !== null ){
@@ -243,7 +244,7 @@ var _printEnvironment = function(env){
 			break;
 		}
 		e = e.$parent;
-	}
+	} */
 	
 	return { delta : delta, gamma : gamma };
 }
