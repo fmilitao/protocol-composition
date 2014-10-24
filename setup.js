@@ -39,6 +39,7 @@ if( !worker_enabled ){
 	console.log('importing scripts to run locally...');
 	importScript('lib/jison.js');
 	importScript('code/parser.js');
+	importScript('code/typechecker.utils.js');
 	importScript('code/typechecker.js');
 	importScript('code/worker.js');
 	console.log('done.');

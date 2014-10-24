@@ -5,7 +5,9 @@
 // Worker thread
 //
 
-var isWorker = typeof(window) === 'undefined';
+const isWorker = typeof(window) === 'undefined';
+const IMPORTS = ['../lib/jison.js','parser.js','typechecker.utils.js','typechecker.js'];
+const GRAMMAR = (isWorker?'':'code/') + 'grammar.jison';
 
 // only loads the following if it is a standalone thread
 if( isWorker ){
@@ -27,12 +29,11 @@ if( isWorker ){
 	}();
 
 	// libs
-	importScripts('../lib/jison.js');
-	importScripts('parser.js','typechecker.js');
+	importScripts.apply( null, IMPORTS );
 
 }
 
-var parser = Parser( (isWorker?'':'code/') + 'grammar.jison' );
+var parser = Parser( GRAMMAR );
 var types = TypeChecker.types;
 var checker = TypeChecker.check;
 
