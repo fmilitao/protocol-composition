@@ -13,6 +13,7 @@ var TypeChecker = (function(AST,exports){
 	// define constants for convenience
 	const assert = exports.assert;
 	const error = exports.error;
+	const isFree = exports.isFree;
 
 	const types = exports.types;
 	const fct = exports.factory;
@@ -38,126 +39,12 @@ var TypeChecker = (function(AST,exports){
 	const DefinitionType = fct.DefinitionType;
 	const GuaranteeType = fct.GuaranteeType;
 
+	const Environment = exports.Environment;
+	
 	//
 	// VISITORS
 	//
 	
-	/**
-	 * Searchs types 't' for location variable 'loc'. isFree if NOT present.
-	 * @param {Type} t that is to be traversed
-	 * @param {LocationVariable,TypeVariable} loc that is to be found
-	 * @return {Boolean} true if location variableis NOT in type.
-	 * Note that all variable names collide so that checking for 
-	 * LocationVariable versus TypeVariable is not necessary.
-	 */
-
-	var isFree = (function(){
-		var _visitor = {};
-		var _add = function( k , fun ){
-			error( !_visitor.hasOwnProperty(k) || ("Duplicated " +k) );
-			_visitor[k] = fun;
-		};
-		
-		_add( types.FunctionType, function(t,loc){
-			return isFree( t.argument(), loc ) && isFree( t.body(), loc );
-		});
-		
-		_add( types.BangType, function(t,loc){
-			return isFree( t.inner(), loc );
-		});
-		
-		_add( types.RelyType, function(t,loc){
-			return isFree( t.rely(), loc ) && isFree( t.guarantee(), loc );
-		});
-		
-		_add( types.GuaranteeType, function(t,loc){
-			return isFree( t.guarantee(), loc ) && isFree( t.rely(), loc );
-		});
- 
-		_add( types.SumType, function(t,loc){
-			var tags = t.tags();
-			for( var i in tags ){
-				if( !isFree(t.inner(tags[i]),loc) )
-					return false; 
-			}	
-			return true;
-		});
-
-		_add( types.ForallType, function(t,loc){
-			if( t.id().name() === loc.name() ) {
-				// the name is already bounded, so loc must be fresh
-				// because it does not occur free inside t.inner()
-				return true;
-			}
-			return isFree(t.id(),loc) && isFree(t.inner(),loc);
-		});
-		_add( types.ExistsType, _visitor[types.ForallType] ); //reuse definition
-
-		_add( types.ReferenceType, function(t,loc){
-			return isFree( t.location(), loc );
-		});
-
-		_add( types.StackedType, function(t,loc){
-			return isFree( t.left(), loc ) && isFree( t.right(), loc );
-		});
-		
-		_add( types.CapabilityType, function(t,loc){
-			return isFree( t.location(), loc ) && isFree( t.value(), loc );
-		});
-
-		_add( types.RecordType, function(t,loc){
-			var fs = t.getFields();
-			for( var i in fs ){
-				if( !isFree(fs[i],loc) )
-					return false;
-			}
-			return true;
-		});
-		
-		_add( types.AlternativeType, function(t,loc){
-			var inners = t.inner();
-			for( var i=0; i<inners.length; ++i )
-				if( !isFree(inners[i],loc) )
-					return false;
-			return true;
-		});
-		_add( types.IntersectionType, _visitor[types.AlternativeType] );
-		_add( types.StarType, _visitor[types.AlternativeType] ); //reuse def.
-		
-		_add( types.TupleType, function(t,loc){
-			var vs = t.getValues();
-			for( var i in vs ){
-				if( !isFree(vs[i],loc) )
-					return false;
-			}
-			return true;
-		});
-		
-		_add( types.TypeVariable, function(t,loc){
-			return t.name() !== loc.name();
-		});
-		_add( types.LocationVariable, _visitor[types.TypeVariable] ); //reuse def.
-		
-		_add( types.PrimitiveType, function(t,loc){ return true; });
-		_add( types.NoneType, _visitor[types.PrimitiveType] );
-		
-		_add( types.DefinitionType, function(t,loc){
-			// t.definition() is a name/identifer.
-			var vs = t.args();
-			for( var i in vs ){
-				if( !isFree(vs[i],loc) )
-					return false;
-			}
-			return true;
-		});
-		
-		// the closure that uses the private _visitor
-		return function (t,loc) {
-			if( !_visitor.hasOwnProperty( t.type ) )
-				error( "@isFree: Not expecting " +t.type );
-			return _visitor[t.type](t,loc);
-		};
-	})();
 	
 	/**
 	 * Substitutes in 'type' any occurances of 'from' to 'to'
@@ -405,6 +292,7 @@ var TypeChecker = (function(AST,exports){
 					return false;
 				
 				try{
+//FIXME this is ugly.
 					// consider extensions
 					var gg1 = g1.guarantee();
 					var gg2 = g2.guarantee();
@@ -809,116 +697,6 @@ var TypeChecker = (function(AST,exports){
 
 	};
 	
-	//
-	// TYPING ENVIRONMENT
-	//
-	
-	// The typing environment is a spaghetti stack where the parent
-	// may be shared among several different typing environments.
-	// All methods return:
-	// 	undefined - new element collides with a previously existing one;
-	//  null/value - if all OK.
-	var Environment = function(parent,defocus_up){
-		// note that set only works at the local level (i.e. it will never
-		// attempt to set something in an upper-level).
-
-		// CAREFUL: '$' and '#' cannot be source-level identifiers
-		var TYPE_INDEX='$';
-		//var CAP_INDEX='#';
-		
-		// meant to be $protected fields
-		this.$map = {};
-		this.$caps = [];
-		this.$parent = parent;
-		
-		// scope methods		
-		this.newScope = function(dg_up){
-			return new Environment(this,dg_up);
-		}
-		this.endScope = function(){
-			return this.$parent;
-		}
-		
-		// operations over IDENTIFIERS
-		this.set = function(id,value){
-			var tmp = this;
-			while( tmp !== null ){
-				if ( tmp.$map.hasOwnProperty(id) )
-					return undefined; // already exists
-				tmp = tmp.$parent; // check parent
-			}
-			
-			this.$map[id] = value;
-			return true; // ok
-		}
-		this.get = function(id,cond){ // condition for removal
-			if ( this.$map.hasOwnProperty(id) ){
-				var tmp = this.$map[id];
-				if( cond !== undefined && cond(tmp) ){
-					// ensures that it is no longer listed
-					delete this.$map[id];
-				}
-				return tmp;
-			}
-			if( this.$parent === null )
-				return undefined;
-			return this.$parent.get(id,cond);
-		}
-		
-		// operations over VARIABLES
-		// (includes both TypeVariables and LocationVariables)
-		this.setType = function(id,value){
-			// type variables cannot be hidden, must be unique
-			// otherwise it would either require renaming collisions
-			// or could allow access to parts that collide. 
-			if( this.getType(id) !== undefined )
-				return undefined; // already there
-			return this.set(TYPE_INDEX+id,value);
-		}
-		this.getType = function(id){
-			return this.get(TYPE_INDEX+id);
-		}
-		
-		// other...
-		this.size = function(){
-			return Object.keys(this.$map).length+
-					this.$caps.length+
-				( this.$parent === null ? 0 : this.$parent.size() );
-		}
-		
-		this.clone = function(){
-			var env = this.$parent !== null ?
-				new Environment( this.$parent.clone() ) :
-				new Environment( null );
-
-			for( var i in this.$map ){
-				// assuming it is OK to alias content (i.e. immutable stuff)
-				env.set( i, this.$map[i] );
-			}
-			for( var i=0; i<this.$caps.length;++i ){
-				env.setCap( this.$caps[i] );
-			}
-			
-			return env;
-		}
-
-		
-		// no order is guaranteed!
-		this.visit = function(all,f){
-			for( var i in this.$map ){
-				var isType = (i[0] === TYPE_INDEX);
-				f(i,this.$map[i],false,isType);
-			}
-			for( var i=0; i<this.$caps.length;++i ){
-				f(null,this.$caps[i],true,false);
-			}
-			if( all && this.$parent !== null )
-				this.$parent.visit(all,f);
-		}
-		
-		
-	};
-	
 	
 	// TypeVariables must be upper cased.
 	var isTypeVariableName = function(n){
@@ -928,99 +706,6 @@ var TypeChecker = (function(AST,exports){
 	//
 	// TYPE CHECKER
 	//
-		
-	/**
-	 * Attempts to merge the two types given as argument.
-	 * @return undefined if they cannot be merged, or the type that is
-	 * 	compatible with both.
-	 */
-	var mergeType = function(t1,t2){
-		if( subtypeOf(t1,t2) )
-			return t2;
-		if( subtypeOf(t2,t1) )
-			return t1;
-
-		//t1 = unAll(t1, false, true);
-		//t2 = unAll(t2, false, true);
-		// if bang mismatch, we need to not consider the sum as banged because
-		// our types cannot do a case on whether the type is liner or pure
-		var b1 = t1.type === types.BangType;
-		var b2 = t2.type === types.BangType;
-		
-		if( b1 ^ b2 ){
-			if( b1 ) t1 = t1.inner();
-			if( b2 ) t2 = t2.inner();
-		}
-		
-		var s1 = t1.type === types.StackedType;
-		var s2 = t2.type === types.StackedType;
-		
-		if( s1 ^ s2 ){
-			if( !s1 ) t1 = new StackedType(t1,NoneType);
-			if( !s2 ) t2 = new StackedType(t2,NoneType);
-		}
-		
-		if( t1.type !== t2.type )
-			return undefined;
-		// both the same type
-		
-		if( t1.type === types.StackedType ){
-			var left = mergeType( t1.left(), t2.left() );
-			if( left === undefined )
-				return undefined;
-			var right = mergeType( t1.right(), t2.right() );
-			if( right === undefined ){
-				// if they cannot be merged, then they are alternatives
-				// TODO: maybe partially merge is possible?
-				right = new AlternativeType();
-				right.add( t1.right() );
-				right.add( t2.right() );
-			}
-			return new StackedType(left,right);
-		}
-		
-		if( t1.type === types.BangType ){
-			var tmp = mergeType( t1.inner(),t2.inner() );
-			if( tmp !== undefined )
-				return new BangType( tmp );
-		}
-		
-		if( t1.type === types.SumType ){
-			// merge both types
-			var tmp = new SumType();
-			// add all the labels to the temporary sum
-			var tags = t1.tags();
-			for( var i in tags ){
-				tmp.add( tags[i], t1.inner(tags[i] ) )
-			}
-			// now check the other to make sure any overlapping is ok or add
-			// anything extra that it may have
-			tags = t2.tags();
-			for( var i in tags ){
-				var overlap = tmp.inner(tags[i]);
-				if( overlap !== undefined ){
-					// make sure they match
-					if( !equals( overlap, t2.inner(tags[i]) ))
-						return undefined;
-				}
-				else{
-					// make sure it was added.
-					if( tmp.add( tags[i], t2.inner(tags[i] ) ) === undefined )
-						return undefined;
-				}
-			}
-			return tmp;
-		}
-		
-		// all other cases must have exactly the same type
-		if( equals(t1,t2) )
-			return t1;
-		// should subtyping replace equals? i.e.:
-		// if( subtypeOf(t1,t2) ) return t2;
-		// if( subtypeOf(t2,t1) ) return t1;
-			
-		return undefined;
-	}
 
 	/*
 	 * bang -- remove bang(s)? !A <: A

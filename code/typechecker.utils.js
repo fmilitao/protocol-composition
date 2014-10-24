@@ -364,9 +364,234 @@ var TypeChecker = (function( assertF ){
 		
 	})();
 
+	/**
+	 * Searchs types 't' for location variable 'loc'. isFree if NOT present.
+	 * @param {Type} t that is to be traversed
+	 * @param {LocationVariable,TypeVariable} loc that is to be found
+	 * @return {Boolean} true if location variableis NOT in type.
+	 * Note that all variable names collide so that checking for 
+	 * LocationVariable versus TypeVariable is not necessary.
+	 */
+	var isFree = (function(){
+		var _visitor = {};
+		var _add = function( k , fun ){
+			error( !_visitor.hasOwnProperty(k) || ("Duplicated " +k) );
+			_visitor[k] = fun;
+		};
+		
+		_add( types.FunctionType, function(t,loc){
+			return isFree( t.argument(), loc ) && isFree( t.body(), loc );
+		});
+		
+		_add( types.BangType, function(t,loc){
+			return isFree( t.inner(), loc );
+		});
+		
+		_add( types.RelyType, function(t,loc){
+			return isFree( t.rely(), loc ) && isFree( t.guarantee(), loc );
+		});
+		
+		_add( types.GuaranteeType, function(t,loc){
+			return isFree( t.guarantee(), loc ) && isFree( t.rely(), loc );
+		});
+ 
+		_add( types.SumType, function(t,loc){
+			var tags = t.tags();
+			for( var i in tags ){
+				if( !isFree(t.inner(tags[i]),loc) )
+					return false; 
+			}	
+			return true;
+		});
+
+		_add( types.ForallType, function(t,loc){
+			if( t.id().name() === loc.name() ) {
+				// the name is already bounded, so loc must be fresh
+				// because it does not occur free inside t.inner()
+				return true;
+			}
+			return isFree(t.id(),loc) && isFree(t.inner(),loc);
+		});
+		_add( types.ExistsType, _visitor[types.ForallType] ); //reuse definition
+
+		_add( types.ReferenceType, function(t,loc){
+			return isFree( t.location(), loc );
+		});
+
+		_add( types.StackedType, function(t,loc){
+			return isFree( t.left(), loc ) && isFree( t.right(), loc );
+		});
+		
+		_add( types.CapabilityType, function(t,loc){
+			return isFree( t.location(), loc ) && isFree( t.value(), loc );
+		});
+
+		_add( types.RecordType, function(t,loc){
+			var fs = t.getFields();
+			for( var i in fs ){
+				if( !isFree(fs[i],loc) )
+					return false;
+			}
+			return true;
+		});
+		
+		_add( types.AlternativeType, function(t,loc){
+			var inners = t.inner();
+			for( var i=0; i<inners.length; ++i )
+				if( !isFree(inners[i],loc) )
+					return false;
+			return true;
+		});
+		_add( types.IntersectionType, _visitor[types.AlternativeType] );
+		_add( types.StarType, _visitor[types.AlternativeType] ); //reuse def.
+		
+		_add( types.TupleType, function(t,loc){
+			var vs = t.getValues();
+			for( var i in vs ){
+				if( !isFree(vs[i],loc) )
+					return false;
+			}
+			return true;
+		});
+		
+		_add( types.TypeVariable, function(t,loc){
+			return t.name() !== loc.name();
+		});
+		_add( types.LocationVariable, _visitor[types.TypeVariable] ); //reuse def.
+		
+		_add( types.PrimitiveType, function(t,loc){ return true; });
+		_add( types.NoneType, _visitor[types.PrimitiveType] );
+		
+		_add( types.DefinitionType, function(t,loc){
+			// t.definition() is a name/identifer.
+			var vs = t.args();
+			for( var i in vs ){
+				if( !isFree(vs[i],loc) )
+					return false;
+			}
+			return true;
+		});
+		
+		// the closure that uses the private _visitor
+		return function (t,loc) {
+			if( !_visitor.hasOwnProperty( t.type ) )
+				error( "@isFree: Not expecting " +t.type );
+			return _visitor[t.type](t,loc);
+		};
+	})();
+	
+	/**
+	 * The typing environment is a spaghetti stack where the parent
+	 * may be shared among several different typing environments.
+	 * All methods return:
+	 * 	undefined - new element collides with a previously existing one;
+	 *  null/value - if all OK.
+	 */
+	var Environment = function(parent){
+		// note that set only works at the local level (i.e. it will never
+		// attempt to set something in an upper-level).
+
+		// CAREFUL: '$' cannot be a source-level identifier
+		var TYPE_INDEX='$';
+		
+		// meant to be $protected fields
+		this.$map = {};
+		this.$caps = [];
+		this.$parent = parent;
+		
+		// scope methods		
+		this.newScope = function(){
+			return new Environment(this);
+		}
+		this.endScope = function(){
+			return this.$parent;
+		}
+		
+		// operations over IDENTIFIERS
+		this.set = function(id,value){
+			// check if 'id' exists
+			var tmp = this;
+			while( tmp !== null ){
+				if ( tmp.$map.hasOwnProperty(id) )
+					return undefined; // already exists
+				tmp = tmp.$parent; // check parent
+			}
+			
+			this.$map[id] = value;
+			return true; // ok
+		}
+
+		this.get = function(id,cond){ // condition for removal
+			if ( this.$map.hasOwnProperty(id) ){
+				var tmp = this.$map[id];
+				if( cond !== undefined && cond(tmp) ){
+					// ensures that it is no longer listed
+					delete this.$map[id];
+				}
+				return tmp;
+			}
+			if( this.$parent === null )
+				return undefined;
+			return this.$parent.get(id,cond);
+		}
+		
+		// operations over VARIABLES
+		// (includes both TypeVariables and LocationVariables)
+		this.setType = function(id,value){
+			// type variables cannot be hidden, must be unique
+			// otherwise it would either require renaming collisions
+			// or could allow access to parts that collide. 
+			if( this.getType(id) !== undefined )
+				return undefined; // already there
+			return this.set(TYPE_INDEX+id,value);
+		}
+
+		this.getType = function(id){
+			return this.get(TYPE_INDEX+id);
+		}
+		
+		// other...
+		this.size = function(){
+			return Object.keys(this.$map).length+
+					this.$caps.length+
+				( this.$parent === null ? 0 : this.$parent.size() );
+		}
+		
+		this.clone = function(){
+			var env = this.$parent !== null ?
+				new Environment( this.$parent.clone() ) :
+				new Environment( null );
+
+			for( var i in this.$map ){
+				// assuming it is OK to alias content (i.e. immutable stuff)
+				env.set( i, this.$map[i] );
+			}
+			for( var i=0; i<this.$caps.length;++i ){
+				env.setCap( this.$caps[i] );
+			}
+			
+			return env;
+		}
+
+		// no order is guaranteed!
+		this.visit = function(all,f){
+			for( var i in this.$map ){
+				var isType = (i[0] === TYPE_INDEX);
+				f(i,this.$map[i],false,isType);
+			}
+			for( var i=0; i<this.$caps.length;++i ){
+				f(null,this.$caps[i],true,false);
+			}
+			if( all && this.$parent !== null )
+				this.$parent.visit(all,f);
+		}
+		
+	};
 
 	exports.assert = assert;
 	exports.error = error;
+	exports.Environment = Environment;
+	exports.isFree = isFree;
 	exports.types = types;
 	exports.factory = fct;
 
