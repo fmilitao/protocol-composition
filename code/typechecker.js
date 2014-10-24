@@ -40,7 +40,7 @@ var TypeChecker = (function(AST,exports){
 	const GuaranteeType = fct.GuaranteeType;
 
 	const Environment = exports.Environment;
-	
+
 	//
 	// VISITORS
 	//
@@ -1669,6 +1669,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			};
 
 			default:
+//FIXME could just print warning on unhandled kinds.
 				return function( ast, env ){
 					error( "Not expecting " + ast.kind );
 				};
@@ -1736,7 +1737,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	var type_info;
 	var unique_counter;
 	//var typedef_eq = new Table();
-	var typedef_sub;
+	var typedef_sub; // subtyping cache
 	var typedef = new TypeDefinition();
 
 	// exporting these to facilitate testing.	
