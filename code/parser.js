@@ -9,6 +9,8 @@
  *  - ErrorWrapper
  *  - assertF
  *  - Parser (...the actual parser for the language)
+ *
+ * Note: AST.kinds for ALL available kinds while each node will have an .kind to list its own kind of AST node.
  */
 
 // http://www.gnu.org/software/bison/manual/html_node/Actions-and-Locations.html#Actions-and-Locations 
@@ -334,7 +336,7 @@ var Parser = function(file){
             if (!r.bydefault)
                 return null;
 			msg = msg + '\n' +
-				// Jisong's style error message 
+				// Jison's style error message 
 				(r.msg + "\n" + "(" + r.s + ", " + r.r + ") -> " + r.action);
         });
         throw new Error(msg);

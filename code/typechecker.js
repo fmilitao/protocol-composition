@@ -2,9 +2,9 @@
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 /**
- * REQUIRED Global variables (all declared in parser.js):
- * 	- AST.kinds, for all AST case analysis needs.
- *  - assertf, for error handling/flagging.
+ * REQUIRED global variables (all previously declared in parser.js):
+ * 	AST : AST.kinds, for all AST case analysis needs.
+ *  assertf : for error handling/flagging.
  */
 
 var TypeChecker = (function(AST,assertF){
@@ -1950,7 +1950,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		type_info.push( info );
 		var res = check_inner( ast, env );
 		info.res = res;
-		if( ast.kind === AST.kinds.SHARE ){
+		if( ast.kind === AST.SHARE ){
 			info.conformance = hack_info;
 		}
 		return res;
@@ -1966,7 +1966,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		
 		switch( kind ) {
 
-			case AST.kinds.SUBTYPE:
+			case AST.SUBTYPE:
 			return function( ast, env ){
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
@@ -1976,7 +1976,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			};
 
 
-			case AST.kinds.SUM_TYPE: 
+			case AST.SUM_TYPE: 
 			return function( ast, env ){
 				var sum = new SumType();
 				for( var i=0; i<ast.sums.length; ++i ){
@@ -1987,7 +1987,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return sum;
 			};
 			
-			case AST.kinds.INTERSECTION_TYPE: 
+			case AST.INTERSECTION_TYPE: 
 			return function( ast, env ){
 				var alt = new IntersectionType();
 				for( var i=0; i<ast.types.length; ++i ){
@@ -1996,7 +1996,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return alt;
 			};
 			
-			case AST.kinds.ALTERNATIVE_TYPE: 
+			case AST.ALTERNATIVE_TYPE: 
 			return function( ast, env ){
 				var alt = new AlternativeType();
 				for( var i=0; i<ast.types.length; ++i ){
@@ -2005,7 +2005,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return alt;
 			};
 			
-			case AST.kinds.STAR_TYPE: 
+			case AST.STAR_TYPE: 
 			return function( ast, env ){
 				var star = new StarType();
 				for( var i=0; i<ast.types.length; ++i ){
@@ -2014,7 +2014,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return star;
 			};
 			
-			case AST.kinds.NAME_TYPE: 
+			case AST.NAME_TYPE: 
 			return function( ast, env ){
 				// the typing environment remains unchanged because all type
 				// definitions and type/location variables should not interfere
@@ -2039,7 +2039,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				assert( 'Unknown type '+label, ast);
 			};
 			
-			case AST.kinds.ID:
+			case AST.ID:
 				// auxiliary function that only removes (i.e. destructive) if linear
 				var destructive = function(t) {
 					return t.type !== types.BangType;
@@ -2054,7 +2054,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			};
 			
 			
-			case AST.kinds.DEFINITION_TYPE:
+			case AST.DEFINITION_TYPE:
 			return function( ast, env ){
 				var id = ast.name;
 				var args = ast.args;
@@ -2086,7 +2086,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new DefinitionType(id,arguments);
 			};
 			
-			case AST.kinds.TYPE_APP: 
+			case AST.TYPE_APP: 
 			return function( ast, env ){
 				var exp = check( ast.exp, env );
 				exp = unAll(exp, true, true);
@@ -2109,7 +2109,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return substitutionVarsOnly( exp.inner(), exp.id(), packed );
 			};
 			
-			case AST.kinds.TAGGED: 
+			case AST.TAGGED: 
 			return function( ast, env ){
 				var sum = new SumType();
 				var tag = ast.tag;
@@ -2121,7 +2121,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return sum;
 			};
 			
-			case AST.kinds.TUPLE_TYPE:
+			case AST.TUPLE_TYPE:
 			return function( ast, env ){
 				// Note that TUPLE cannot move to the auto-bang block
 				// because it may contain pure values that are not in the
@@ -2145,7 +2145,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			};
 			
 			
-			case AST.kinds.SHARE: 
+			case AST.SHARE: 
 			return function( ast, env ){
 				var cap = check( ast.type, env );
 								
@@ -2166,7 +2166,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 			
 			// TYPES
-			case AST.kinds.RELY_TYPE: 
+			case AST.RELY_TYPE: 
 			return function( ast, env ){
 				var rely = check( ast.left, env );
 				var guarantee = check( ast.right, env );
@@ -2176,14 +2176,14 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new RelyType( rely, guarantee );
 			};
 			
-			case AST.kinds.GUARANTEE_TYPE: 
+			case AST.GUARANTEE_TYPE: 
 			return function( ast, env ){
 				var guarantee = check( ast.left, env );
 				var rely = check( ast.right, env );
 				return new GuaranteeType( guarantee, rely );
 			};
 			
-			case AST.kinds.REF_TYPE: 
+			case AST.REF_TYPE: 
 			return function( ast, env ){
 				var id = ast.text;
 				var loc = env.getType( id );
@@ -2194,7 +2194,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new ReferenceType( loc );
 			};
 			
-			case AST.kinds.EXISTS_TYPE: 
+			case AST.EXISTS_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
 				var e = env.newScope();
@@ -2210,8 +2210,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new ExistsType( variable, check( ast.type, e ) );
 			};
 			
-			case AST.kinds.FORALL:
-			case AST.kinds.FORALL_TYPE: 
+			case AST.FORALL:
+			case AST.FORALL_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
 				var e = env.newScope();
@@ -2227,7 +2227,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new ForallType( variable, check( ast.exp, e ) );
 			};
 			
-			case AST.kinds.RECURSIVE_TYPE: 
+			case AST.RECURSIVE_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
 				var e = env.newScope();
@@ -2240,17 +2240,17 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new RecursiveType( variable, check( ast.exp, e ) );
 			};
 						
-			case AST.kinds.NONE_TYPE:
+			case AST.NONE_TYPE:
 			return function( ast, env ){
 				return NoneType;
 			};
 				
-			case AST.kinds.BANG_TYPE:
+			case AST.BANG_TYPE:
 			return function( ast, env ){
 				return new BangType( check( ast.type , env ) );
 			};
 			
-			case AST.kinds.FUN_TYPE: 
+			case AST.FUN_TYPE: 
 			return function( ast, env ){
 				return new FunctionType( 
 					check( ast.arg, env ),
@@ -2258,7 +2258,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				);
 			};
 			
-			case AST.kinds.CAP_TYPE: 
+			case AST.CAP_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
 				var loc = env.getType( id );
@@ -2271,7 +2271,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new CapabilityType( loc, type );
 			};
 			
-			case AST.kinds.STACKED_TYPE: 
+			case AST.STACKED_TYPE: 
 			return function( ast, env ){
 				return new StackedType(
 					check( ast.left, env ),
@@ -2279,7 +2279,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				);
 			};
 			
-			case AST.kinds.CAP_STACK: 
+			case AST.CAP_STACK: 
 			return function( ast, env ){
 				var exp = check( ast.exp, env );
 				var cap = check( ast.type, env );
@@ -2294,7 +2294,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new StackedType( exp, cap );
 			};
 			
-			case AST.kinds.RECORD_TYPE: 
+			case AST.RECORD_TYPE: 
 			return function( ast, env ){
 				var rec = new RecordType();
 				for( var i=0; i<ast.exp.length ; ++i ){
@@ -2307,7 +2307,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return rec;
 			};
 			
-			case AST.kinds.PRIMITIVE_TYPE:
+			case AST.PRIMITIVE_TYPE:
 			return function( ast, env ){
 				// any primitive type is acceptable but only ints, booleans
 				// and strings have actual values that match a primitive type.
@@ -2324,7 +2324,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	
 	var visitor = {};
 	// setup visitors
-	for( var i in AST.kinds ){
+	for( var i in AST ){
 		error( !visitor.hasOwnProperty(i) ||
 				( 'Error @visitor, duplication: '+i ) );
 		// find witch function to call on each AST kind of node
@@ -2396,7 +2396,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		var start = new Date().getTime();
 		type_info = [];
 		try{
-			error( (ast.kind === AST.kinds.PROGRAM) || 'Unexpected AST node' );
+			error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
 				
 			// reset typechecke's state.
 			unique_counter = 0;
@@ -2466,5 +2466,5 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 	};
 	return exports;
-})(AST,assertF); // required globals
+})( AST.kinds, assertF ); // required globals
 
