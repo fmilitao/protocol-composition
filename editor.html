@@ -2,7 +2,6 @@
 <html lang="en">
     <head>
         <meta charset="utf-8">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1">
         <title> Prototype </title>
         <link rel="stylesheet" type="text/css" href="style.css">
         <script src="ace/ace.js" type="text/javascript" charset="utf-8"></script>
@@ -14,14 +13,9 @@
 
 <div id="info">
 <h2>
-	Protocol Conformance.
-	<div class="footnote">
-		Experimental code. Research prototype.
-	</div>
-	<div class="footnote">
-		<a href="https://code.google.com/p/protocol-conformance/" target="_blank">Project Page.</a>
-		<a href="tests.html" target="_blank">Unit Tests.</a>
-	</div>
+	<a href="https://code.google.com/p/protocol-conformance/" target="_blank">Protocol Conformance</a>
+	<img id="gear" src="lib/gear.png" style="float: right;" title="click for settings"/>
+
 	<div id='chrome_warn' class="chrome_hide">WARNING: designed for <a href="http://www.google.com/chrome" target="_blank">Google Chrome</a></div>
 	</h2>
 	
@@ -31,16 +25,18 @@
     	<div id="examples" > </div>
 	</div>
 	
+	
+</div>
+
+<div id="config">
+	<h2><img id="gear" src="lib/gear.png" /> Settings </h2>
 	<select id="test-file">
 		<option value="">-- Load Test File --</option>
 	</select>
-	
+	<br/><br/>
 	<select id="editor-style">
 		<option value="">-- Change Style --</option>
 	</select>
-	
-	<br/>
-	<br/>
 </div>
 
 <div id="controls">

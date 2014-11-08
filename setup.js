@@ -130,6 +130,25 @@ $(document).ready(function() {
     // Editor and Buttons setup
     //
 
+    $("#gear").click(function(){
+    	var panel = $("#config");
+	
+		var position = $(this).offset();
+    	var y = position.top;
+      	var x = position.left;
+
+    	panel.css({
+    		'left': x-7,
+    		'top': y-7-6,
+    		'display': 'block'
+    	});
+
+    	panel.mouseleave(function(){
+    		//panel.css('display','none');
+    		panel.fadeOut('fast');
+    	});
+    });
+
     var editor = ace.edit(EDITOR);
 	var Range = ace.require("ace/range").Range;
 

@@ -2,9 +2,9 @@
 /* FIXME: this code needs clean up and remove useless bits. */
 
 body {
-	background: #F5D4AB;
+	background: #D6D6C2;
 	color: black;
-	font-family: helvetica;
+	font-family: "Palatino", helvetica;
 	font-size: 10pt;
 	overflow: hidden;
 	margin: 0 0 0 0;
@@ -14,6 +14,16 @@ h2 {
 	margin: 5px 0 8px 0;
 }
 
+#config {
+  display: none;
+  background: #f1f1f1;
+  border: 2px solid #a9a9a9;
+  position: absolute;
+  z-index: 99999;
+  padding: 5px 5px;
+  text-align: left;
+  box-shadow: 1px 3px 3px rgba(0,0,0,0.4);
+}
 
 /* hr {
 	border: 0;
@@ -89,6 +99,7 @@ select {
 	position: absolute;
 	top: 0px;
 	/*
+	padding-top: 20px;
 	border-left-color: gray;
 	border-left-style: solid; */
 	display: block;
@@ -165,7 +176,8 @@ a {
 }
 
 a:hover {
-	text-decoration: underline;
+	/* text-decoration: underline; */
+	color: #000099;
 }
 a:visited {
 }
