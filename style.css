@@ -14,12 +14,20 @@ h2 {
 	margin: 5px 0 8px 0;
 }
 
+#gear {
+	opacity: 0.6;
+}
+#gear:hover{
+	opacity: 1;
+}
+
 #config {
   display: none;
   background: #f1f1f1;
   border: 2px solid #a9a9a9;
   position: absolute;
   z-index: 100;
+  width: 200px;
   padding: 5px 5px;
   text-align: left;
   box-shadow: 1px 3px 3px rgba(0,0,0,0.4);

@@ -270,9 +270,17 @@ $(document).ready(function() {
     	});
     })();
 
-
+    var actionButton = function(label,id,title,text){
+    	var ctr = $('#controls');
+    	ctr.prepend("<span class='action'>"+label+"<button class='exbuttong' id="+id+
+    		" title="+title+"><b>"+text+"</b></button></span>");
+    };
 
 	(function(){ // Auto-Run button
+		actionButton("Autorun: ","autorun",
+			"Autorun may crash tab/browser if your code does not terminate.",
+			"ON");
+
 		var autorun = true;
 		var button = $(_AUTORUN_);
 		button.click( function(event){
@@ -285,6 +293,10 @@ $(document).ready(function() {
 
 	var typeinfo = true;
 	(function(){ // Typing-information panel.
+		actionButton("Typing Information: ","typeinfo",
+			"Type information is shown when the cursor is placed at the beginning of a construct.",
+			"SHOW");
+
 		var button = $(_TYPEINFO_);
 		var panel = $(_TYPING_);
 
@@ -331,16 +343,19 @@ $(document).ready(function() {
 
 	})();
 
-	(function(){ // reset worker button.
-		var button = $(_RESET_);
+	(function(){
+		// reset worker button.
+		if( worker_enabled ) {
+			actionButton("Re-Start Worker: ","reset",
+				"If code does not terminate, you may need to manually reset the worker thread.",
+				"RESET");
 
-		if( !worker_enabled ) {
-			button.html("N/A");
-		} else {
+			var button = $(_RESET_);
+
 			button.click( function(event){
 				comm.reset();
 				editor.focus();
-		});
+			});
 		}
 	})();
 
