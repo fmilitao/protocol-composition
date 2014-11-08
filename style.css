@@ -19,7 +19,7 @@ h2 {
   background: #f1f1f1;
   border: 2px solid #a9a9a9;
   position: absolute;
-  z-index: 99999;
+  z-index: 100;
   padding: 5px 5px;
   text-align: left;
   box-shadow: 1px 3px 3px rgba(0,0,0,0.4);

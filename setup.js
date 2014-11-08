@@ -4,6 +4,7 @@
 var DEBUG_MSG = true;
 var worker_enabled = true;
 var default_file = 'examples/welcome.txt';
+var default_style = 'ace/theme/mono_industrial'; //NOTE: cannot be wrapped in quotes.
 
 //load examples given as parameters
 var parameters = document.URL.split('?');
@@ -18,6 +19,9 @@ if( parameters.length > 1 ){
     		switch( option ){
     			case 'file': // loads file
     				default_file = value;
+    				break;
+    			case 'style':
+    				default_style = value;
     				break;
     			case 'worker':
 					// compares given string with 'true' string.
@@ -131,6 +135,7 @@ $(document).ready(function() {
     //
 
     $("#gear").click(function(){
+    	var entered = false;
     	var panel = $("#config");
 	
 		var position = $(this).offset();
@@ -139,13 +144,17 @@ $(document).ready(function() {
 
     	panel.css({
     		'left': x-7,
-    		'top': y-7-6,
+    		'top': y-7+20,
     		'display': 'block'
     	});
 
+    	panel.mouseenter(function(){
+    		entered = true;
+    	});
+
     	panel.mouseleave(function(){
-    		//panel.css('display','none');
-    		panel.fadeOut('fast');
+    		if(entered)
+    			panel.fadeOut('fast');
     	});
     });
 
@@ -153,7 +162,7 @@ $(document).ready(function() {
 	var Range = ace.require("ace/range").Range;
 
 	(function(){
-    	editor.setTheme("ace/theme/mono_industrial");
+    	editor.setTheme(default_style);
     	// selected="selected"
 		var STYLE_LIST = $("#editor-style");
 		$.get( "ace/ace-themes-list" , function(data) {
