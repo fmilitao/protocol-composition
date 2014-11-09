@@ -24,10 +24,10 @@ h2 {
 #config {
   display: none;
   background: #f1f1f1;
-  border: 2px solid #a9a9a9;
+  border: 1px solid gray;
   position: absolute;
-  z-index: 100;
-  width: 200px;
+  z-index: 1000;
+  width: 300px;
   padding: 5px 5px;
   text-align: left;
   box-shadow: 1px 3px 3px rgba(0,0,0,0.4);

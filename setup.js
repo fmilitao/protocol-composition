@@ -134,29 +134,38 @@ $(document).ready(function() {
     // Editor and Buttons setup
     //
 
-    $("#gear").click(function(){
+    (function(){
     	var entered = false;
     	var panel = $("#config");
-	
-		var position = $(this).offset();
-    	var y = position.top;
-      	var x = position.left;
-
-    	panel.css({
-    		'left': x-7,
-    		'top': y-7+20,
-    		'display': 'block'
-    	});
 
     	panel.mouseenter(function(){
-    		entered = true;
+			entered = true;
     	});
 
     	panel.mouseleave(function(){
-    		if(entered)
-    			panel.fadeOut('fast');
+    		if(entered){
+    			panel.slideToggle(100);
+    			entered = false;
+    		}
+    		//panel.fadeOut('fast');
     	});
-    });
+
+	    $("#gear").click(function(){
+		
+			var position = $(this).offset();
+	    	var y = position.top;
+	      	var x = position.left;
+
+	    	panel.css({
+	    		'left': x-(panel.width()/2),
+	    		'top': y-7+(1.5*$(this).outerHeight())
+	    		//, 'display': 'block'
+	    	});
+
+	    	panel.slideToggle(100);
+
+	    });
+	}());
 
     var editor = ace.edit(EDITOR);
 	var Range = ace.require("ace/range").Range;
