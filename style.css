@@ -1,5 +1,7 @@
 
-/* FIXME: this code needs clean up and remove useless bits. */
+/* FIXME: this code needs clean up and remove useless bits. 
+remember .CLASS #ID 
+TODO: config must be scroll on overflow. */
 
 body {
 	background: #D6D6C2;
@@ -12,6 +14,12 @@ body {
 
 h2 {
 	margin: 5px 0 8px 0;
+	/* vertical-align:center; */
+}
+
+.plain {
+	white-space: pre;
+	font-family: monospace;
 }
 
 #gear {
@@ -24,10 +32,10 @@ h2 {
 #config {
   display: none;
   background: #f1f1f1;
+  overflow: scroll;
   border: 1px solid gray;
   position: absolute;
   z-index: 1000;
-  width: 300px;
   padding: 5px 5px;
   text-align: left;
   box-shadow: 1px 3px 3px rgba(0,0,0,0.4);
@@ -77,8 +85,9 @@ select {
 }
 
 .action{
-	margin: 0 25px 0 10px;
+	/* margin: 0 25px 0 10px; */
 }
+
 
 #info {
 	box-sizing: border-box;
@@ -102,6 +111,14 @@ select {
 	margin: 1px 0 1px 0;
 }
 
+.status{
+	float: left;
+	vertical-align:bottom;
+	/* remember to match exbuttong: */
+	padding: 2px 2px;
+	margin: 1px 0 1px 0;
+}
+
 #editor {
 	box-sizing: border-box; /* this is a god-send... */
 	position: absolute;
@@ -112,6 +129,7 @@ select {
 	border-left-style: solid; */
 	display: block;
 }
+
 
 #output {
 	box-sizing: border-box;
@@ -128,7 +146,7 @@ select {
 	border-top-width: 1px;*/
 }
 
-#controls{
+#statusbar{
 	box-sizing: border-box;
 	position: absolute;
 	background-color: #dcdcdc;

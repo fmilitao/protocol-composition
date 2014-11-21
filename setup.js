@@ -8,7 +8,6 @@ var default_style = 'ace/theme/mono_industrial'; //NOTE: cannot be wrapped in qu
 
 //load examples given as parameters
 var parameters = document.URL.split('?');
-var filegiven = false;
 if( parameters.length > 1 ){
 	parameters = parameters[1].split('&');
 	for( var i=0;i<parameters.length;++i ){
@@ -48,7 +47,7 @@ if( !worker_enabled ){
 	importScript('code/worker.js');
 	console.log('done.');
 
-	// uses this GLOBAL var to communicate with worker
+	// uses this GLOBAL var to communicate with fake worker
 	var MAIN_HANDLER = null;
 }
 
@@ -56,7 +55,7 @@ if( !worker_enabled ){
 var INFO ="info";
 var EDITOR = "editor";
 var OUTPUT = "output";
-var CONTROLS = "controls";
+var STATUS_BAR = "statusbar";
 var EXAMPLES = "examples";
 var AUTORUN = "autorun";
 var TYPING = 'typing';
@@ -107,7 +106,7 @@ $(document).ready(function() {
 		editor.style.height = (h-console_height-controls_height)+"px";
 		editor.style.top = 0+"px";
 
-		var controls = document.getElementById(CONTROLS);
+		var controls = document.getElementById(STATUS_BAR);
 		controls.style.left = split+"px";
 		controls.style.width = (w-split)+"px";
 		controls.style.height = (controls_height)+"px";
@@ -144,7 +143,7 @@ $(document).ready(function() {
 
     	panel.mouseleave(function(){
     		if(entered){
-    			panel.slideToggle(100);
+    			panel.fadeToggle(50);
     			entered = false;
     		}
     		//panel.fadeOut('fast');
@@ -162,7 +161,7 @@ $(document).ready(function() {
 	    		//, 'display': 'block'
 	    	});
 
-	    	panel.slideToggle(100);
+	    	panel.fadeToggle(50);
 
 	    });
 	}());
@@ -281,8 +280,8 @@ $(document).ready(function() {
 
     var actionButton = function(label,id,title,text){
     	var ctr = $('#controls');
-    	ctr.prepend("<span class='action'>"+label+"<button class='exbuttong' id="+id+
-    		" title="+title+"><b>"+text+"</b></button></span>");
+    	ctr.prepend("<div class='action'>"+label+"<button class='exbuttong' id="+id+
+    		" title="+title+"><b>"+text+"</b></button></div>");
     };
 
 	(function(){ // Auto-Run button
@@ -650,4 +649,10 @@ $(document).ready(function() {
     // editor apparently automatically gets focused, even without this.
     editor.focus();
 
+
+    var setStatus = function(txt){
+    	$('#status').text(txt);
+    };
+
+    setStatus('Ready.');
 });

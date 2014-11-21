@@ -14,7 +14,7 @@
 <div id="info">
 <h2>
 	<a href="https://code.google.com/p/protocol-conformance/" target="_blank" title="open project page">Protocol Conformance</a>
-	<img id="gear" src="lib/gear.png" style="float: right;" title="click for settings"/>
+	<img id="gear" src="lib/gear.png" style="float: right" title="click for settings"/>
 
 	<div id='chrome_warn' class="chrome_hide">WARNING: designed for <a href="http://www.google.com/chrome" target="_blank">Google Chrome</a></div>
 	</h2>
@@ -29,26 +29,39 @@
 </div>
 
 <div id="config">
-	<h2> Settings </h2>
-	Load test file: <select id="test-file">
-		<option value="">-- Load Test File --</option>
-	</select>
-	<br/><br/>
-	Change code style-sheet:
-	<select id="editor-style">
-		<option value="">-- Change Style --</option>
-	</select>
-	<br/><br/>
-	?options:
-	<br/>
-	worker=false : runs single-threaded
-	<br/>
-	file=FILE : loads up FILE as initial example
-	<br/>
-	style=STYLE : use style-sheet STYLE by default
+ <h2> Settings <img src="lib/gear.png" style="float: right" /> </h2>
+	
+ Load test file:
+ <select id="test-file">
+  <option value="">-- Load Test File --</option>
+ </select>
+	
+<br/><br/>
+	
+ Change code style-sheet:
+  <select id="editor-style">
+   <option value="">-- Change Style --</option>
+  </select>
+
+<br/><br/>
+
+ URL argument options:
+<span class="plain">
+ URL/editor.html?OPTIONS
+ (use & to combine options)
+  worker=false : runs single-threaded
+  file=FILE    : loads FILE as start example
+  style=STYLE  : sets starting style-sheet
+</span>
+
+<br/><br/>
+
+ Advanced controls:
+	<div id="controls"></div>
 </div>
 
-<div id="controls">
+<div id="statusbar">
+	<span id="status" class="status">Initializing...</span>
 	<span id="cursor-position">1:0</span>
 </div>
 
