@@ -96,25 +96,27 @@ $(document).ready(function() {
 		var controls_height = 20;
 		var console_height = 80;
 		var split = 270;
+		var bar = 35;
 
 		var info = document.getElementById(INFO);
-		info.style.width = split+"px";
+		info.style.width = w+"px";
+		info.style.height = bar+"px";
 
 		var editor = document.getElementById(EDITOR);
-		editor.style.left = split+"px";
-		editor.style.width = (w-split)+"px";
-		editor.style.height = (h-console_height-controls_height)+"px";
-		editor.style.top = 0+"px";
+		//editor.style.left = split+"px";
+		editor.style.width = (w)+"px";
+		editor.style.height = (h-console_height-controls_height-bar)+"px";
+		editor.style.top = bar+"px";
 
 		var controls = document.getElementById(STATUS_BAR);
-		controls.style.left = split+"px";
-		controls.style.width = (w-split)+"px";
+		//controls.style.left = split+"px";
+		controls.style.width = w+"px";
 		controls.style.height = (controls_height)+"px";
 		controls.style.top = (h-controls_height)+"px";
 
 		var output = document.getElementById(OUTPUT);
-		output.style.left = split+"px";
-		output.style.width = (w-split)+"px";
+		//output.style.left = split+"px";
+		output.style.width = w+"px";
 		output.style.height = (console_height)+"px";
 		output.style.top = (h-console_height-controls_height)+"px";
 
@@ -156,7 +158,7 @@ $(document).ready(function() {
 	      	var x = position.left;
 
 	    	panel.css({
-	    		'left': x-(panel.width()/2),
+	    		'left': window.innerWidth-(panel.width())-15, //2, //x-(panel.width()/2),
 	    		'top': y-7+(1.5*$(this).outerHeight())
 	    		//, 'display': 'block'
 	    	});
@@ -223,6 +225,7 @@ $(document).ready(function() {
 			var button = $('<button/>', {
 				class: 'button',
 	        	text: name,
+	        	title: 'load example',
 	        	click: function(){
 	        		//button.text(name+' (Loading...)');
 	        		button.addClass('button_load');
@@ -244,11 +247,6 @@ $(document).ready(function() {
 					addExample( 'examples/'+examples[i] , examples[i] );
 			}
 		});
-
-		//$("#examples").hide();
-	    $("#examples-button").click(function() {
-	        $("#examples").slideToggle(100);
-	    });
 
 		// setup editor with default file.
 		$.get( default_file , function(data) { setEditor(data); });

@@ -13,7 +13,6 @@ var TypeChecker = (function(AST,exports){
 	// define constants for convenience
 	const assert = exports.assert;
 	const error = exports.error;
-	const isFree = exports.isFree;
 
 	const types = exports.types;
 	const fct = exports.factory;
@@ -267,6 +266,7 @@ var TypeChecker = (function(AST,exports){
 					
 				// if name mismatch, do "quick" substitution to make them match
 				if( t1.id().name() !== t2.id().name() ){
+//FIXME: substitution should not be used here. DeBruijn?
 					var tmp = substitutionVarsOnly(t2.inner(),t2.id(),t1.id());
 					return equals( t1.inner(), tmp );
 				}
@@ -652,6 +652,7 @@ var TypeChecker = (function(AST,exports){
 				
 				// if needs renaming
 				if( t1.id().name() !== t2.id().name() ){
+//FIXME use DeBruijn
 					var tmp = substitutionVarsOnly( t2.inner(), t2.id(), t1.id() );
 					return subtypeOf( t1.inner(), tmp );
 				}

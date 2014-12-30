@@ -557,6 +557,17 @@ var TypeChecker = (function( assertF ){
 		this.getType = function(id){
 			return this.get(TYPE_INDEX+id);
 		}
+
+		// returns the depth of 'id' in the spaghetti stack (current is 1)
+		// returns -1 if not found.
+		this.getTypeDepth = function(id){
+			if ( this.$map.hasOwnProperty(id) ){
+				return 1;
+			}
+			if( this.$parent === null )
+				return -1; // not found
+			return 1+this.$parent.getTypeDepth(id);
+		}
 		
 		// other...
 		this.size = function(){

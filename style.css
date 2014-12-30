@@ -4,7 +4,7 @@ remember .CLASS #ID
 TODO: config must be scroll on overflow. */
 
 body {
-	background: #D6D6C2;
+	background: #b7b794;
 	color: black;
 	font-family: "Palatino", helvetica;
 	font-size: 10pt;
@@ -24,6 +24,8 @@ h2 {
 
 #gear {
 	opacity: 0.6;
+	float: right;
+	margin: 0px 0px 0px 5px;
 }
 #gear:hover{
 	opacity: 1;
@@ -66,11 +68,12 @@ select {
 	padding: 5px 5px 5px 5px; */	
 }
 
+
 .exbuttong{
 	width: 45px;
 	margin: 1px 0 1px 0;
 	background-color: #dcdcdc;
-	border: 1px solid #dcdcdc; /*#666; */
+	border: 1px solid #dcdcdc;
 	color: #000;
 	text-decoration: none;
 	padding: 2px 2px;
@@ -91,14 +94,14 @@ select {
 
 #info {
 	box-sizing: border-box;
-	overflow: scroll;
+	-webkit-box-sizing: border-box;
+  	-moz-box-sizing: border-box;
+	/* overflow: scroll; */
 	position: absolute;
 	top: 0px;
 	height: 100%;
-	border-right-color: gray;
-	border-right-style: solid;
-	border-right-width: 1px;
 	padding: 5px 5px;
+	border: 1px solid black;
 }
 
 #cursor-position{
@@ -210,50 +213,37 @@ a:visited {
 
 /* ----- */
 
-.heading {
-	margin: 10px 0 10px 0;
-	padding: 2px 2px;
-	/* cursor: pointer; */
-	/*
-	border-radius: 3px;
-	*/
-	border: 1px solid gray;
-	background-color: #dcdcdc;
-	box-shadow: 2px 2px 2px #888888;
-}
 
-.heading-title {
+
+.title {
 	font-weight: bold;
-	font-size: 8pt;
-}
-
-.heading-title:hover:after {
-	content: ' (press to expand/collapse) ';
-	font-weight: normal;
+	font-size: 16pt;
 }
 
 .button {
-	width: 100%;
+	/* width: 100%; */
 	margin: 1px 0 1px 0;
-	background-color: #dcdcdc;
-	border: 1px solid #dcdcdc; /*#666; */
-	color: #000;
+	color: black;
 	text-decoration: none;
-	padding: 5px 5px 5px 5px;
-	/*
-	border-radius: 3px;
-	*/
+	padding: 3px 5px 3px 5px;
+}
+
+#examples {
+	/* margin: 0px 0px 0px 15px ; */
+	float: right;
 }
 
 .button_load {
-	background:#dcdcdc url('lib/ajax-loader.gif') no-repeat right top;
+	background:#dcdcdc url('lib/ajax-loader.gif') no-repeat center top;
+	color: gray;
 }
 
 .button:hover {
 	background-color: #cdcdcd;
 	font-weight: bold;
-	border: 2px solid #acacac;
-	padding: 4px 4px 4px 4px;
+	margin: 0;
+	border: 1px solid #acacac;
+	padding: 3px 4px 3px 4px;
 }
 
 .footnote {
