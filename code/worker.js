@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 //
@@ -44,7 +44,7 @@ var checker = TypeChecker.check;
 var send;
 if( isWorker ){
 	send = function(k,msg){
-		self.postMessage({kind: k, data: msg });
+		self.postMessage({ kind: k, data: msg });
 	};
 	
 	self.addEventListener('message', function(e) {
@@ -57,7 +57,7 @@ if( isWorker ){
 		}
 	}, false);
 } else {
-	// Just for local debugging, MAIN_HANDLER is global var
+	// Just for local debugging, MAIN_HANDLER is global var in 'setup.js'
 	send = function(kind,data) {
 		try{
 			MAIN_HANDLER[kind](data);

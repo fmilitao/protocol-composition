@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 /**
@@ -170,6 +170,12 @@ var TypeChecker = (function( assertF ){
 		}
 	);
 	
+	newType('TopType',
+		function TopType(){
+			// intentionally empty	
+		}
+	);
+
 	newType('TupleType',
 		function TupleType(){
 			var values = [];
@@ -361,6 +367,7 @@ var TypeChecker = (function( assertF ){
 		_add( types.PrimitiveType, tmp );
 		
 		_add( types.NoneType, function(){ return 'none'; });
+		_add( types.TopType, function(){ return 'top'; });
 		
 	})();
 
@@ -461,7 +468,8 @@ var TypeChecker = (function( assertF ){
 		
 		_add( types.PrimitiveType, function(t,loc){ return true; });
 		_add( types.NoneType, _visitor[types.PrimitiveType] );
-		
+		_add( types.TopType, _visitor[types.PrimitiveType] );
+
 		_add( types.DefinitionType, function(t,loc){
 			// t.definition() is a name/identifer.
 			var vs = t.args();

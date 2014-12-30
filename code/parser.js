@@ -60,6 +60,7 @@ var AST = new function(){
 		'STAR_TYPE',
 		'PRIMITIVE_TYPE',
 		'NONE_TYPE',
+		'TOP_TYPE',
 		'DEFINITION_TYPE',
 		'USE',
 		'FORALL',
@@ -203,11 +204,11 @@ var AST = new function(){
 		return aux( this.kinds.CASE, {exp:exp, branches:branches}, info);
 	}
 	// types
-	this.makeExistsType = function(id,type, info){
-		return aux( this.kinds.EXISTS_TYPE, {id: id, type: type}, info);
+	this.makeExistsType = function(id,type,bound, info){
+		return aux( this.kinds.EXISTS_TYPE, {id: id, bound: bound, type: type}, info);
 	}
-	this.makeForallType = function(id,type, info){
-		return aux( this.kinds.FORALL_TYPE, {id: id, exp: type}, info);
+	this.makeForallType = function(id,type,bound, info){
+		return aux( this.kinds.FORALL_TYPE, {id: id, bound: bound, exp: type}, info);
 	}
 //	this.makeRecursiveType = function(id,type, info){
 //		return aux( this.kinds.RECURSIVE_TYPE, {id: id, exp: type}, info);
@@ -265,6 +266,9 @@ var AST = new function(){
 	}
 	this.makeNoneType = function(info){
 		return aux( this.kinds.NONE_TYPE, {}, info);
+	}
+	this.makeTopType = function(info){
+		return aux( this.kinds.TOP_TYPE, {}, info);
 	}
 	this.makeDefinitionType = function(exp,type,info){
 		return aux( this.kinds.DEFINITION_TYPE, {name: exp, args: type}, info);

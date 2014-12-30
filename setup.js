@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 var DEBUG_MSG = true;
@@ -39,6 +39,9 @@ if( !worker_enabled ){
 		document.write('<script src="'+file+'"><\/script>');
 	};
 
+	// uses this GLOBAL var to communicate with fake worker
+	var MAIN_HANDLER = null;
+
 	console.log('importing scripts to run locally...');
 	importScript('lib/jison.js');
 	importScript('code/parser.js');
@@ -46,28 +49,25 @@ if( !worker_enabled ){
 	importScript('code/typechecker.js');
 	importScript('code/worker.js');
 	console.log('done.');
-
-	// uses this GLOBAL var to communicate with fake worker
-	var MAIN_HANDLER = null;
 }
 
 // HTML element IDs that need to be present in the .html file
-var INFO ="info";
-var EDITOR = "editor";
-var OUTPUT = "output";
-var STATUS_BAR = "statusbar";
-var EXAMPLES = "examples";
-var AUTORUN = "autorun";
-var TYPING = 'typing';
-var TYPEINFO = 'typeinfo';
+const INFO ="info";
+const EDITOR = "editor";
+const OUTPUT = "output";
+const STATUS_BAR = "statusbar";
+const EXAMPLES = "examples";
+const AUTORUN = "autorun";
+const TYPING = 'typing';
+const TYPEINFO = 'typeinfo';
 // convenient constants to use with jQuery
-var _OUTPUT_ = "#"+OUTPUT;
-var _AUTORUN_ = "#"+AUTORUN;
-var _EXAMPLES_ = "#"+EXAMPLES;
-var _CURSOR_ = "#cursor-position";
-var _TYPEINFO_ = '#'+TYPEINFO;
-var _TYPING_ = '#'+TYPING;
-var _RESET_ = '#reset';
+const _OUTPUT_ = "#"+OUTPUT;
+const _AUTORUN_ = "#"+AUTORUN;
+const _EXAMPLES_ = "#"+EXAMPLES;
+const _CURSOR_ = "#cursor-position";
+const _TYPEINFO_ = '#'+TYPEINFO;
+const _TYPING_ = '#'+TYPING;
+const _RESET_ = '#reset';
 
 var TYPE_INFO_WIDTHS = null;
 
@@ -582,6 +582,7 @@ $(document).ready(function() {
 					}
 				}, false);
 
+				// generic send, tags k as 'kind' and msg as 'data'
 				this.send = function(k,msg){
 					worker.postMessage({ kind: k, data: msg });
 				};
@@ -596,6 +597,8 @@ $(document).ready(function() {
 
 			this.send = function(kind,data) {
 				try{
+					// imported code should defin global variable 'WORKER_HANDLER' to
+					// enable "communication".
 					WORKER_HANDLER[kind](data);
 				}catch(e){
 					console.error(e);
@@ -622,6 +625,7 @@ $(document).ready(function() {
 		};
 
 	};
+	// END communication object.
 
 	var cursor_elem = $(_CURSOR_);
 

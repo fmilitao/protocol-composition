@@ -10,6 +10,6 @@ TODO:
 - interface clean up and remove dead code.
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
 - Modules with (loose?) augmentation: http://www.adequatelygood.com/JavaScript-Module-Pattern-In-Depth.html
-- improment? http://en.wikipedia.org/wiki/De_Bruijn_index
+- improvement? http://en.wikipedia.org/wiki/De_Bruijn_index
 
 - gear icon from: http://findicons.com/icon/84346/gear?id=429415

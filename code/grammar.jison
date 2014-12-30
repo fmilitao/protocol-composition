@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 /* lexical grammar */
@@ -17,6 +17,7 @@
 "as"                  return 'AS'
 "typedef"             return 'TYPEDEF'
 "none"                return 'NONE'
+"top"                 return 'TOP'
 "not"                 return 'NOT'
 "(+)"                 return '(+)'
 "&"                   return '&'
@@ -62,9 +63,13 @@ file :
 type_root :
 	  type_rg
 	| FORALL IDENTIFIER '.' type_root
-		{ $$ = AST.makeForallType($2,$4,@$); }
+		{ $$ = AST.makeForallType($2,$4,null,@$); }
+	| FORALL IDENTIFIER '<:' type_root '.' type_root
+		{ $$ = AST.makeForallType($2,$6,$4,@$); }
 	| EXISTS IDENTIFIER '.' type_root
-		{ $$ = AST.makeExistsType($2,$4,@$); }
+		{ $$ = AST.makeExistsType($2,$4,null,@$); }
+	| EXISTS IDENTIFIER '<:' type_root '.' type_root
+		{ $$ = AST.makeExistsType($2,$6,$4,@$); }
 	| alternative_type // groups all alternatives, easier commutative ops.
 		{ $$ = AST.makeAlternativeType($1,@$); }
 	| intersection_type // same.
@@ -124,6 +129,8 @@ type :
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| NONE
 		{ $$ = AST.makeNoneType(@$); }
+	| TOP
+		{ $$ = AST.makeTopType(@$); }
 	;
 
 tagged :

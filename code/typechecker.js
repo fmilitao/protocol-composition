@@ -28,6 +28,7 @@ var TypeChecker = (function(AST,exports){
 	const ExistsType = fct.ExistsType;
 	const RecordType = fct.RecordType;
 	const NoneType = new fct.NoneType();
+	const TopType = new fct.TopType();
 	const TupleType = fct.TupleType;
 	const ReferenceType = fct.ReferenceType;
 	const StackedType = fct.StackedType;
@@ -186,6 +187,7 @@ var TypeChecker = (function(AST,exports){
 		case types.TypeVariable:
 		case types.PrimitiveType:
 		case types.NoneType:
+		case types.TopType:
 			return t;
 
 		default:
@@ -292,7 +294,7 @@ var TypeChecker = (function(AST,exports){
 					return false;
 				
 				try{
-//FIXME this is ugly.
+//FIXME this is ugly. BROKEN
 					// consider extensions
 					var gg1 = g1.guarantee();
 					var gg2 = g2.guarantee();
@@ -1597,6 +1599,11 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			case AST.NONE_TYPE:
 			return function( ast, env ){
 				return NoneType;
+			};
+
+			case AST.TOP_TYPE:
+			return function( ast, env ){
+				return TopType;
 			};
 				
 			case AST.BANG_TYPE:

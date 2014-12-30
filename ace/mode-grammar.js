@@ -82,7 +82,7 @@ var GrammarHighlightRules = function() {
 	var keywords = lang.arrayToMap( ("subtype|case|of|share|focus|defocus|as|open|use|let|in|end|").split("|") );
 	var keywords2 = lang.arrayToMap( ("not|fun|new|delete").split("|") );
 	var keywords3 = lang.arrayToMap( ("typedef|import").split("|") );
-	var types = lang.arrayToMap( ("none|rw|forall|exists|ref|int|boolean|string").split("|") );
+	var types = lang.arrayToMap( ("none|top|rw|forall|exists|ref|int|boolean|string").split("|") );
     
     this.$rules = {
         "start" : [
