@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Filipe Militao <filipe.militao@cs.cmu.edu>
+// Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
 /**
@@ -45,7 +45,6 @@ var TypeChecker = (function(AST,exports){
 	// VISITORS
 	//
 	
-	
 	/**
 	 * Substitutes in 'type' any occurances of 'from' to 'to'
 	 * 		type[from/to] ('from' for 'to')
@@ -67,6 +66,7 @@ var TypeChecker = (function(AST,exports){
 			return substitutionF(type,from,to,eq);
 		}
 		
+		// danger: if 'eq' uses subsitution this may not terminate
 		if( eq(t,from) )
 			return to;
 			
@@ -117,11 +117,11 @@ var TypeChecker = (function(AST,exports){
 		// We have two cases to consider:
 		// 1. The variable to be renamed is the same as bounded var:
 		// (exists t.A){t/X} "t for X" 
-		// in this case, we are done renaming, since t is bounded inside A.
+		// in this case, we are done with substitution, since t is bounded inside A.
 		// 2. The *to* name is the same the bounded var:
 		// (exists t.A){g/t} "g for t"
 		// in this case we must rename the location 't' to avoid capture
-		// in the case when 'g' occurs in A.
+		// in the case when 'g' may occur in A.
 		case types.ExistsType: 
 		case types.ForallType: {
 			if( ( from.type === types.LocationVariable ||
@@ -139,7 +139,8 @@ var TypeChecker = (function(AST,exports){
 				// capture avoiding substitution 
 				nvar = t.id().clone(null); // fresh loc/type-variable
 				
-				// must use simpler equals function to avoid unending cycles
+				// this substitution is simpler since it does not rely on full equals
+				// only does comparision of variables, thus it always terminates.
 				ninner = substitutionVarsOnly( t.inner(), t.id(), nvar );
 			}
 			
@@ -239,6 +240,8 @@ var TypeChecker = (function(AST,exports){
 		var def2 = t2.type === types.DefinitionType;
 		if( def1 ^ def2 ){
 			if( def1 ){
+//FIXME define shallow equals that does not follow unfolds.
+// shallow should be useful when doing table compares for cycles.
 				t1 = unAll(t1,false,true);
 				// if unfolding worked
 				if( t1.type !== types.DefinitionType ){
@@ -285,31 +288,8 @@ var TypeChecker = (function(AST,exports){
 			case types.BangType:
 				return equals( t1.inner(), t2.inner() );
 			case types.RelyType: {
-				var r1 = t1.rely();
-				var r2 = t2.rely();
-				var g1 = t1.guarantee();
-				var g2 = t2.guarantee();
-
-				if( !equals( r1, r2 ) )
-					return false;
-				
-				try{
-//FIXME this is ugly. BROKEN
-					// consider extensions
-					var gg1 = g1.guarantee();
-					var gg2 = g2.guarantee();
-				
-					if( gg1.type === types.NoneType && gg2.type !== types.NoneType ){
-						var initial = gg2; // initial state
-						var protocol = g2.rely();
-						
-						conformanceStateProtocol( initial, protocol, NoneType);
-						return true;
-					}
-				}catch(e){
-					return equals( g1, g2 );						
-				}
-				return equals( g1, g2 );
+				return equals( t1.rely(), t2.rely() ) &&
+					equals( t1.guarantee(), t2.guarantee() );
 			}
 			case types.GuaranteeType: {
 				return equals( t1.guarantee(), t2.guarantee() ) &&
@@ -1032,7 +1012,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 		if( s.type === types.AlternativeType ){
 			var base = null;
 			var alts = s.inner();
-//XXX does none mess this up?
+//FIXME does none mess this up?
 			for( var i=0; i<alts.length; ++i ){
 				var tmp = simP( alts[i], p, o, ast );
 				if( base === null ){
@@ -1677,7 +1657,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			};
 
 			default:
-//FIXME could just print warning on unhandled kinds.
+			// unexpected AST kinds
 				return function( ast, env ){
 					error( "Not expecting " + ast.kind );
 				};

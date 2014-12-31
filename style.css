@@ -124,7 +124,9 @@ select {
 }
 
 #editor {
-	box-sizing: border-box; /* this is a god-send... */
+	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+  	-moz-box-sizing: border-box;
 	position: absolute;
 	top: 0px;
 	/*
@@ -137,6 +139,8 @@ select {
 
 #output {
 	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+  	-moz-box-sizing: border-box;
 	font-family: monospace;
 	font-size: 10pt;
 	background: #EEEEEE;
@@ -152,6 +156,8 @@ select {
 
 #statusbar{
 	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+  	-moz-box-sizing: border-box;
 	position: absolute;
 	background-color: #dcdcdc;
 	/* border-style: solid;
@@ -165,6 +171,8 @@ select {
 #typing{
 	display:none; /* initially invisible */
 	box-sizing: border-box;
+	-webkit-box-sizing: border-box;
+  	-moz-box-sizing: border-box;
 	border: 2px solid #f1c661;
 	/* margin: 2px 2px; */
 	padding: 5px 10px;
