@@ -222,18 +222,18 @@ $(document).ready(function() {
 
 		var addExample = function(file,name){
 			name = name.replace('.txt','');
-			var button = $('<button/>', {
-				class: 'button',
+			var button = $('<span/>', {
+				class: 'b1',
 	        	text: name,
 	        	title: 'load example',
 	        	click: function(){
 	        		//button.text(name+' (Loading...)');
-	        		button.addClass('button_load');
+	        		button.addClass('b1_load');
 
 	        		$.get( file , function(data) {
 						setEditor(data);
 						//button.text(name);
-						button.removeClass('button_load');
+						button.removeClass('b1_load');
 					});
 				}
 	    	});
