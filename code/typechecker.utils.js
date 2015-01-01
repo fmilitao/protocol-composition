@@ -210,28 +210,26 @@ var TypeChecker = (function( assertF ){
 	);
 	
 	newType('LocationVariable',
-		function LocationVariable( name ){
+		function LocationVariable( name, index ){
 			var n = name === null ? 't<sub>'+(unique_counter++)+'</sub>' : name;
-			var i = null;
+			var i = index === undefined ? null : index;
 			
 			this.index = function(){ return i; }
-			this.setIndex = function(j){ i = j; }
 			this.name = function(){ return n; }
 			this.newFreshVar = function( ){ return new LocationVariable(null); }
-			this.copy = function(){ return new LocationVariable(name); }
+			this.copy = function(j){ return new LocationVariable(name,j); }
 		}
 	);
 	
 	newType('TypeVariable',
-		function TypeVariable( name ){
+		function TypeVariable( name, index ){
 			var n = name === null ? 'T<sub>'+(unique_counter++)+'</sub>' : name;
-			var i = null;
+			var i = index === undefined ? null : index;
 			
 			this.index = function(){ return i; }
-			this.setIndex = function(j){ i = j; }
 			this.name = function(){ return n; }
 			this.newFreshVar = function(){ return new TypeVariable(null); }
-			this.copy = function(){ return new TypeVariable(name); }
+			this.copy = function(j){ return new TypeVariable(name,j); }
 		}
 	);
 	
@@ -566,11 +564,11 @@ var TypeChecker = (function( assertF ){
 			return this.get(TYPE_INDEX+id);
 		}
 
-		// returns the depth of 'id' in the spaghetti stack (current is 1)
+		// returns the depth of 'id' in the spaghetti stack, starting at 0.
 		// returns -1 if not found.
 		this.getTypeDepth = function(id){
 			if ( this.$map.hasOwnProperty(TYPE_INDEX+id) ){
-				return 1;
+				return 0;
 			}
 			if( this.$parent === null )
 				return -1; // not found

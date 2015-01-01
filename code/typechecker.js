@@ -41,115 +41,373 @@ var TypeChecker = (function(AST,exports){
 
 	const Environment = exports.Environment;
 
-	//
-	// VISITORS
-	//
 
-	// updates the indexes on 't', no return only effects.
-	// this could also be done in place, but a separate function is IMHO clearer when dealing with substitution.
-	var updateIndexes = function( type ){
-		// environment is a spaghetti stack because each newScope does not interfere with the others.
-		var env = new Environment(null);
-		var aux = function( t, e ){
-			switch ( t.type ){
-				case types.FunctionType:
-					aux( t.argument(), e );
-					aux( t.body(), e );
-					return;
-				case types.BangType:
-					aux( t.inner(), e );
-					return;
-				case types.RelyType: {
-					aux( t.rely(), e );
-					aux( t.guarantee(), e );
-					return;
-				}
-				case types.GuaranteeType: {
-					aux( t.guarantee(), e );
-					aux( t.rely(), e );
-					return;
-				}
-				case types.SumType:{
-					var tags = t.tags();
-					for( var i in tags )
-						aux( t.inner(tags[i]), e );
-					return;
-				}
-				case types.AlternativeType:{
-					var inners = t.inner();
-					for( var i=0;i<inners.length;++i ){
-						aux( inners[i], e ); 
-					}	
-					return;
-				}
-				case types.IntersectionType:{
-					var inners = t.inner();
-					for( var i=0;i<inners.length;++i ){
-						aux( inners[i], e ); 
-					}	
-					return;
-				}
-				case types.StarType:{
-					var inners = t.inner();
-					for( var i=0;i<inners.length;++i ){
-						aux( inners[i], e ); 
-					}	
-					return;
-				}
-				case types.ExistsType: 
-				case types.ForallType:{
-					var newEnv = e.newScope();
-					var v = t.id();
-					newEnv.setType( v.name(), v );
-					aux( t.inner(), newEnv );
-					return;
-				}
-				case types.ReferenceType:
-					aux( t.location(), e );
-					return;
-				case types.StackedType:
-					aux( t.left(), e );
-					aux( t.right(), e );
-					return;
-				case types.CapabilityType:
-					aux( t.location(), e );
-					aux( t.value(), e );
-					return;
-				case types.RecordType: {
-					var fs = t.getFields();
-					for( var i in fs )
-						aux( fs[i], e );
-					return;
-				}
-				case types.TupleType: {
-					var fs = t.getValues();
-					for( var i in fs )
-						aux( fs[i], e );
-					return;
-				}
-				case types.DefinitionType: {
-					var fs = t.args();
-					for( var i in fs )
-						aux( fs[i], e );
-					return;
-				}
-				case types.LocationVariable:
-				case types.TypeVariable:
-					var i = e.getTypeDepth( t.name() );
-					assert( i>=0 || ('Invalid index '+i+' for '+t) );
-					t.setIndex(i);
-					return;
-				case types.PrimitiveType:
-				case types.NoneType:
-				case types.TopType:
-					return;
-				default:
-					error( "@updateIndexes: Not expecting " +t.type );
-				}
-		};
+	// shifts indexes of free variables in 't' by 1.
+	// t -> type
+	// c -> cutoff index
+	var shift1 = function( t, c ){
 
-		aux( type, env );
+		switch ( t.type ){
+
+			case types.FunctionType:
+				return new FunctionType(
+						shift1( t.argument(), c ),
+						shift1( t.body(), c ) );
+
+			case types.BangType:
+				return new BangType( shift1( t.inner(), c ) );
+
+			case types.RelyType: 
+				return new RelyType(
+							shift1( t.rely(), c ),
+							shift1( t.guarantee(), c ) );
+
+			case types.GuaranteeType:
+				return new GuaranteeType(
+							shift1( t.guarantee(), c ),
+							shift1( t.rely(), c ) );
+
+			case types.SumType:{
+				var sum = new SumType();
+				var tags = t.tags();
+				for( var i in tags )
+					sum.add( tags[i], shift1( t.inner(tags[i]), c ) );
+				return sum;
+			}
+			case types.AlternativeType:{
+				var star = new AlternativeType();
+				var inners = t.inner();
+				for( var i=0;i<inners.length;++i ){
+					star.add( shift1( rec(inners[i]), c ) ); 
+				}	
+				return star;
+			}
+			case types.IntersectionType:{
+				var star = new IntersectionType();
+				var inners = t.inner();
+				for( var i=0;i<inners.length;++i ){
+					star.add( shift1( rec(inners[i]), c ) ); 
+				}	
+				return star;
+			}
+			case types.StarType:{
+				var star = new StarType();
+				var inners = t.inner();
+				for( var i=0;i<inners.length;++i ){
+					star.add( shift1( rec(inners[i]), c ) );
+				}	
+				return star;
+			}
+
+			case types.ExistsType:
+				return new ExistsType( t.id(), shift1( t.inner(), c+1 ) );
+
+			case types.ForallType:
+				return new ForallType( t.id(), shift1( t.inner(), c+1 ) );
+
+			case types.ReferenceType:
+				return new ReferenceType( shift1( t.location(), c ) );
+			
+			case types.StackedType:
+				return new StackedType( shift1( t.left(), c ), shift1( t.right(), c ) );
+
+			case types.CapabilityType:
+				return new CapabilityType( shift1( t.location(), c ), shift1( t.value(), c ) );
+			
+			case types.RecordType: {
+				var r = new RecordType();
+				var fs = t.getFields();
+				for( var i in fs )
+					r.add( i, shift1( fs[i], c ) );
+				return r;
+			}
+
+			case types.TupleType: {
+				var r = new TupleType();
+				var fs = t.getValues();
+				for( var i in fs )
+					r.add( shift1( fs[i], c ) );
+				return r;
+			}
+
+			case types.DefinitionType: {
+				var fs = t.args();
+				var tmp = [];
+				for( var i in fs )
+					tmp = tmp.concat( shift1( fs[i], c ) );
+				return new DefinitionType(t.definition(),tmp);
+			}
+
+			case types.LocationVariable:
+			case types.TypeVariable:
+				if( t.index() < c )
+					return t;
+				return t.copy( t.index()+1 );
+
+			case types.PrimitiveType:
+			case types.NoneType:
+			case types.TopType:
+
+				return t;
+			default:
+				error( "@shift1: Not expecting " +t.type );
+		}
 	}
+
+	//FIXME new version
+	var _equals = function( t1, t2, shallow){
+		var rec = function(t1,t2){ return _equals(t1,t2,shallow) }; //TODO tmp
+
+		if( t1 === t2 )
+			return true;
+
+		var def1 = t1.type === types.DefinitionType;
+		var def2 = t2.type === types.DefinitionType;
+		if( def1 ^ def2 && !shallow ){
+			error('NOT DONE');
+		}
+		
+		if( t1.type !== t2.type )
+			return false;
+			
+		// assuming both same type
+		switch ( t1.type ){
+			case types.ForallType:		
+			case types.ExistsType: {
+				if( t1.id().type !== t2.id().type )
+					return false;
+
+				return rec( t1.inner(), t2.inner() );
+			}
+			case types.TypeVariable:
+			case types.LocationVariable: {
+				assert( (t1.index() !== null && t2.index() !== null) || ('@equals: missing De Bruijn index') );
+
+				return  t1.index() === t2.index();
+			}
+			case types.FunctionType:
+				return rec( t1.argument(), t2.argument() ) &&
+					rec( t1.body(), t2.body() );
+			case types.BangType:
+				return rec( t1.inner(), t2.inner() );
+			case types.RelyType: {
+				return rec( t1.rely(), t2.rely() ) &&
+					rec( t1.guarantee(), t2.guarantee() );
+			}
+			case types.GuaranteeType: {
+				return rec( t1.guarantee(), t2.guarantee() ) &&
+					rec( t1.rely(), t2.rely() );
+			}
+			case types.SumType: {
+				var t1s = t1.tags();
+				var t2s = t2.tags();
+				// note that it is an array of tags (strings)
+				if( t1s.length !== t2s.length )
+					return false;
+				for( var i=0; i<t1s.length; ++i ){
+					if( t2s.indexOf(t1s[i])===-1 ||
+						!rec( t1.inner(t1s[i]), t2.inner(t1s[i]) ) )
+						return false;
+				}
+				return true;
+			}
+			case types.ReferenceType:
+				return rec( t1.location(), t2.location() );
+			case types.StackedType:
+				return rec( t1.left(), t2.left() ) &&
+					rec( t1.right(), t2.right() );
+			case types.CapabilityType:
+				return rec( t1.location(), t2.location() ) &&
+					rec( t1.value(), t2.value() );
+			case types.RecordType: {
+				var t1s = t1.getFields();
+				var t2s = t2.getFields();
+				if( Object.keys(t1s).length !== Object.keys(t2s).length )
+					return false;
+				for( var i in t2s )
+					if( !t1s.hasOwnProperty(i) || 
+						!rec( t1s[i], t2s[i] ) )
+						return false;
+				return true;
+			} 
+			case types.TupleType: {
+				var t1s = t1.getValues();
+				var t2s = t2.getValues();
+				if( t1s.length !== t2s.length )
+					return false;
+				for( var i=0;i<t1s.length;++i )
+					if( !rec( t1s[i], t2s[i] ) )
+						return false;
+				return true;
+			}
+			case types.PrimitiveType:
+				return t1.name() === t2.name();
+
+			case types.IntersectionType:
+			case types.AlternativeType:
+			case types.StarType:{
+				var i1s = t1.inner();
+				var i2s = t2.inner();
+				
+				if( i1s.length !== i2s.length )
+					return false;
+				// any order should do
+				var tmp_i2s = i2s.slice(0); // copies array
+				for(var i=0;i<i1s.length;++i){
+					var curr = i1s[i];
+					var found = false;
+					// tries to find matching element
+					for(var j=0;j<tmp_i2s.length;++j){
+						var tmp = tmp_i2s[j];
+						if( rec(curr,tmp) ){
+							tmp_i2s.splice(j,1); // removes element
+							found = true;
+							break; // continue to next
+						}
+					}
+					// if not found, then must be different
+					if( !found ){
+						return false;
+					}
+				}
+				return true;
+			}
+			case types.DefinitionType:{
+				if( t1.definition() !== t2.definition() )
+					return false;
+				
+				var t1s = t1.args();
+				var t2s = t2.args();
+				if( t1s.length !== t2s.length )
+					return false;
+				for( var i=0;i<t1s.length;++i )
+					if( !rec( t1s[i], t2s[i] ) )
+						return false;
+				return true;
+			}
+			default:
+				error( "@_equals: Not expecting " +t2.type );
+			}
+	};
+
+	var _substitution = function(t,from,to,eq){
+		
+		// for convenience...
+		var rec = function(type){
+			return _substitution(type,from,to,eq);
+		}
+		
+		if( eq(t,from) )
+			return to;
+			
+		switch ( t.type ){
+		case types.FunctionType:
+			return new FunctionType( rec(t.argument()), rec(t.body()) );
+		case types.BangType:
+			return new BangType( rec(t.inner()) );
+		case types.RelyType: {
+			return new RelyType( rec(t.rely()), rec(t.guarantee()) );
+		}
+		case types.GuaranteeType: {
+			return new GuaranteeType( rec(t.guarantee()), rec(t.rely()) );
+		}
+		case types.SumType:{
+			var sum = new SumType();
+			var tags = t.tags();
+			for( var i in tags )
+				sum.add( tags[i], rec(t.inner(tags[i])) );
+			return sum;
+		}
+		case types.AlternativeType:{
+			var star = new AlternativeType();
+			var inners = t.inner();
+			for( var i=0;i<inners.length;++i ){
+				star.add( rec(inners[i]) ); 
+			}	
+			return star;
+		}
+		case types.IntersectionType:{
+			var star = new IntersectionType();
+			var inners = t.inner();
+			for( var i=0;i<inners.length;++i ){
+				star.add( rec(inners[i]) ); 
+			}	
+			return star;
+		}
+		case types.StarType:{
+			var star = new StarType();
+			var inners = t.inner();
+			for( var i=0;i<inners.length;++i ){
+				star.add( rec(inners[i]) ); 
+			}	
+			return star;
+		}
+
+		case types.ExistsType: 
+		case types.ForallType: {
+//FIXME needs shift1 TODO does this always star at 0??
+			var _to = shift1(to,0);
+			var _from = shift1(from,0);
+
+			var rec2 = function(type){
+				return _substitution(type,_from,_to,eq);
+			}
+
+			var nvar = t.id();
+			var ninner = t.inner();
+			
+			// switch again to figure out what constructor to use.
+			switch( t.type ){
+				case types.ExistsType:
+					return new ExistsType( nvar, rec2(ninner) );
+				case types.ForallType:
+					return new ForallType( nvar, rec2(ninner) );
+				default:
+					error( "@_substitution: Not expecting " +t.type );
+			}
+		}
+		case types.ReferenceType:
+			return new ReferenceType( rec(t.location()) );
+		case types.StackedType:
+			return new StackedType( rec(t.left()), rec(t.right()) );
+		case types.CapabilityType:
+			return new CapabilityType( rec(t.location()), rec(t.value()) );
+		case types.RecordType: {
+			var r = new RecordType();
+			var fs = t.getFields();
+			for( var i in fs )
+				r.add( i, rec(fs[i]) );
+			return r;
+		}
+		case types.TupleType: {
+			var r = new TupleType();
+			var fs = t.getValues();
+			for( var i in fs )
+				r.add( rec(fs[i]) );
+			return r;
+		}
+		case types.DefinitionType: {
+			var fs = t.args();
+			var tmp = [];
+			for( var i in fs )
+				tmp = tmp.concat( rec(fs[i]) );
+			return new DefinitionType(t.definition(),tmp);
+		}
+		// these remain UNCHANGED
+		// note that Location/Type Variable is tested ABOVE, not here
+		case types.LocationVariable:
+		case types.TypeVariable:
+		case types.PrimitiveType:
+		case types.NoneType:
+		case types.TopType:
+			return t;
+
+		default:
+			error( "@_substitution: Not expecting " +t.type );
+		}
+	};
+
+	// =================================
 	
 	/**
 	 * Substitutes in 'type' any occurances of 'from' to 'to'
@@ -243,7 +501,7 @@ var TypeChecker = (function(AST,exports){
 				  to.type === types.TypeVariable )
 					&& t.id().name() === to.name() ){
 				// capture avoiding substitution 
-				nvar = t.id().newFreshVar(); // fresh loc/type-variable
+				nvar = t.id().newFreshVar(); // fresh loc/type-variable FIXME: deprecated
 
 				// this substitution is simpler since it does not rely on full equals
 				// only does comparision of variables, thus it always terminates.
@@ -840,7 +1098,6 @@ var TypeChecker = (function(AST,exports){
 		if( d.type !== types.DefinitionType ||
 				typedef.isInRecDefs() )
 			return d;
-//console.log( '<<<'+d );		
 		var t = typedef.getDefinition(d.definition());
 		var args = d.args();
 		var pars = typedef.getType(d.definition());
@@ -849,8 +1106,6 @@ var TypeChecker = (function(AST,exports){
 		for(var i=0;i<args.length;++i){
 			t = substitutionVarsOnly(t,pars[i],args[i]);
 		}
-//		updateIndexes(t);
-//console.log( '>>>'+t );
 		return t;
 	}
 	
@@ -1465,10 +1720,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				if( tmp !== undefined &&
 					( tmp.type === types.TypeVariable ||
 					  tmp.type === types.LocationVariable ) ){
-						var n = tmp.copy();
-						var i = env.getTypeDepth(label);
-						n.setIndex(i);
-						return n; // returns a copy to avoid messing indexes
+						return tmp.copy( env.getTypeDepth(label) );
 				}
 				
 				// look for type definitions
@@ -1619,11 +1871,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast );
 				
-				var n = loc.copy();
-				var i = env.getTypeDepth( id );
-				n.setIndex( i );
-
-				return new ReferenceType( n );
+				return new ReferenceType( loc.copy( env.getTypeDepth( id ) ) );
 			};
 			
 			case AST.EXISTS_TYPE: 
@@ -1703,11 +1951,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast);
 
-				var n = loc.copy();
-				var i = env.getTypeDepth( id );
-				n.setIndex( i );
-
-				return new CapabilityType( n, check( ast.type, env ) );
+				return new CapabilityType( loc.copy( env.getTypeDepth( id ) ), check( ast.type, env ) );
 			};
 			
 			case AST.STACKED_TYPE: 
