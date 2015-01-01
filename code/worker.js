@@ -155,8 +155,8 @@ if( !isWorker ){
 
 var printAST = function(ast,r){
 	return "@"+(ast.line+1)+":"+ast.col+'-'
-		+(ast.last_line+1)+':'+ast.last_col+' '+ast.kind;
-		//+'\nType: '+toHTML(r) // Too much to also show resulting type.
+		+(ast.last_line+1)+':'+ast.last_col+' '+ast.kind
+		+'\n\nType: '+toHTML(r)+'\n';
 }
 
 var printConformance = function(cf){
@@ -440,11 +440,12 @@ var toHTML = function (t){
 				'<span class="type_variable">')
 			+t.id().name()+'</span>.'+_toHTML(t.inner());
 		case types.ReferenceType:
-			return "<b>ref</b> "+
-			'<span class="type_location">'+t.location().name()+'</span>';
+			return "<b>ref</b> "+toHTML(t.location());
+			//'<span class="type_location">'+t.location().name()+'</span>';
 		case types.CapabilityType:
 			return '<b>rw</b> '+
-			'<span class="type_location">'+t.location().name()+'</span> '+
+			toHTML(t.location())+' '+
+			//'<span class="type_location">'+t.location().name()+'</span> '+
 			toHTML(t.value());
 		case types.StackedType:
 			return wq( wq(toHTML(t.left())) + wQ(' :: ')+ wq(toHTML(t.right())) );
@@ -463,9 +464,9 @@ var toHTML = function (t){
 			return "["+res.join(', ')+"]";
 		}
 		case types.LocationVariable:
-			return '<span class="type_location">'+t.name()+'</span>';
+			return '<span class="type_location">'+t.name()+'<sup>'+t.index()+'</sup></span>';
 		case types.TypeVariable:
-			return '<span class="type_variable">'+t.name()+'</span>';
+			return '<span class="type_variable">'+t.name()+'<sup>'+t.index()+'</sup></span>';
 		case types.PrimitiveType:
 			return '<b>'+t.name()+'</b>';
 		case types.NoneType:

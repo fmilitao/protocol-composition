@@ -212,18 +212,26 @@ var TypeChecker = (function( assertF ){
 	newType('LocationVariable',
 		function LocationVariable( name ){
 			var n = name === null ? 't<sub>'+(unique_counter++)+'</sub>' : name;
+			var i = null;
 			
+			this.index = function(){ return i; }
+			this.setIndex = function(j){ i = j; }
 			this.name = function(){ return n; }
-			this.clone = function( n ){ return new LocationVariable(n); }
+			this.newFreshVar = function( ){ return new LocationVariable(null); }
+			this.copy = function(){ return new LocationVariable(name); }
 		}
 	);
 	
 	newType('TypeVariable',
 		function TypeVariable( name ){
 			var n = name === null ? 'T<sub>'+(unique_counter++)+'</sub>' : name;
+			var i = null;
 			
+			this.index = function(){ return i; }
+			this.setIndex = function(j){ i = j; }
 			this.name = function(){ return n; }
-			this.clone = function( n ){ return new TypeVariable(n); }
+			this.newFreshVar = function(){ return new TypeVariable(null); }
+			this.copy = function(){ return new TypeVariable(name); }
 		}
 	);
 	
@@ -332,11 +340,11 @@ var TypeChecker = (function( assertF ){
 		} );
 		
 		_add( types.ReferenceType, function(){
-			return "ref "+this.location().name();
+			return "ref "+_wrap(this.location());
 		} );
 		
 		_add( types.CapabilityType, function(){
-			return 'rw '+this.location().name()+' '+_wrap( this.value() );			
+			return 'rw '+_wrap(this.location())+' '+_wrap( this.value() );			
 		} );
 		
 		_add( types.StackedType, function(){
@@ -361,10 +369,10 @@ var TypeChecker = (function( assertF ){
 			return _wrap( this.definition() );
 		} );
 		
-		var tmp = function(){ return this.name(); };
+		var tmp = function(){ return this.name()+'^'+this.index(); };
 		_add( types.LocationVariable, tmp );
 		_add( types.TypeVariable, tmp );
-		_add( types.PrimitiveType, tmp );
+		_add( types.PrimitiveType, function(){ return this.name(); } );
 		
 		_add( types.NoneType, function(){ return 'none'; });
 		_add( types.TopType, function(){ return 'top'; });
@@ -561,12 +569,16 @@ var TypeChecker = (function( assertF ){
 		// returns the depth of 'id' in the spaghetti stack (current is 1)
 		// returns -1 if not found.
 		this.getTypeDepth = function(id){
-			if ( this.$map.hasOwnProperty(id) ){
+			if ( this.$map.hasOwnProperty(TYPE_INDEX+id) ){
 				return 1;
 			}
 			if( this.$parent === null )
 				return -1; // not found
-			return 1+this.$parent.getTypeDepth(id);
+
+			var tmp = this.$parent.getTypeDepth(id);
+			if( tmp === -1 ) 
+				return tmp;
+			return 1+tmp;
 		}
 		
 		// other...

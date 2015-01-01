@@ -3,6 +3,8 @@
 
 typedef A = int
 
+typedef X = exists A.exists B.( l#A + q#B )
+
 typedef H<p> =
 			( rw p !(Empty#[]) => rw p !(Empty#[]) ; H[p] ) (+)
 			( rw p !(Closed#[]) => none ) (+) 
