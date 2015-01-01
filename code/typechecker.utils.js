@@ -506,8 +506,10 @@ var TypeChecker = (function( assertF ){
 		// attempt to set something in an upper-level).
 
 		// CAREFUL: '$' cannot be a source-level identifier
+		// '$' was used to distinguish between variables and location/type variables
 		var TYPE_INDEX='$';
 		
+//FIXME it should no longer be needed to have non-private fields, I think.
 		// meant to be $protected fields
 		this.$map = {};
 		this.$caps = [];

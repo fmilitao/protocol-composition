@@ -3,7 +3,6 @@ Protocol Conformance Checker
 
 Grammar is limited to only check 'subtype' and 'share', as well as 'typedef' for convenience.
 
-
 De Bruijn indexes for equals:
 -> updateIndexes after substitution
 -> define error constants/enum instead of having constants spread out through the code.

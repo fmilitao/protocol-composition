@@ -156,7 +156,9 @@ var TypeChecker = (function(AST,exports){
 
 	//FIXME new version
 	var _equals = function( t1, t2, shallow){
-		var rec = function(t1,t2){ return _equals(t1,t2,shallow) }; //TODO tmp
+		var rec = function(t1,t2){
+			return _equals(t1,t2,shallow)
+		};
 
 		if( t1 === t2 )
 			return true;
@@ -164,7 +166,22 @@ var TypeChecker = (function(AST,exports){
 		var def1 = t1.type === types.DefinitionType;
 		var def2 = t2.type === types.DefinitionType;
 		if( def1 ^ def2 && !shallow ){
-			error('NOT DONE');
+//FIXME this is ugly...
+			if( def1 ){
+				t1 = unAll(t1,false,true);
+				// if unfolding worked
+				if( t1.type !== types.DefinitionType ){
+					return rec( t1, t2 );
+				}
+			}
+			
+			if( def2 ){
+				t2 = unAll(t2,false,true);
+				// if unfolding worked
+				if( t2.type !== types.DefinitionType ){
+					return rec( t1, t2 );
+				}
+			}
 		}
 		
 		if( t1.type !== t2.type )
@@ -769,6 +786,14 @@ var TypeChecker = (function(AST,exports){
 			return visited[keyF(a,b)];
 		}
 	};
+
+//FIXME not activated.
+var __INDEX__ = false;
+
+if( __INDEX__ ){
+	equals = _equals;
+	substitutionAux = _substitutionAux;
+}
 	
 	/**
 	 * Subtyping two types.
@@ -992,20 +1017,25 @@ var TypeChecker = (function(AST,exports){
 				
 				if( t1.id().type !== t2.id().type )
 					return false;
-				
+
+//FIXME use DeBruijn
+if( !__INDEX__	 ){
+
 				// if needs renaming
 				if( t1.id().name() !== t2.id().name() ){
-//FIXME use DeBruijn
 					var tmp = substitution( t2.inner(), t2.id(), t1.id() );
 					return subtypeOf( t1.inner(), tmp );
 				}
-
+ }
 				return subtypeOf( t1.inner(), t2.inner() );
 			}
 
 			case types.TypeVariable:
 			case types.LocationVariable: {
+if( !__INDEX__ ){
 					return t1.name() === t2.name();
+				}
+				return t1.index() === t2.index();					
 			}
 
 			case types.DefinitionType:{
@@ -2109,13 +2139,15 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				for(var i=0;i<ast.typedefs.length;++i){
 					var type = ast.typedefs[i];						
-					var tmp_env = env.newScope();
+					var tmp_env = env;
 					var args = typedef.getType(type.id);
 					
 					// sets the variables, if there are any to setup
 					if( args !== null ){
 						for(var j=0;j<args.length;++j){
-							// should be both for LocationVariables and TypeVariables
+							// should be for both LocationVariables and TypeVariables
+							// we must create a new scope to increase the De Bruijn index
+							tmp_env = tmp_env.newScope();
 							tmp_env.setType( args[j].name(), args[j] );
 						}
 					}
