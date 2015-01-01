@@ -290,14 +290,16 @@ var TypeChecker = (function(AST,exports){
 			}
 	};
 
-	var _substitution = function(t,from,to,eq){
+	var _substitutionAux = function(t,from,to){
 		
 		// for convenience...
 		var rec = function(type){
-			return _substitution(type,from,to,eq);
+			return _substitutionAux(type,from,to);
 		}
 		
-		if( eq(t,from) )
+		// base case: if X{to/X} = to and since we are only checking location
+		// variables or type variables, we only need to check the index.
+		if( t.type === from.type && t.index() === from.index() )
 			return to;
 			
 		switch ( t.type ){
@@ -345,13 +347,9 @@ var TypeChecker = (function(AST,exports){
 
 		case types.ExistsType: 
 		case types.ForallType: {
-//FIXME needs shift1 TODO does this always star at 0??
+			// updates the indexes (see Types and Programming Languages, Chapter 6)
 			var _to = shift1(to,0);
 			var _from = shift1(from,0);
-
-			var rec2 = function(type){
-				return _substitution(type,_from,_to,eq);
-			}
 
 			var nvar = t.id();
 			var ninner = t.inner();
@@ -359,11 +357,11 @@ var TypeChecker = (function(AST,exports){
 			// switch again to figure out what constructor to use.
 			switch( t.type ){
 				case types.ExistsType:
-					return new ExistsType( nvar, rec2(ninner) );
+					return new ExistsType( nvar, _substitutionAux(ninner,_from,_to) );
 				case types.ForallType:
-					return new ForallType( nvar, rec2(ninner) );
+					return new ForallType( nvar, _substitutionAux(ninner,_from,_to) );
 				default:
-					error( "@_substitution: Not expecting " +t.type );
+					error( "@_substitutionAux: Not expecting " +t.type );
 			}
 		}
 		case types.ReferenceType:
@@ -403,35 +401,37 @@ var TypeChecker = (function(AST,exports){
 			return t;
 
 		default:
-			error( "@_substitution: Not expecting " +t.type );
+			error( "@_substitutionAux: Not expecting " +t.type );
 		}
 	};
 
 	// =================================
 	
 	/**
-	 * Substitutes in 'type' any occurances of 'from' to 'to'
-	 * 		type[from/to] ('from' for 'to')
-	 * @param {Type} type that is to be searched
-	 * @param {Type} when 'from' is found, it is replaced with
-	 * @param {LocationVariable,TypeVariable} 'to'
+	 * Substitutes in 't' any occurances of 'from' to 'to'
+	 * 		t[from/to] ('from' for 'to')
+	 * @param {Type} 't' that is to be searched on
+	 * @param {LocationVariable,TypeVariable} when 'from' is found, it is replaced with
+	 *  	NOTE: 'from' is limited to LocationVariable or TypeVariables
+	 * @param {Type} 'to'
 	 * @param {Function} equals function to compare types
-	 * @return a *copy* of 'type' where all instances of 'from' have been
-	 * 	replaced with 'to' (note that each to is the same and never
-	 * 	cloned).
-	 *  Note that it also RENAMES any bounded variable that colides with the
+	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
+
+
+	 *  TODO: pending FIX --- Note that it also RENAMES any bounded variable that colides with the
 	 *  'from' name so that bounded names are never wrongly substituted.
 	 */
 	
-	var substitutionF = function(t,from,to,eq){
+	var substitutionAux = function(t,from,to){
 		
 		// for convenience...
 		var rec = function(type){
-			return substitutionF(type,from,to,eq);
-		}
+			return substitutionAux(type,from,to);
+		};
 		
-		// danger: if 'eq' uses subsitution this may not terminate
-		if( eq(t,from) )
+		// substitution never unfolds a definition
+		// base case: if X{to/X} = to
+		if( t.type === from.type && t.name() === from.name() )
 			return to;
 			
 		switch ( t.type ){
@@ -505,7 +505,7 @@ var TypeChecker = (function(AST,exports){
 
 				// this substitution is simpler since it does not rely on full equals
 				// only does comparision of variables, thus it always terminates.
-				ninner = substitutionVarsOnly( t.inner(), t.id(), nvar );
+				ninner = substitution( t.inner(), t.id(), nvar );
 			}
 			
 			// switch again to figure out what constructor to use.
@@ -515,7 +515,7 @@ var TypeChecker = (function(AST,exports){
 				case types.ForallType:
 					return new ForallType( nvar, rec(ninner) );
 				default:
-					error( "@substitution: Not expecting " +t.type );
+					error( "@substitutionAux: Not expecting " +t.type );
 			}
 		}
 		case types.ReferenceType:
@@ -555,7 +555,7 @@ var TypeChecker = (function(AST,exports){
 			return t;
 
 		default:
-			error( "@substitution: Not expecting " +t.type );
+			error( "@substitutionAux: Not expecting " +t.type );
 		}
 	};
 	
@@ -565,20 +565,13 @@ var TypeChecker = (function(AST,exports){
 	 * equality test since we are no longer attempting to match complete types
 	 * and instead are just looking for TypeVariables or LocationVariables
 	 */
-	var substitutionVarsOnly = function(type,from,to){
+	var substitution = function(type,from,to){
 		if( from.type !== types.LocationVariable && 
-				from.type !== types.TypeVariable ){
-			error( "@substitutionVarsOnly: not a Type/LocationVariable" );
+			from.type !== types.TypeVariable ){
+			error( "@substitution: can only substitute a Type/LocationVariable" );
 		}
-		return substitutionF(type,from,to,function(a,b){
-			// same type and same name
-			// WARNING: unstated assumption that 'a' is 'from'
-			return a.type === b.type && a.name() === b.name();
-		});
-	};
-	
-	var substitution = function(t,from,to){
-		return substitutionF(t,from,to,equals);
+
+		return substitutionAux(type,from,to);
 	};
 	
 	//
@@ -635,7 +628,7 @@ var TypeChecker = (function(AST,exports){
 				// if name mismatch, do "quick" substitution to make them match
 				if( t1.id().name() !== t2.id().name() ){
 //FIXME: substitution should not be used here. DeBruijn?
-					var tmp = substitutionVarsOnly(t2.inner(),t2.id(),t1.id());
+					var tmp = substitution(t2.inner(),t2.id(),t1.id());
 					return equals( t1.inner(), tmp );
 				}
 
@@ -1003,7 +996,7 @@ var TypeChecker = (function(AST,exports){
 				// if needs renaming
 				if( t1.id().name() !== t2.id().name() ){
 //FIXME use DeBruijn
-					var tmp = substitutionVarsOnly( t2.inner(), t2.id(), t1.id() );
+					var tmp = substitution( t2.inner(), t2.id(), t1.id() );
 					return subtypeOf( t1.inner(), tmp );
 				}
 
@@ -1104,7 +1097,7 @@ var TypeChecker = (function(AST,exports){
 		// type definitions will only replace Type or Location Variables, we
 		// can use the simpler kind of substitution.
 		for(var i=0;i<args.length;++i){
-			t = substitutionVarsOnly(t,pars[i],args[i]);
+			t = substitution(t,pars[i],args[i]);
 		}
 		return t;
 	}
@@ -1786,7 +1779,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 							( 'Cannot be LocationVariable' ), ast.id );
 				}
 
-				return substitutionVarsOnly( exp.inner(), exp.id(), packed );
+				return substitution( exp.inner(), exp.id(), packed );
 			};
 			
 			case AST.TAGGED: 
