@@ -23,5 +23,5 @@ not subtype int <: boolean
 
 share A as A => none ; none || none
 
-<l>share (rw l !(Empty#![])) as (H[l]) || (T[l])
+<l>share (rw l !(Empty#![])) as H[l] || T[l]
 

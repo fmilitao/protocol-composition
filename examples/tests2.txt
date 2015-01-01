@@ -58,12 +58,12 @@ typedef P4<l> = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] 
 
 // ---- ///
 
-<f><c> share F[f,c] as (Receiver[f,c]) || (TMP[f,c])
-<f><c> share TMP[f,c] as (Storer[f,c]) || (Compressor[f,c])
+<f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
+<f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
 
 // ---- //
 
-<l> share (rw l !(Empty#![])) as (Head[l]) || (Tail[l])
+<l> share (rw l !(Empty#![])) as Head[l] || Tail[l]
 
 // ---- //
 
@@ -73,12 +73,12 @@ share none as none || none
 
 // ---- //
 
-<t> share Held[t] as (A[t]) || (A[t])
+<t> share Held[t] as A[t] || A[t]
 
-<t> share Held[t] as (B[t]) || none
+<t> share Held[t] as B[t] || none
 
-<t> share P[t] as (P0[t]) || (P1[t])
+<t> share P[t] as P0[t] || P1[t]
 
-<t> share P4[t] as (P3[t]) || (P1[t])
+<t> share P4[t] as P3[t] || P1[t]
 
 
