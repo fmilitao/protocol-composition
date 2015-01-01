@@ -252,6 +252,7 @@ $(document).ready(function() {
 		$.get( default_file , function(data) { setEditor(data); });
 
 		// tests
+		/*
 	    var TEST_LIST = $("#test-file");
 		$.get( "examples/tests-list" , function(data) {
 			var file = data.split('\n');
@@ -273,7 +274,7 @@ $(document).ready(function() {
 					setEditor(data);
 				});
 			}
-    	});
+    	});*/
     })();
 
     var actionButton = function(label,id,title,text){
