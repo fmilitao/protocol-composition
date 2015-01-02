@@ -19,3 +19,12 @@ TODO:
 - improvement? http://en.wikipedia.org/wiki/De_Bruijn_index
 
 - gear icon from: http://findicons.com/icon/84346/gear?id=429415
+
+
+
+GRAMMAR FIXES:
+
+not A <: A // subtype test
+not A == A // equality test
+
+A{A/x} // substitution, only on type/location variables

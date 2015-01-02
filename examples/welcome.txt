@@ -21,6 +21,23 @@ subtype [a:int,b:int] <: [a:int]
 subtype int <: !int
 not subtype int <: boolean
 
+/*
+// subtyping checks
+
+	[a:int,b:int] <: [a:int]
+<B> [a:int,b:B] <: [a:int]
+	int <: !int
+not int <: boolean
+
+// equals
+	int == int
+not int == boolean
+
+// substitution
+<X>	X{A/X} == A
+*/
+
+// sharing
 share A as A => none ; none || none
 
 <l>share (rw l !(Empty#![])) as H[l] || T[l]
