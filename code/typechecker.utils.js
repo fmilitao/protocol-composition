@@ -211,24 +211,22 @@ var TypeChecker = (function( assertF ){
 	
 	newType('LocationVariable',
 		function LocationVariable( name, index ){
-			var n = name === null ? 't<sub>'+(unique_counter++)+'</sub>' : name;
+			var n = name;
 			var i = index === undefined ? null : index;
 			
 			this.index = function(){ return i; }
 			this.name = function(){ return n; }
-			this.newFreshVar = function( ){ return new LocationVariable(null); }
 			this.copy = function(j){ return new LocationVariable(name,j); }
 		}
 	);
 	
 	newType('TypeVariable',
 		function TypeVariable( name, index ){
-			var n = name === null ? 'T<sub>'+(unique_counter++)+'</sub>' : name;
+			var n = name;
 			var i = index === undefined ? null : index;
 			
 			this.index = function(){ return i; }
 			this.name = function(){ return n; }
-			this.newFreshVar = function(){ return new TypeVariable(null); }
 			this.copy = function(j){ return new TypeVariable(name,j); }
 		}
 	);

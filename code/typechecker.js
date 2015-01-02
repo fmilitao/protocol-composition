@@ -154,10 +154,19 @@ var TypeChecker = (function(AST,exports){
 		}
 	}
 
-	//FIXME new version
-	var _equals = function( t1, t2, shallow){
+	/**
+	 * Tests if types 'a' and 'b' are the same.
+	 * Up to renaming of bounded variables, so that it renames existentials
+	 * and foralls. Thus, returns true when they are structurally equal, even
+	 * if their labels in existentials are of different strings values.
+	 * @param {Type} a
+	 * @param {Type} b
+	 * @return {Boolean} if the types are equal up to renaming.
+	 */
+
+	var equals = function( t1, t2, shallow){
 		var rec = function(t1,t2){
-			return _equals(t1,t2,shallow)
+			return equals(t1,t2,shallow)
 		};
 
 		if( t1 === t2 )
@@ -198,8 +207,6 @@ var TypeChecker = (function(AST,exports){
 			}
 			case types.TypeVariable:
 			case types.LocationVariable: {
-				assert( (t1.index() !== null && t2.index() !== null) || ('@equals: missing De Bruijn index') );
-
 				return  t1.index() === t2.index();
 			}
 			case types.FunctionType:
@@ -303,15 +310,26 @@ var TypeChecker = (function(AST,exports){
 				return true;
 			}
 			default:
-				error( "@_equals: Not expecting " +t2.type );
+				error( "@equals: Not expecting " +t2.type );
 			}
 	};
 
-	var _substitutionAux = function(t,from,to){
+
+	/**
+	 * Substitutes in 't' any occurances of 'from' to 'to'
+	 * 		t[from/to] ('from' for 'to')
+	 * @param {Type} 't' that is to be searched on
+	 * @param {LocationVariable,TypeVariable} when 'from' is found, it is replaced with
+	 *  	NOTE: 'from' is limited to LocationVariable or TypeVariables
+	 * @param {Type} 'to'
+	 * @param {Function} equals function to compare types
+	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
+	 */
+	var substitutionAux = function(t,from,to){
 		
 		// for convenience...
 		var rec = function(type){
-			return _substitutionAux(type,from,to);
+			return substitutionAux(type,from,to);
 		}
 		
 		// base case: if X{to/X} = to and since we are only checking location
@@ -374,9 +392,9 @@ var TypeChecker = (function(AST,exports){
 			// switch again to figure out what constructor to use.
 			switch( t.type ){
 				case types.ExistsType:
-					return new ExistsType( nvar, _substitutionAux(ninner,_from,_to) );
+					return new ExistsType( nvar, substitutionAux(ninner,_from,_to) );
 				case types.ForallType:
-					return new ForallType( nvar, _substitutionAux(ninner,_from,_to) );
+					return new ForallType( nvar, substitutionAux(ninner,_from,_to) );
 				default:
 					error( "@_substitutionAux: Not expecting " +t.type );
 			}
@@ -424,157 +442,6 @@ var TypeChecker = (function(AST,exports){
 
 	// =================================
 	
-	/**
-	 * Substitutes in 't' any occurances of 'from' to 'to'
-	 * 		t[from/to] ('from' for 'to')
-	 * @param {Type} 't' that is to be searched on
-	 * @param {LocationVariable,TypeVariable} when 'from' is found, it is replaced with
-	 *  	NOTE: 'from' is limited to LocationVariable or TypeVariables
-	 * @param {Type} 'to'
-	 * @param {Function} equals function to compare types
-	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
-
-
-	 *  TODO: pending FIX --- Note that it also RENAMES any bounded variable that colides with the
-	 *  'from' name so that bounded names are never wrongly substituted.
-	 */
-	
-	var substitutionAux = function(t,from,to){
-		
-		// for convenience...
-		var rec = function(type){
-			return substitutionAux(type,from,to);
-		};
-		
-		// substitution never unfolds a definition
-		// base case: if X{to/X} = to
-		if( t.type === from.type && t.name() === from.name() )
-			return to;
-			
-		switch ( t.type ){
-		case types.FunctionType:
-			return new FunctionType( rec(t.argument()), rec(t.body()) );
-		case types.BangType:
-			return new BangType( rec(t.inner()) );
-		case types.RelyType: {
-			return new RelyType( rec(t.rely()), rec(t.guarantee()) );
-		}
-		case types.GuaranteeType: {
-			return new GuaranteeType( rec(t.guarantee()), rec(t.rely()) );
-		}
-		case types.SumType:{
-			var sum = new SumType();
-			var tags = t.tags();
-			for( var i in tags )
-				sum.add( tags[i], rec(t.inner(tags[i])) );
-			return sum;
-		}
-		case types.AlternativeType:{
-			var star = new AlternativeType();
-			var inners = t.inner();
-			for( var i=0;i<inners.length;++i ){
-				star.add( rec(inners[i]) ); 
-			}	
-			return star;
-		}
-		case types.IntersectionType:{
-			var star = new IntersectionType();
-			var inners = t.inner();
-			for( var i=0;i<inners.length;++i ){
-				star.add( rec(inners[i]) ); 
-			}	
-			return star;
-		}
-		case types.StarType:{
-			var star = new StarType();
-			var inners = t.inner();
-			for( var i=0;i<inners.length;++i ){
-				star.add( rec(inners[i]) ); 
-			}	
-			return star;
-		}
-		// CAPTURE AVOIDANCE in the following cases...
-		// Renaming is needed to avoid capture of bounded variables.
-		// We have two cases to consider:
-		// 1. The variable to be renamed is the same as bounded var:
-		// (exists t.A){t/X} "t for X" 
-		// in this case, we are done with substitution, since t is bounded inside A.
-		// 2. The *to* name is the same the bounded var:
-		// (exists t.A){g/t} "g for t"
-		// in this case we must rename the location 't' to avoid capture
-		// in the case when 'g' may occur in A.
-		case types.ExistsType: 
-		case types.ForallType: {
-			if( ( from.type === types.LocationVariable ||
-				  from.type === types.TypeVariable )
-					&& t.id().name() === from.name() ){
-				// 'from' is bounded, thus we are done. 
-				return t;
-			}
-			
-			var nvar = t.id();
-			var ninner = t.inner();
-			if( ( to.type === types.LocationVariable ||
-				  to.type === types.TypeVariable )
-					&& t.id().name() === to.name() ){
-				// capture avoiding substitution 
-				nvar = t.id().newFreshVar(); // fresh loc/type-variable FIXME: deprecated
-
-				// this substitution is simpler since it does not rely on full equals
-				// only does comparision of variables, thus it always terminates.
-				ninner = substitution( t.inner(), t.id(), nvar );
-			}
-			
-			// switch again to figure out what constructor to use.
-			switch( t.type ){
-				case types.ExistsType:
-					return new ExistsType( nvar, rec(ninner) );
-				case types.ForallType:
-					return new ForallType( nvar, rec(ninner) );
-				default:
-					error( "@substitutionAux: Not expecting " +t.type );
-			}
-		}
-		case types.ReferenceType:
-			return new ReferenceType( rec(t.location()) );
-		case types.StackedType:
-			return new StackedType( rec(t.left()), rec(t.right()) );
-		case types.CapabilityType:
-			return new CapabilityType( rec(t.location()), rec(t.value()) );
-		case types.RecordType: {
-			var r = new RecordType();
-			var fs = t.getFields();
-			for( var i in fs )
-				r.add( i, rec(fs[i]) );
-			return r;
-		}
-		case types.TupleType: {
-			var r = new TupleType();
-			var fs = t.getValues();
-			for( var i in fs )
-				r.add( rec(fs[i]) );
-			return r;
-		}
-		case types.DefinitionType: {
-			var fs = t.args();
-			var tmp = [];
-			for( var i in fs )
-				tmp = tmp.concat( rec(fs[i]) );
-			return new DefinitionType(t.definition(),tmp);
-		}
-		// these remain UNCHANGED
-		// note that Location/Type Variable is tested ABOVE, not here
-		case types.LocationVariable:
-		case types.TypeVariable:
-		case types.PrimitiveType:
-		case types.NoneType:
-		case types.TopType:
-			return t;
-
-		default:
-			error( "@substitutionAux: Not expecting " +t.type );
-		}
-	};
 	
 	/*
 	 * This is a "simpler" substitution where 'from' must either be a
@@ -595,176 +462,6 @@ var TypeChecker = (function(AST,exports){
 	// EQUALS and SUBTYPING
 	//	
 
-	/**
-	 * Tests if types 'a' and 'b' are the same.
-	 * Up to renaming of bounded variables, so that it renames existentials
-	 * and foralls. Thus, returns true when they are structurally equal, even
-	 * if their labels in existentials are of different strings values.
-	 * @param {Type} a
-	 * @param {Type} b
-	 * @return {Boolean} if the types are equal up to renaming.
-	 */
-	var equals = function(t1,t2){
-
-		// exactly the same
-		if( t1 === t2 )
-			return true;
-
-		var def1 = t1.type === types.DefinitionType;
-		var def2 = t2.type === types.DefinitionType;
-		if( def1 ^ def2 ){
-			if( def1 ){
-//FIXME define shallow equals that does not follow unfolds.
-// shallow should be useful when doing table compares for cycles.
-				t1 = unAll(t1,false,true);
-				// if unfolding worked
-				if( t1.type !== types.DefinitionType ){
-					return equals( t1, t2 );
-				}
-			}
-			if( def2 ){
-				t2 = unAll(t2,false,true);
-				// if unfolding worked
-				if( t2.type !== types.DefinitionType ){
-					return equals( t1, t2 );
-				}
-			}
-		}
-		
-		if( t1.type !== t2.type )
-			return false;
-			
-		// assuming both same type
-		switch ( t1.type ){
-			case types.ForallType:		
-			case types.ExistsType: {
-				if( t1.id().type !== t2.id().type )
-					return false;
-
-
-				// if name mismatch, do "quick" substitution to make them match
-				if( t1.id().name() !== t2.id().name() ){
-//FIXME: substitution should not be used here. DeBruijn?
-					var tmp = substitution(t2.inner(),t2.id(),t1.id());
-					return equals( t1.inner(), tmp );
-				}
-
-				return equals( t1.inner(), t2.inner() );
-			}
-			case types.TypeVariable:
-			case types.LocationVariable: {
-				/*
-				assert( (t1.index() !== null && t2.index() !== null) || ('@equals: missing De Bruijn index') );
-
-				return  t1.index() === t2.index();
-				*/
-				// note: same name for case of variables that are in scope
-				// but not declared in the type (i.e. already opened)
-				return  t1.name() === t2.name();
-			}
-			case types.FunctionType:
-				return equals( t1.argument(), t2.argument() ) &&
-					equals( t1.body(), t2.body() );
-			case types.BangType:
-				return equals( t1.inner(), t2.inner() );
-			case types.RelyType: {
-				return equals( t1.rely(), t2.rely() ) &&
-					equals( t1.guarantee(), t2.guarantee() );
-			}
-			case types.GuaranteeType: {
-				return equals( t1.guarantee(), t2.guarantee() ) &&
-					equals( t1.rely(), t2.rely() );
-			}
-			case types.SumType: {
-				var t1s = t1.tags();
-				var t2s = t2.tags();
-				// note that it is an array of tags (strings)
-				if( t1s.length !== t2s.length )
-					return false;
-				for( var i=0; i<t1s.length; ++i ){
-					if( t2s.indexOf(t1s[i])===-1 ||
-						!equals( t1.inner(t1s[i]), t2.inner(t1s[i]) ) )
-						return false;
-				}
-				return true;
-			}
-			case types.ReferenceType:
-				return equals( t1.location(), t2.location() );
-			case types.StackedType:
-				return equals( t1.left(), t2.left() ) &&
-					equals( t1.right(), t2.right() );
-			case types.CapabilityType:
-				return equals( t1.location(), t2.location() ) &&
-					equals( t1.value(), t2.value() );
-			case types.RecordType: {
-				var t1s = t1.getFields();
-				var t2s = t2.getFields();
-				if( Object.keys(t1s).length !== Object.keys(t2s).length )
-					return false;
-				for( var i in t2s )
-					if( !t1s.hasOwnProperty(i) || 
-						!equals( t1s[i], t2s[i] ) )
-						return false;
-				return true;
-			} 
-			case types.TupleType: {
-				var t1s = t1.getValues();
-				var t2s = t2.getValues();
-				if( t1s.length !== t2s.length )
-					return false;
-				for( var i=0;i<t1s.length;++i )
-					if( !equals( t1s[i], t2s[i] ) )
-						return false;
-				return true;
-			}
-			case types.PrimitiveType:
-				return t1.name() === t2.name();
-			case types.IntersectionType:
-			case types.AlternativeType:
-			case types.StarType:{
-				var i1s = t1.inner();
-				var i2s = t2.inner();
-				
-				if( i1s.length !== i2s.length )
-					return false;
-				// any order should do
-				var tmp_i2s = i2s.slice(0); // copies array
-				for(var i=0;i<i1s.length;++i){
-					var curr = i1s[i];
-					var found = false;
-					// tries to find matching element
-					for(var j=0;j<tmp_i2s.length;++j){
-						var tmp = tmp_i2s[j];
-						if( equals(curr,tmp) ){
-							tmp_i2s.splice(j,1); // removes element
-							found = true;
-							break; // continue to next
-						}
-					}
-					// if not found, then must be different
-					if( !found ){
-						return false;
-					}
-				}
-				return true;
-			}
-			case types.DefinitionType:{
-				if( t1.definition() !== t2.definition() )
-					return false;
-				
-				var t1s = t1.args();
-				var t2s = t2.args();
-				if( t1s.length !== t2s.length )
-					return false;
-				for( var i=0;i<t1s.length;++i )
-					if( !equals( t1s[i], t2s[i] ) )
-						return false;
-				return true;
-			}
-			default:
-				error( "@equals: Not expecting " +t2.type );
-			}
-	};
 	
 	// for visited definitions
 	var Table = function(){
@@ -786,14 +483,6 @@ var TypeChecker = (function(AST,exports){
 			return visited[keyF(a,b)];
 		}
 	};
-
-//FIXME not activated.
-var __INDEX__ = true;
-
-if( __INDEX__ ){
-	equals = _equals;
-	substitutionAux = _substitutionAux;
-}
 	
 	/**
 	 * Subtyping two types.
@@ -1018,23 +707,11 @@ if( __INDEX__ ){
 				if( t1.id().type !== t2.id().type )
 					return false;
 
-//FIXME use DeBruijn
-if( !__INDEX__	 ){
-
-				// if needs renaming
-				if( t1.id().name() !== t2.id().name() ){
-					var tmp = substitution( t2.inner(), t2.id(), t1.id() );
-					return subtypeOf( t1.inner(), tmp );
-				}
- }
 				return subtypeOf( t1.inner(), t2.inner() );
 			}
 
 			case types.TypeVariable:
 			case types.LocationVariable: {
-if( !__INDEX__ ){
-					return t1.name() === t2.name();
-				}
 				return t1.index() === t2.index();					
 			}
 

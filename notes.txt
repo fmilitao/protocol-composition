@@ -1,18 +1,15 @@
 Protocol Conformance Checker
 ============================
 
-Grammar is limited to only check 'subtype' and 'share', as well as 'typedef' for convenience.
-
-* grammar simplifications to remove some unnecessary parenthesis on 'share' constructs, etc.
-
-De Bruijn indexes for equals:
--> updateIndexes after substitution
--> define error constants/enum instead of having constants spread out through the code.
-
-Shallow equals / and full equals that uses lookup table to avoid loops.
+Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
+Instead of recursion, we have 'typedef' for clarity.
 
 TODO:
 =====
+
+- define error constants/enum instead of having constants spread out through the code.
+
+- Shallow equals / and full equals that uses lookup table to avoid loops.
 
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
 
@@ -21,13 +18,11 @@ TODO:
 
 
 FIXME --- GRAMMAR:
+==================
+* grammar simplifications to remove some unnecessary parenthesis on 'share' constructs, etc.
+
  not A <: A // subtype test
  not A == A // equality test
  	--> PROBLEM: ambiguity in the grammar!
  share A as B, C, D, E;
  share D as D, D;
-
-
-
-++ 1 Activate DeBruijn
-- improvement? http://en.wikipedia.org/wiki/De_Bruijn_index
