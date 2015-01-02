@@ -77,6 +77,8 @@ type_root :
 		{ $$ = AST.makeAlternativeType($1,@$); }
 	| intersection_type // same.
 		{ $$ = AST.makeIntersectionType($1,@$); }
+	| type_rg '{' type_root '/' id '}'
+		{ $$ = AST.makeSubstitution($1,$3,$5,@$); }
 	;
 
 type_rg :
@@ -104,13 +106,17 @@ type_cap :
 	| sum_type
 		{ $$ = AST.makeSumType($1,@$); }
 	;
-	
+
+id :
+	IDENTIFIER
+	 	{ $$ = AST.makeNameType(yytext,@$); }
+	;
 
 type :
 	 '!' type
  	  	{ $$ = AST.makeBangType($2,@$); }
-	| IDENTIFIER
-	 	{ $$ = AST.makeNameType(yytext,@$); }
+	| id
+	 	{ $$ = $1; }
 	| REF IDENTIFIER
 	 	{ $$ = AST.makeRefType($2,@$); }
 	| '(' type_root ')'

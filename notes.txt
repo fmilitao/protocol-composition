@@ -27,4 +27,7 @@ GRAMMAR FIXES:
 not A <: A // subtype test
 not A == A // equality test
 
-A{A/x} // substitution, only on type/location variables
+
+
+++ 1 Activate DeBruijn
+

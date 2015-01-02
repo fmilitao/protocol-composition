@@ -5,6 +5,8 @@ typedef A = int
 
 typedef X = exists A.exists B.( l#A + q#B )
 
+typedef Y<x> = boolean{int/x}
+
 typedef Buggy<q,l> = tag#(ref q) + teg#(ref l)
 
 typedef H<p> =

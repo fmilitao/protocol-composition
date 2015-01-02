@@ -585,7 +585,7 @@ var TypeChecker = (function(AST,exports){
 	var substitution = function(type,from,to){
 		if( from.type !== types.LocationVariable && 
 			from.type !== types.TypeVariable ){
-			error( "@substitution: can only substitute a Type/LocationVariable" );
+			error( "@substitution: can only substitute a Type/LocationVariable, got: "+from.type );
 		}
 
 		return substitutionAux(type,from,to);
@@ -1682,6 +1682,18 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	var setupAST = function( kind ) {
 		
 		switch( kind ) {
+
+			case AST.SUBSTITUTION:
+			return function( ast, env ){
+				var type = check( ast.type, env );
+				var to = check( ast.to, env );
+				var from = check( ast.from, env );
+
+				assert( (from.type === types.LocationVariable || from.type === types.TypeVariable)
+					|| ("Can only substitute a Type/LocationVariable, got: "+from.type ), ast.from );
+
+				return substitution(type, from, to);
+			};
 
 			case AST.SUBTYPE:
 			return function( ast, env ){

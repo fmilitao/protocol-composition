@@ -92,7 +92,8 @@ var AST = new function(){
 		'FOCUS',
 		'DEFOCUS',
 		'TUPLE',
-		'LET_TUPLE'
+		'LET_TUPLE',
+		'SUBSTITUTION'
 	);
 	
 	this.makeTypedef = function(id,type,pars,info){
@@ -103,6 +104,10 @@ var AST = new function(){
 	}
 	this.makeProgram = function(imports,typedefs,exp,info){
 		return aux( this.kinds.PROGRAM, {imports:imports,typedefs:typedefs,exp:exp}, info);
+	}
+
+	this.makeSubstitution = function(type,to,from,info){
+		return aux( this.kinds.SUBSTITUTION, {type:type,to:to,from:from}, info);
 	}
 	
 	//
