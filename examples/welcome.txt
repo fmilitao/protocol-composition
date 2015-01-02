@@ -31,6 +31,7 @@ not equals int == !int
 not equals forall X.forall Y.([X,Y]) == forall X.forall Y.([Y,X])
 
 	equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
+	equals exists X.(forall X.exists X.X){int/X} == exists X.forall X.exists X.X
 
 // substitution
 <X> equals X{A/X} == A

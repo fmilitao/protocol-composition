@@ -499,65 +499,51 @@ var TypeChecker = (function( assertF ){
 	 * 	undefined - new element collides with a previously existing one;
 	 *  null/value - if all OK.
 	 */
-	var Environment = function(parent){
-		// note that set only works at the local level (i.e. it will never
-		// attempt to set something in an upper-level).
+	var Environment = function(up){
 
 		// CAREFUL: '$' cannot be a source-level identifier
-		// '$' was used to distinguish between variables and location/type variables
+		// LEGACY CODE: '$' was previously used to distinguish between
+		// variables and location/type variables, and so I left it like that.
 		var TYPE_INDEX='$';
 		
-//FIXME it should no longer be needed to have non-private fields, I think.
-		// meant to be $protected fields
-		this.$map = {};
-		this.$caps = [];
-		this.$parent = parent;
+		var map = {};
+		var parent = up;
 		
 		// scope methods		
 		this.newScope = function(){
 			return new Environment(this);
 		}
 		this.endScope = function(){
-			return this.$parent;
+			return parent;
 		}
 		
 		// operations over IDENTIFIERS
 		this.set = function(id,value){
-			// check if 'id' exists
-			var tmp = this;
-			while( tmp !== null ){
-				if ( tmp.$map.hasOwnProperty(id) )
-					return undefined; // already exists
-				tmp = tmp.$parent; // check parent
-			}
-			
-			this.$map[id] = value;
+			// does not search up. ALLOWS NAME COLISIONS/HIDDING with upper levels.
+			// check if 'id' exists at this level
+			if( map.hasOwnProperty(id) )
+				return undefined; // already exists
+			map[id] = value;
 			return true; // ok
 		}
 
 		this.get = function(id,cond){ // condition for removal
-			if ( this.$map.hasOwnProperty(id) ){
-				var tmp = this.$map[id];
+			if ( map.hasOwnProperty(id) ){
+				var tmp = map[id];
 				if( cond !== undefined && cond(tmp) ){
 					// ensures that it is no longer listed
-					delete this.$map[id];
+					delete map[id];
 				}
 				return tmp;
 			}
-			if( this.$parent === null )
+			if( parent === null )
 				return undefined;
-			return this.$parent.get(id,cond);
+			return parent.get(id,cond);
 		}
 		
-		// operations over VARIABLES
-		// (includes both TypeVariables and LocationVariables)
+		// operations over TypeVariables / LocationVariables
 		this.setType = function(id,value){
-			// does not search up. ALLOWS NAME COLISIONS/HIDDING
-			if( this.$map.hasOwnProperty(TYPE_INDEX+id) )
-				return undefined; // already exists
-			
-			this.$map[TYPE_INDEX+id] = value;
-			return true; // ok
+			return this.set(TYPE_INDEX+id,value);
 		}
 
 		this.getType = function(id){
@@ -567,13 +553,13 @@ var TypeChecker = (function( assertF ){
 		// returns the depth of 'id' in the spaghetti stack, starting at 0.
 		// returns -1 if not found.
 		this.getTypeDepth = function(id){
-			if ( this.$map.hasOwnProperty(TYPE_INDEX+id) ){
+			if ( map.hasOwnProperty(TYPE_INDEX+id) ){
 				return 0;
 			}
-			if( this.$parent === null )
+			if( parent === null )
 				return -1; // not found
 
-			var tmp = this.$parent.getTypeDepth(id);
+			var tmp = parent.getTypeDepth(id);
 			if( tmp === -1 ) 
 				return tmp;
 			return 1+tmp;
@@ -581,22 +567,18 @@ var TypeChecker = (function( assertF ){
 		
 		// other...
 		this.size = function(){
-			return Object.keys(this.$map).length+
-					this.$caps.length+
-				( this.$parent === null ? 0 : this.$parent.size() );
+			return Object.keys(map).length+caps.length+
+				( parent === null ? 0 : parent.size() );
 		}
 		
 		this.clone = function(){
-			var env = this.$parent !== null ?
-				new Environment( this.$parent.clone() ) :
+			var env = parent !== null ?
+				new Environment( parent.clone() ) :
 				new Environment( null );
 
-			for( var i in this.$map ){
-				// assuming it is OK to alias content (i.e. immutable stuff)
-				env.set( i, this.$map[i] );
-			}
-			for( var i=0; i<this.$caps.length;++i ){
-				env.setCap( this.$caps[i] );
+			for( var i in map ){
+				// assuming it is OK to alias types/content (i.e. all immutable stuff)
+				env.set( i, map[i] );
 			}
 			
 			return env;
@@ -604,15 +586,12 @@ var TypeChecker = (function( assertF ){
 
 		// no order is guaranteed!
 		this.visit = function(all,f){
-			for( var i in this.$map ){
+			for( var i in map ){
 				var isType = (i[0] === TYPE_INDEX);
-				f(i,this.$map[i],false,isType);
+				f(i,map[i],false,isType);
 			}
-			for( var i=0; i<this.$caps.length;++i ){
-				f(null,this.$caps[i],true,false);
-			}
-			if( all && this.$parent !== null )
-				this.$parent.visit(all,f);
+			if( all && parent !== null )
+				parent.visit(all,f);
 		}
 		
 	};
