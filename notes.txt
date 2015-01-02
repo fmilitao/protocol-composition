@@ -23,9 +23,9 @@ TODO:
 
 
 GRAMMAR FIXES:
-
-not A <: A // subtype test
-not A == A // equality test
+ not A <: A // subtype test
+ not A == A // equality test
+ --> ambiguity in the grammar??
 
 
 

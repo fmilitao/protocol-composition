@@ -1704,6 +1704,14 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return left;
 			};
 
+			case AST.EQUALS:
+			return function( ast, env ){
+				var left = check( ast.a, env );
+				var right = check( ast.b, env );
+				var s = equals(left,right);
+				assert( s==ast.value || ('Unexpected Result, got '+s+' expecting '+ast.value), ast );
+				return left;
+			};
 
 			case AST.SUM_TYPE: 
 			return function( ast, env ){

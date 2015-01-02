@@ -18,26 +18,16 @@ typedef T<p> =  rw p !(Empty#[]) =>
 	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: (H[q]))])) )
 
 
-subtype [a:int,b:int] <: [a:int]
-<B>subtype [a:int,b:B] <: [a:int]
-subtype int <: !int
+    subtype [a:int,b:int] <: [a:int]
+<B> subtype [a:int,b:B] <: [a:int]
+    subtype int <: !int
 not subtype int <: boolean
 
-/*
-// subtyping checks
-
-	[a:int,b:int] <: [a:int]
-<B> [a:int,b:B] <: [a:int]
-	int <: !int
-not int <: boolean
-
-// equals
-	int == int
-not int == boolean
+    equals int == int
+not equals int == boolean
 
 // substitution
-<X>	X{A/X} == A
-*/
+<X> equals X{A/X} == A
 
 // sharing
 share A as A => none ; none || none

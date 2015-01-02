@@ -89,6 +89,7 @@ var AST = new function(){
 		'FUN',
 		'SHARE',
 		'SUBTYPE',
+		'EQUALS',
 		'FOCUS',
 		'DEFOCUS',
 		'TUPLE',
@@ -128,6 +129,9 @@ var AST = new function(){
 	}
 	this.makeSubtype = function(v,a,b,info){
 		return aux( this.kinds.SUBTYPE, {value:v,a:a,b:b}, info);
+	}
+	this.makeEquals = function(v,a,b,info){
+		return aux( this.kinds.EQUALS, {value:v,a:a,b:b}, info);
 	}
 	
 	// expressions

@@ -14,6 +14,7 @@
 "string"              return 'STRING_TYPE'
 "share"               return 'SHARE'
 "subtype"             return 'SUBTYPE'
+"equals"              return 'EQUALS'
 "as"                  return 'AS'
 "typedef"             return 'TYPEDEF'
 "none"                return 'NONE'
@@ -36,6 +37,7 @@
 "::"                  return '::'
 ":"                   return ':'
 "=>"                  return '=>'
+"=="                  return '=='
 "="                   return '='
 "!"                   return '!'
 "["                   return '['
@@ -194,6 +196,13 @@ field_types :
 		{ $$ = [$1].concat($3); }
 	;
 
+ids_list :
+	IDENTIFIER
+		{ $$ = [$1]; }
+	| IDENTIFIER ',' ids_list
+		{ $$ = [$1].concat($3); }
+	;
+
 // EXPRESSIONS
 
 program :
@@ -223,13 +232,7 @@ typedef_pars :
 	;
 
 sequence :
-	  share
-	| subtype
-	| forall
-	| share sequence
-	 { $$ = $1.concat($2); }
-	| subtype sequence
-	 { $$ = $1.concat($2); }
+	  forall
 	| forall sequence
 	 { $$ = $1.concat($2); }
 	;
@@ -237,10 +240,12 @@ sequence :
 forall :
       '<' IDENTIFIER '>' forall
 		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
-    | '<' IDENTIFIER '>' share
-		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
-	| '<' IDENTIFIER '>' subtype
-		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
+    | share
+		{ $$ = $1; }
+	| subtype
+		{ $$ = $1; }
+	| equals
+		{ $$ = $1; }
 	;
 
 share :
@@ -257,9 +262,10 @@ subtype :
 	 { $$ = [AST.makeSubtype(false,$3,$5,@$)]; }
 	;
 
-ids_list :
-	IDENTIFIER
-		{ $$ = [$1]; }
-	| IDENTIFIER ',' ids_list
-		{ $$ = [$1].concat($3); }
+equals :
+	EQUALS type_root '==' type_root
+	 { $$ = [AST.makeEquals(true,$2,$4,@$)]; }
+	| NOT EQUALS type_root '==' type_root
+	 { $$ = [AST.makeEquals(false,$3,$5,@$)]; }
 	;
+
