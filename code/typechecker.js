@@ -177,7 +177,7 @@ var TypeChecker = (function(AST,exports){
 		if( def1 ^ def2 && !shallow ){
 //FIXME this is ugly...
 			if( def1 ){
-				t1 = unAll(t1,false,true);
+				t1 = unfold(t1);
 				// if unfolding worked
 				if( t1.type !== types.DefinitionType ){
 					return rec( t1, t2 );
@@ -185,7 +185,7 @@ var TypeChecker = (function(AST,exports){
 			}
 			
 			if( def2 ){
-				t2 = unAll(t2,false,true);
+				t2 = unfold(t2);
 				// if unfolding worked
 				if( t2.type !== types.DefinitionType ){
 					return rec( t1, t2 );
@@ -499,14 +499,14 @@ var TypeChecker = (function(AST,exports){
 		var def2 = t2.type === types.DefinitionType;
 		if( def1 ^ def2 ){
 			if( def1 ){
-				t1 = unAll(t1,false,true);
+				t1 = unfold(t1);
 				// if unfolding worked
 				if( t1.type !== types.DefinitionType ){
 					return subtypeOf( t1, t2 );
 				}
 			}
 			if( def2 ){
-				t2 = unAll(t2,false,true);
+				t2 = unfold(t2);
 				// if unfolding worked
 				if( t2.type !== types.DefinitionType ){
 					return subtypeOf( t1, t2 );
@@ -739,7 +739,7 @@ var TypeChecker = (function(AST,exports){
 				// assume the same, should fail elsewhere if wrong assuming
 				typedef_sub.set(a,b,true);
 				// unfold and try again
-				var tmp = subtypeOf( unAll(t1,false,true), unAll(t2,false,true) );
+				var tmp = subtypeOf( unfold(t1), unfold(t2) );
 				typedef_sub.set(a,b,tmp);
 					
 				return tmp;
@@ -760,38 +760,22 @@ var TypeChecker = (function(AST,exports){
 	// TYPE CHECKER
 	//
 
-	/*
-	 * bang -- remove bang(s)? !A <: A
-	 * rec -- unfold recursive definition(s)?
-	 */
-	var unAll = function(t,bang,rec){
+	// unfolds DefinitionType until it rechaes something else
+	var unfold = function(t){
 		var MAX = 100;
+		var tmp = t;
 		
-		while( MAX-->0 ){
-			
-			// by subtyping rule: !A <: A
-			if( bang && t.type === types.BangType ){
-				t = t.inner();
-				continue;
-			}
-			
-			// by unfold definition
-			if( rec && t.type === types.DefinitionType ){
-				t = unfoldDefinition(t);
-				continue;
-			}
-			
-			break;
+		while( MAX-- > 0 && tmp.type === types.DefinitionType ){			
+			tmp = unfoldDefinition(tmp);
 		}
 
 		if( MAX === 0 ){
-			console.debug('@unAll: MAX UNFOLD REACHED, '+t);
+			console.debug('@unfold: MAX UNFOLD REACHED, '+t+' at '+tmp);
 			// returns whatever we got, will likely fail due to a packed
 			// definition anyway. But it's not our fault that you gave us a type
-			// that is bogus/infinite recursive!
+			// that is bogus/infinitely recursive!
 		}
-		return t;
-
+		return tmp;
 	}	
 	
 	var unfoldDefinition = function(d){
@@ -819,7 +803,7 @@ var TypeChecker = (function(AST,exports){
  * protocol that was given as argument.
  */
 var getInitialState = function( p ){
-	p = unAll(p,false,true);
+	p = unfold(p);
 	switch(p.type){
 		case types.RelyType:
 			return p.rely();
@@ -890,7 +874,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 	var simM = function( s, p, m, ast ){
 		
 		// unfold definition
-		p = unAll(p,false,true);
+		p = unfold(p);
 		
 		if( p.type === types.NoneType ){
 			assert( equals( s, m ) ||
@@ -997,7 +981,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 	// generates all possible variantes of 'p' base on subtyping intersections 
 	var breakProtocol = function(p){
 		// unfold definition
-		p = unAll(p,false,true);
+		p = unfold(p);
 		//debugger
 		if( p.type === types.IntersectionType ){
 			return p.inner();
@@ -1057,7 +1041,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 	var simP = function( s, p, o, ast ){
 
 		// unfold definitions
-		p = unAll(p,false,true);
+		p = unfold(p);
 
 		// unchanged
 		if( p.type === types.NoneType ){
@@ -1127,7 +1111,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 	 */
 	var step = function(s,p, ast){
 		// unfold definitions
-		p = unAll(p,false,true);
+		p = unfold(p);
 		
 		// unchanged
 		if( p.type === types.NoneType )
@@ -1651,7 +1635,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var exp = check( ast.exp, env );
 				var cap = check( ast.type, env );
 
-				cap = unAll(cap,false,true);
+				cap = unfold(cap);
 				
 				var c = autoStack ( null, cap, env, ast.type );
 				// make sure that the capabilities that were extracted from 
