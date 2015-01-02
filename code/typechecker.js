@@ -788,7 +788,7 @@ var TypeChecker = (function(AST,exports){
 	};
 
 //FIXME not activated.
-var __INDEX__ = false;
+var __INDEX__ = true;
 
 if( __INDEX__ ){
 	equals = _equals;

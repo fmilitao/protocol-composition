@@ -131,6 +131,10 @@ type :
 	 	{ $$ = AST.makeRecordType($2,@$); }
 	| '[' type_list ']'
 		{ $$ = AST.makeTupleType($2,@$); }
+	| NONE
+		{ $$ = AST.makeNoneType(@$); }
+	| TOP
+		{ $$ = AST.makeTopType(@$); }
 	// Primitive Types
 	| INT_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
@@ -138,10 +142,6 @@ type :
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| STRING_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
-	| NONE
-		{ $$ = AST.makeNoneType(@$); }
-	| TOP
-		{ $$ = AST.makeTopType(@$); }
 	;
 
 tagged :

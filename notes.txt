@@ -15,19 +15,19 @@ TODO:
 =====
 
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
-- Modules with (loose?) augmentation: http://www.adequatelygood.com/JavaScript-Module-Pattern-In-Depth.html
-- improvement? http://en.wikipedia.org/wiki/De_Bruijn_index
 
 - gear icon from: http://findicons.com/icon/84346/gear?id=429415
 
 
 
-GRAMMAR FIXES:
+FIXME --- GRAMMAR:
  not A <: A // subtype test
  not A == A // equality test
- --> ambiguity in the grammar??
+ 	--> PROBLEM: ambiguity in the grammar!
+ share A as B, C, D, E;
+ share D as D, D;
 
 
 
 ++ 1 Activate DeBruijn
-
+- improvement? http://en.wikipedia.org/wiki/De_Bruijn_index

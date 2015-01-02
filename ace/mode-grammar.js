@@ -124,7 +124,7 @@ var GrammarHighlightRules = function() {
                 regex : "[a-zA-Z0-9_]+"
             }, {
                 token : "constant.other",
-                regex : "[{}]"
+                regex : "[{}/]"
             }, {
                 token : "keyword.operator",
                 regex : "[()]"
