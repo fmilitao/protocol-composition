@@ -1,4 +1,5 @@
 
+/* === CONFORMANCE TESTS === */
 
 //
 // Pipe
@@ -80,5 +81,3 @@ share none as none || none
 <t> share P[t] as P0[t] || P1[t]
 
 <t> share P4[t] as P3[t] || P1[t]
-
-

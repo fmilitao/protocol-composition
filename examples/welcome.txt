@@ -1,5 +1,5 @@
-
-// The welcome file should also contain all examples and tests
+// Welcome file
+// The other files should contain the main tests and examples.
 
 typedef A = int
 
@@ -17,20 +17,25 @@ typedef H<p> =
 typedef T<p> =  rw p !(Empty#[]) =>
 	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: (H[q]))])) )
 
-
+// subtyping
     subtype [a:int,b:int] <: [a:int]
 <B> subtype [a:int,b:B] <: [a:int]
     subtype int <: !int
 not subtype int <: boolean
 
+// equality
     equals int == int
+    equals forall X.(X{int/X}) == forall Y.int
 not equals int == boolean
+not equals int == !int
+not equals forall X.forall Y.([X,Y]) == forall X.forall Y.([Y,X])
+
+	equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
 
 // substitution
 <X> equals X{A/X} == A
 
 // sharing
-share A as A => none ; none || none
-
-<l>share (rw l !(Empty#![])) as H[l] || T[l]
+	 share A as A => none ; none || none
+<l> share (rw l !(Empty#![])) as H[l] || T[l]
 

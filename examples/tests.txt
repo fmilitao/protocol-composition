@@ -92,12 +92,7 @@ not subtype exists X.X <: exists Z.!Z
 
 <t> not subtype rw t int <: rw t boolean 
 
-
 <X><Y><Z>     subtype X & Y & Z <: X & Z
 <X><Y><Z> not subtype X <: X & Z
 <Z><X>    not subtype X <: X & Z
-
-/* === CONFORMANCE TESTS === */
-
-share none as none || none
 

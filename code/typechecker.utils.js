@@ -552,12 +552,12 @@ var TypeChecker = (function( assertF ){
 		// operations over VARIABLES
 		// (includes both TypeVariables and LocationVariables)
 		this.setType = function(id,value){
-			// type variables cannot be hidden, must be unique
-			// otherwise it would either require renaming collisions
-			// or could allow access to parts that collide. 
-			if( this.getType(id) !== undefined )
-				return undefined; // already there
-			return this.set(TYPE_INDEX+id,value);
+			// does not search up. ALLOWS NAME COLISIONS/HIDDING
+			if( this.$map.hasOwnProperty(TYPE_INDEX+id) )
+				return undefined; // already exists
+			
+			this.$map[TYPE_INDEX+id] = value;
+			return true; // ok
 		}
 
 		this.getType = function(id){

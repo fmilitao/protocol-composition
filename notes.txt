@@ -4,6 +4,11 @@ Protocol Conformance Checker
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
+
+URGENT FIX ON TYPING ENVIRONMENT.
+ >> THAT THING IS A MESS...
+
+
 TODO:
 =====
 

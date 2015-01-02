@@ -1,0 +1,3 @@
+//	equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
+
+equals forall X.forall X.forall X.X == forall X.forall X.forall X.X
