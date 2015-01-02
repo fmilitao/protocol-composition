@@ -8,14 +8,15 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO:
 =====
 
+1. Shallow equals / and full equals that uses lookup table to avoid loops.
+2. Fix recursion
+3. Update subtyping, requires 'unify' function
+4. Protocol Conformance
+
+
 - define error constants/enum instead of having constants spread out through the code.
 
-- Shallow equals / and full equals that uses lookup table to avoid loops.
-
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
-
-- gear icon from: http://findicons.com/icon/84346/gear?id=429415
-
 
 
 FIXME --- GRAMMAR:

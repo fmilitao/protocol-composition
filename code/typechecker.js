@@ -1486,29 +1486,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new DefinitionType(id,arguments);
 			};
 			
-			case AST.TYPE_APP: 
-			return function( ast, env ){
-				var exp = check( ast.exp, env );
-				exp = unAll(exp, true, true);
-				assert( exp.type === types.ForallType || 
-					('Not a Forall '+exp.toString()), ast.exp );
-				
-				var packed = check(ast.id, env);
-				var variable = exp.id();
-
-				if( variable.type === types.LocationVariable ){
-						assert( packed.type === types.LocationVariable ||
-							( 'Not LocationVariable: '+packed.type ), ast.id );
-				}
-				
-				if( variable.type === types.TypeVariable ){
-						assert( packed.type !== types.LocationVariable ||
-							( 'Cannot be LocationVariable' ), ast.id );
-				}
-
-				return substitution( exp.inner(), exp.id(), packed );
-			};
-			
 			case AST.TAGGED: 
 			return function( ast, env ){
 				var sum = new SumType();
@@ -1626,19 +1603,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				return new ForallType( variable, check( ast.exp, e ) );
 			};
-			
-			case AST.RECURSIVE_TYPE: 
-			return function( ast, env ){
-				var id = ast.id;
-				var e = env.newScope();
-				
-				assert( isTypeVariableName(id) ||
-					'Type Variables must be upper-cased', ast );
-					
-				var variable = new TypeVariable(id);
-				e.setType( id, variable );
-				return new RecursiveType( variable, check( ast.exp, e ) );
-			};
 						
 			case AST.NONE_TYPE:
 			return function( ast, env ){
@@ -1712,16 +1676,14 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			
 			case AST.PRIMITIVE_TYPE:
 			return function( ast, env ){
-				// any primitive type is acceptable but only ints, booleans
-				// and strings have actual values that match a primitive type.
+				// relying on the parser to limit primitive types to ints, etc.
 				return new PrimitiveType(ast.text);
 			};
 
-			default:
-			// unexpected AST kinds
-				return function( ast, env ){
-					error( "Not expecting " + ast.kind );
-				};
+			default: // unexpected AST kinds
+			return function( ast, env ){
+				error( "Not expecting " + ast.kind );
+			};
 		}
 
 	}
