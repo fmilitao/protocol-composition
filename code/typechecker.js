@@ -74,24 +74,11 @@ var TypeChecker = (function(AST,exports){
 					sum.add( tags[i], shift1( t.inner(tags[i]), c ) );
 				return sum;
 			}
-			case types.AlternativeType:{
-				var star = new AlternativeType();
-				var inners = t.inner();
-				for( var i=0;i<inners.length;++i ){
-					star.add( shift1( rec(inners[i]), c ) ); 
-				}	
-				return star;
-			}
-			case types.IntersectionType:{
-				var star = new IntersectionType();
-				var inners = t.inner();
-				for( var i=0;i<inners.length;++i ){
-					star.add( shift1( rec(inners[i]), c ) ); 
-				}	
-				return star;
-			}
-			case types.StarType:{
-				var star = new StarType();
+
+			case types.AlternativeType:
+			case types.IntersectionType:
+			case types.StarType: {
+				var star = new t.constructor();
 				var inners = t.inner();
 				for( var i=0;i<inners.length;++i ){
 					star.add( shift1( rec(inners[i]), c ) );
@@ -100,10 +87,9 @@ var TypeChecker = (function(AST,exports){
 			}
 
 			case types.ExistsType:
-				return new ExistsType( t.id(), shift1( t.inner(), c+1 ) );
-
 			case types.ForallType:
-				return new ForallType( t.id(), shift1( t.inner(), c+1 ) );
+				// calls appropriate constructor function
+				return new t.constructor( t.id(), shift1( t.inner(), c+1 ) );
 
 			case types.ReferenceType:
 				return new ReferenceType( shift1( t.location(), c ) );
@@ -342,12 +328,11 @@ var TypeChecker = (function(AST,exports){
 			return new FunctionType( rec(t.argument()), rec(t.body()) );
 		case types.BangType:
 			return new BangType( rec(t.inner()) );
-		case types.RelyType: {
+		case types.RelyType:
 			return new RelyType( rec(t.rely()), rec(t.guarantee()) );
-		}
-		case types.GuaranteeType: {
+		case types.GuaranteeType:
 			return new GuaranteeType( rec(t.guarantee()), rec(t.rely()) );
-		}
+
 		case types.SumType:{
 			var sum = new SumType();
 			var tags = t.tags();
@@ -355,31 +340,18 @@ var TypeChecker = (function(AST,exports){
 				sum.add( tags[i], rec(t.inner(tags[i])) );
 			return sum;
 		}
-		case types.AlternativeType:{
-			var star = new AlternativeType();
+		
+		case types.AlternativeType:
+		case types.IntersectionType:
+		case types.StarType: {
+			var star = new t.constructor();
 			var inners = t.inner();
 			for( var i=0;i<inners.length;++i ){
 				star.add( rec(inners[i]) ); 
 			}	
 			return star;
 		}
-		case types.IntersectionType:{
-			var star = new IntersectionType();
-			var inners = t.inner();
-			for( var i=0;i<inners.length;++i ){
-				star.add( rec(inners[i]) ); 
-			}	
-			return star;
-		}
-		case types.StarType:{
-			var star = new StarType();
-			var inners = t.inner();
-			for( var i=0;i<inners.length;++i ){
-				star.add( rec(inners[i]) ); 
-			}	
-			return star;
-		}
-
+		
 		case types.ExistsType: 
 		case types.ForallType: {
 			// updates the indexes (see Types and Programming Languages, Chapter 6)
@@ -388,16 +360,9 @@ var TypeChecker = (function(AST,exports){
 
 			var nvar = t.id();
 			var ninner = t.inner();
-			
-			// switch again to figure out what constructor to use.
-			switch( t.type ){
-				case types.ExistsType:
-					return new ExistsType( nvar, substitutionAux(ninner,_from,_to) );
-				case types.ForallType:
-					return new ForallType( nvar, substitutionAux(ninner,_from,_to) );
-				default:
-					error( "@_substitutionAux: Not expecting " +t.type );
-			}
+
+			// to avoid having to switch again, we just use 't' constructor function
+			return new t.constructor( nvar, substitutionAux(ninner,_from,_to) );
 		}
 		case types.ReferenceType:
 			return new ReferenceType( rec(t.location()) );
@@ -426,6 +391,7 @@ var TypeChecker = (function(AST,exports){
 				tmp = tmp.concat( rec(fs[i]) );
 			return new DefinitionType(t.definition(),tmp);
 		}
+
 		// these remain UNCHANGED
 		// note that Location/Type Variable is tested ABOVE, not here
 		case types.LocationVariable:
@@ -436,7 +402,7 @@ var TypeChecker = (function(AST,exports){
 			return t;
 
 		default:
-			error( "@_substitutionAux: Not expecting " +t.type );
+			error( "@substitutionAux: Not expecting " +t.type );
 		}
 	};
 
@@ -773,7 +739,7 @@ var TypeChecker = (function(AST,exports){
 			console.debug('@unfold: MAX UNFOLD REACHED, '+t+' at '+tmp);
 			// returns whatever we got, will likely fail due to a packed
 			// definition anyway. But it's not our fault that you gave us a type
-			// that is bogus/infinitely recursive!
+			// that is bogus/infinitely recursive (i.e. bottom type)!
 		}
 		return tmp;
 	}	
