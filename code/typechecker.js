@@ -429,14 +429,15 @@ var TypeChecker = (function(AST,exports){
 	//	
 
 	
-	// for visited definitions
-	var Table = function(){
+	var Set2 = function(){
+
 		var visited = {};
+		var keyF = function(a,b){ return a+b; };
 		
-		var keyF = function(a,b){
-			return a < b ? a+b : b+a;
-		};
-		
+		this.set = function(a,b,value){
+			visited[keyF(a,b)] = value;
+		}
+
 		this.contains = function(a,b){
 			return visited.hasOwnProperty( keyF(a,b) );
 		}
@@ -463,6 +464,7 @@ var TypeChecker = (function(AST,exports){
 		// if mismatch on DefinitionType
 		var def1 = t1.type === types.DefinitionType;
 		var def2 = t2.type === types.DefinitionType;
+// FIXME ------
 		if( def1 ^ def2 ){
 			if( def1 ){
 				t1 = unfold(t1);
@@ -479,6 +481,7 @@ var TypeChecker = (function(AST,exports){
 				}
 			}
 		}
+// FIXME ------
 
 		// "pure to linear" - ( t1: !A ) <: ( t2: A )
 		if ( t1.type === types.BangType && t2.type !== types.BangType )
@@ -696,14 +699,16 @@ var TypeChecker = (function(AST,exports){
 				// different definitions
 				var a = t1.definition();
 				var b = t2.definition();	
-				
+
+// FIXME ------
 				// already seen
 				if( typedef_sub.contains(a,b) ){
 					return typedef_sub.get(a,b);
 				}
-				
 				// assume the same, should fail elsewhere if wrong assuming
 				typedef_sub.set(a,b,true);
+// FIXME ------
+
 				// unfold and try again
 				var tmp = subtypeOf( unfold(t1), unfold(t2) );
 				typedef_sub.set(a,b,tmp);
@@ -1661,7 +1666,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 		// reset typedef equality table
 		//typedef_eq = new Table();
-		typedef_sub = new Table();
+		typedef_sub = new Set2();
 
 		// these 3 methods must be used to avoid attempts at resoving recursive
 		// definitions before they are all inserted/defined.
@@ -1691,17 +1696,16 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			inRecDef = false;
 			typedefs = {};
 			typedefs_args = {};
-			typedef_sub = new Table();
+			typedef_sub = new Set2();
 		}
 	};
 
 	var type_info;
-	var unique_counter;
 	//var typedef_eq = new Table();
 	var typedef_sub; // subtyping cache
 	var typedef = new TypeDefinition();
 
-	// exporting these to facilitate testing.	
+	// exporting these functions to facilitate testing.	
 	exports.subtypeOf = subtypeOf;
 	exports.equals = equals;
 	exports.typedef = typedef;
@@ -1711,11 +1715,11 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		// stats gathering
 		var start = new Date().getTime();
 		type_info = [];
+		
 		try{
 			error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
 				
 			// reset typechecke's state.
-			unique_counter = 0;
 			typedef.reset();
 			var env = new Environment(null);
 				

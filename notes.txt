@@ -13,6 +13,7 @@ TODO:
 3. Update subtyping, requires 'unify' function
 4. Protocol Conformance
 
+CAREFUL: a+b could be trouble due to toString not using de bruijn???
 
 - define error constants/enum instead of having constants spread out through the code.
 
