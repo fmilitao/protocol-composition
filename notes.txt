@@ -16,6 +16,8 @@ A <: top
  ---> type definitions must be checked for "bottom" types.
 
 
+-------
+
 * Update subtyping rules (and equals too). Define 'unify' function for implicit packing and type/location application.
 	unify( type,variable, target )
 		// finds a type to be used with 'variable' such that:
@@ -42,9 +44,17 @@ STYLE:
 FIXME --- GRAMMAR:
 ==================
 * grammar simplifications to remove some unnecessary parenthesis on 'share' constructs, etc.
+* TODO: read jison documentation on token precedences.
 
  not A <: A // subtype test
  not A == A // equality test
  	--> PROBLEM: ambiguity in the grammar!
  share A as B, C, D, E;
  share D as D, D;
+
+
+Extra Credits:
+==============
+- Types and Programming Languages, Chapter 6 (for De Bruijn stuff).
+- Subtyping Recursive Types, for recursion checks.
+

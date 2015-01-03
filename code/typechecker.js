@@ -427,25 +427,6 @@ var TypeChecker = (function(AST,exports){
 	//
 	// EQUALS and SUBTYPING
 	//	
-
-	
-	var Set2 = function Set2(){
-
-		var visited = {};
-		var keyF = function(a,b){ return a+b; };
-
-		this.contains = function(a,b){
-			return visited.hasOwnProperty( keyF(a,b) );
-		}
-		
-		this.set = function(a,b,value){
-			visited[keyF(a,b)] = value;
-		}
-		
-		this.get = function(a,b){
-			return visited[keyF(a,b)];
-		}
-	};
 	
 	/**
 	 * Subtyping two types.
@@ -694,23 +675,24 @@ var TypeChecker = (function(AST,exports){
 
 				// else: different definitions
 
-				// uses their string representation with indexes only (true)
-				var a = t1.toString(true); //.definition();
-				var b = t2.toString(true); //.definition();	
+				// uses the type's string representation (with indexes only) as key
+				// the string representation ensures as 'shallow' equality, but will
+				// (unfortunately) ignore types that are equal due to commutativity.
+				var key = t1.toString(true) + t2.toString(true);
 
 // FIXME ------
 				// already seen
-				if( typedef_sub.contains(a,b) ){
+				if( typedef_sub.has( key ) ){
 //console.debug( a+' '+b+' found.');
-					return typedef_sub.get(a,b);
+					return typedef_sub.get( key );
 				}
 				// assume the same, should fail elsewhere if wrong assuming
-				typedef_sub.set(a,b,true);
+				typedef_sub.set( key, true );
 // FIXME ------
 
 				// unfold and try again
 				var tmp = subtypeOf( unfold(t1), unfold(t2) );
-				typedef_sub.set(a,b,tmp);
+				typedef_sub.set( key, tmp );
 					
 				return tmp;
 			}
@@ -719,7 +701,6 @@ var TypeChecker = (function(AST,exports){
 		}
 
 	};
-	
 	
 	// TypeVariables must be upper cased.
 	var isTypeVariableName = function(n){
@@ -754,7 +735,6 @@ var TypeChecker = (function(AST,exports){
 		return t;
 	}
 	
-
 //
 // Protocol Conformance
 //
@@ -1683,7 +1663,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			typedefs = {};
 			typedefs_args = {};
 			// reset typedef equality table
-			typedef_sub = new Set2();
+			typedef_sub = new Map();
 		};
 
 		this.reset();
