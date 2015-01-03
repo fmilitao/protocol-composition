@@ -692,13 +692,16 @@ var TypeChecker = (function(AST,exports){
 					return true;
 				}
 
-				// different definitions
-				var a = t1.definition();
-				var b = t2.definition();	
+				// else: different definitions
+
+				// uses their string representation with indexes only (true)
+				var a = t1.toString(true); //.definition();
+				var b = t2.toString(true); //.definition();	
 
 // FIXME ------
 				// already seen
 				if( typedef_sub.contains(a,b) ){
+//console.debug( a+' '+b+' found.');
 					return typedef_sub.get(a,b);
 				}
 				// assume the same, should fail elsewhere if wrong assuming
