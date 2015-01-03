@@ -1,3 +1,13 @@
+
+/*
+// these types are invalid because they are bottom types.
+typedef X = X
+typedef A = B
+typedef B = A
+typedef X<x,y> = Y[y,x]
+typedef Y<y,x> = X[x,y]
+*/
+
 //	equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
 
 equals forall X.forall X.forall X.X == forall X.forall X.forall X.X

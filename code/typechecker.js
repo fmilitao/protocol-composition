@@ -730,27 +730,18 @@ var TypeChecker = (function(AST,exports){
 	// TYPE CHECKER
 	//
 
-	// unfolds DefinitionType until it rechaes something else
+	// unfolds DefinitionType until it reaches some useful type
+	// NOTE: we previously checked for infinitely recursive definitions
+	// therefore this function should always terminate.
 	var unfold = function(t){
-		var MAX = 100;
-		var tmp = t;
-		
-		while( MAX-- > 0 && tmp.type === types.DefinitionType ){			
-			tmp = unfoldDefinition(tmp);
+		while( t.type === types.DefinitionType ){			
+			t = unfoldDefinition(t);
 		}
-
-		if( MAX === 0 ){
-			console.debug('@unfold: MAX UNFOLD REACHED, '+t+' at '+tmp);
-			// returns whatever we got, will likely fail due to a packed
-			// definition anyway. But it's not our fault that you gave us a type
-			// that is bogus/infinitely recursive (i.e. bottom type)!
-		}
-		return tmp;
+		return t;
 	}	
 	
 	var unfoldDefinition = function(d){
-		if( d.type !== types.DefinitionType ||
-				typedef.isInRecDefs() )
+		if( d.type !== types.DefinitionType || typedef.isInRecDefs() )
 			return d;
 		var t = typedef.getDefinition(d.definition());
 		var args = d.args();
@@ -1659,13 +1650,9 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	}
 		
 	var TypeDefinition = function(){
-		var inRecDef = false;
-		var typedefs = {};
-		var typedefs_args = {};
-
-		// reset typedef equality table
-		//typedef_eq = new Table();
-		typedef_sub = new Set2();
+		var inRecDef;
+		var typedefs;
+		var typedefs_args;
 
 		// these 3 methods must be used to avoid attempts at resoving recursive
 		// definitions before they are all inserted/defined.
@@ -1695,8 +1682,11 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			inRecDef = false;
 			typedefs = {};
 			typedefs_args = {};
+			// reset typedef equality table
 			typedef_sub = new Set2();
-		}
+		};
+
+		this.reset();
 	};
 
 	var type_info;
@@ -1771,6 +1761,23 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				
 				// ok to allow unfoldings
 				typedef.endRecDefs();
+
+				//check for bottom types.
+				for(var i=0;i<ast.typedefs.length;++i){
+					var type = ast.typedefs[i];
+					var x = typedef.getDefinition(type.id);
+					var set = new Set();
+					while( x.type === types.DefinitionType ){
+						// note that we use the string-indexOnly representation of the type
+						set.add( x.toString(false) );
+						x = unfoldDefinition(x);
+						// if already seen this unfold, then type is a cycle
+						assert( !set.has( x.toString(false) )
+							|| ('Infinite typedef (i.e. bottom type): '+type.id), type );
+					}
+
+				}
+
 			}
 
 			var exps = ast.exp;

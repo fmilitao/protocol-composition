@@ -8,14 +8,33 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO:
 =====
 
-1. Shallow equals / and full equals that uses lookup table to avoid loops.
-2. Fix recursion
-3. Update subtyping, requires 'unify' function
-4. Protocol Conformance
+* Fix recursion, use 'trail' (sequential search?) instead of global table. However, current use of global table ensures shallow equality, but DOES NOT consider re-orderings.
 
-CAREFUL: a+b could be trouble due to toString not using de bruijn???
+bottom <: A
+A <: top
+ ---> rec X.X is bottom, i.e. unfolding reaches a fixed point without other path.
+ ---> type definitions must be checked for "bottom" types.
+
+
+* Update subtyping rules (and equals too). Define 'unify' function for implicit packing and type/location application.
+	unify( type,variable, target )
+		// finds a type to be used with 'variable' such that:
+		// type{RESULT/variable} == target
+		// there must be only ONE result, or it will fail.
+
+CHECKS:
+	subtype A <: exists X.X // X == A
+	subtype forall X.X <: A // X == A
+
+	subtype forall X<:B.X <: A // X == A, iff A <: B
+	subtype A <: exists X<:B.X // X == A, iff A <: B
+
+* New Protocol Conformance
 
 - define error constants/enum instead of having constants spread out through the code.
+
+STYLE:
+======
 
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
 
