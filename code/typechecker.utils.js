@@ -329,11 +329,11 @@ var TypeChecker = (function( assertF ){
 		} );
 		
 		_add( types.ExistsType, function(v){
-			return 'exists '+this.id().name()+'.'+_wrap( this.inner(), v );
+			return 'exists'+(v?'':' '+this.id().name())+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ForallType, function(v){
-			return 'forall '+this.id().name()+'.('+_wrap( this.inner(), v );
+			return 'forall'+(v?'':' '+this.id().name())+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ReferenceType, function(v){

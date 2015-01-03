@@ -3,7 +3,7 @@
 
 typedef A = int
 
-typedef X = exists A.exists B.( l#A + q#B )
+typedef X = exists A.forall B.( a#A + b#B )
 
 typedef Y<x> = boolean{int/x}
 
