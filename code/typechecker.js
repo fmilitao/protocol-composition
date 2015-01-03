@@ -429,14 +429,10 @@ var TypeChecker = (function(AST,exports){
 	//	
 
 	
-	var Set2 = function(){
+	var Set2 = function Set2(){
 
 		var visited = {};
 		var keyF = function(a,b){ return a+b; };
-		
-		this.set = function(a,b,value){
-			visited[keyF(a,b)] = value;
-		}
 
 		this.contains = function(a,b){
 			return visited.hasOwnProperty( keyF(a,b) );
@@ -1715,7 +1711,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		// stats gathering
 		var start = new Date().getTime();
 		type_info = [];
-		
+
 		try{
 			error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
 				

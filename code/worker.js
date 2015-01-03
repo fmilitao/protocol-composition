@@ -156,7 +156,7 @@ if( !isWorker ){
 var printAST = function(ast,r){
 	return "@"+(ast.line+1)+":"+ast.col+'-'
 		+(ast.last_line+1)+':'+ast.last_col+' '+ast.kind
-		+'\n\nType: '+toHTML(r)+'\n';
+		+'\n\nType: '+toHTML(r)+'\n'; //+r.toString(true)+'\n';
 }
 
 var printConformance = function(cf){

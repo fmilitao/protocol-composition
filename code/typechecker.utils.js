@@ -62,7 +62,6 @@ var TypeChecker = (function( assertF ){
 	};
 	
 	// Note: all constructors are labelled to make heap profiling easier.
-	
 
 	newType('FunctionType',
 		function FunctionType( argument, body ) {
@@ -259,119 +258,135 @@ var TypeChecker = (function( assertF ){
 	);
 	
 	
-	// append toString method to types
+	// append 'toString' method to types
+	// toString( indexesOnly ) // undefined means false
+	// if indexesOnly == true then it will only print variable's indexes, not their names.
 	(function(){
 		// defines which types get wrapping parenthesis
-		var _wrap = function(t){
+		var _wrap = function(t,v){
 			if( t.type === types.ReferenceType ||
 				t.type === types.FunctionType ||
 				t.type === types.StackedType ||
 				t.type === types.StarType || 
 				t.type === types.AlternativeType ||
 				t.type === types.SumType ){
-					return '('+t.toString()+')';
+					return '('+t.toString(v)+')';
 				}
-			return t.toString();
+			return t.toString(v);
 		};
 		var _add = function(t,fun){
 			error( !fct[t].hasOwnProperty('toString') || ("Duplicated " +k) );
 			fct[t].prototype.toString = fun;
 		};
 		
-		_add( types.FunctionType, function(){
-			return _wrap( this.argument() )+" -o "+_wrap( this.body() );
+		_add( types.FunctionType, function(v){
+			return _wrap( this.argument(), v )+" -o "+_wrap( this.body(), v );
 		} );
 		
-		_add( types.BangType, function(){
-			return "!"+_wrap( this.inner() );
+		_add( types.BangType, function(v){
+			return "!"+_wrap( this.inner(), v );
 		} );
 
-		_add( types.RelyType, function(){
-			return _wrap( this.rely() )+' => '+_wrap( this.guarantee() );
+		_add( types.RelyType, function(v){
+			return _wrap( this.rely(), v )+' => '+_wrap( this.guarantee(), v );
 		} );
 
-		_add( types.GuaranteeType, function(){
-			return _wrap( this.guarantee() )+' ; '+_wrap( this.rely() );
+		_add( types.GuaranteeType, function(v){
+			return _wrap( this.guarantee(), v )+' ; '+_wrap( this.rely(), v );
 		} );
 		
-		_add( types.SumType, function(){
+		_add( types.SumType, function(v){
 			var tags = this.tags();
 			var res = [];
 			for( var i in tags ){
-				res.push( tags[i]+'#'+_wrap( this.inner(tags[i]) ) ); 
+				res.push( tags[i]+'#'+_wrap( this.inner(tags[i]), v ) ); 
 			}	
 			return res.join('+');
 		} );
 
-		_add( types.StarType, function(){
+		_add( types.StarType, function(v){
 			var inners = this.inner();
 			var res = [];
 			for( var i=0; i<inners.length; ++i )
-				res.push( _wrap( inners[i] ) ); 
+				res.push( _wrap( inners[i], v ) ); 
 			return res.join(' * ');
 		} );
 		
-		_add( types.AlternativeType, function(){
+		_add( types.AlternativeType, function(v){
 			var inners = this.inner();
 			var res = [];
 			for( var i=0; i<inners.length; ++i )
-				res.push( _wrap( inners[i] ) ); 
+				res.push( _wrap( inners[i], v ) ); 
 			return res.join(' (+) ');
 		} );
 		
-		_add( types.IntersectionType, function(){
+		_add( types.IntersectionType, function(v){
 			var inners = this.inner();
 			var res = [];
 			for( var i=0; i<inners.length; ++i )
-				res.push( _wrap( inners[i] ) ); 
+				res.push( _wrap( inners[i], v ) ); 
 			return res.join(' & ');
 		} );
 		
-		_add( types.ExistsType, function(){
-			return 'exists '+this.id().name()+'.'+_wrap( this.inner() );
+		_add( types.ExistsType, function(v){
+			return 'exists '+this.id().name()+'.'+_wrap( this.inner(), v );
 		} );
 		
-		_add( types.ForallType, function(){
-			return 'forall '+this.id().name()+'.('+_wrap( this.inner() );
+		_add( types.ForallType, function(v){
+			return 'forall '+this.id().name()+'.('+_wrap( this.inner(), v );
 		} );
 		
-		_add( types.ReferenceType, function(){
-			return "ref "+_wrap(this.location());
+		_add( types.ReferenceType, function(v){
+			return "ref "+_wrap( this.location(), v );
 		} );
 		
-		_add( types.CapabilityType, function(){
-			return 'rw '+_wrap(this.location())+' '+_wrap( this.value() );			
+		_add( types.CapabilityType, function(v){
+			return 'rw '+_wrap( this.location(), v )+' '+_wrap( this.value(), v );
 		} );
 		
-		_add( types.StackedType, function(){
-			return _wrap( this.left() )+' :: '+_wrap( this.right() );
+		_add( types.StackedType, function(v){
+			return _wrap( this.left(), v )+' :: '+_wrap( this.right(), v );
 		} );
 		
-		_add( types.RecordType, function(){
+		_add( types.RecordType, function(v){
 			var res = [];
 			var fields = this.getFields();
 			for( var i in fields )
-				res.push(i+": "+_wrap( fields[i]) );
+				res.push(i+": "+_wrap( fields[i], v ) );
 			return "["+res.join()+"]";
 		} );
 		
-		_add( types.TupleType, function(){
-			return "["+this.getValues().join()+"]";
+		_add( types.TupleType, function(v){
+			var res = [];
+			var fields = this.getValues();
+			for( var i in fields )
+				res.push(i+": "+_wrap( fields[i], v ) );
+			return "["+res.join()+"]";
 		} );
 		
-		_add( types.DefinitionType, function(){
-			if( this.args().length > 0 )
-				return _wrap( this.definition() )+'['+ this.args().join() +']';
-			return _wrap( this.definition() );
+		_add( types.DefinitionType, function(v){
+			if( this.args().length > 0 ){
+				var args = this.args();
+				var tmp = [];
+				for( var i=0; i<args.length;++i ){
+					tmp.push( _wrap( args[i], v ) );
+				}
+				return _wrap( this.definition(), v )+'['+ tmp.join() +']';
+			}
+			return _wrap( this.definition(), v );
 		} );
 		
-		var tmp = function(){ return this.name()+'^'+this.index(); };
+		var tmp = function(v){
+			if( !v )
+				return this.name()+'^'+this.index(); 
+			return this.index();
+		};
 		_add( types.LocationVariable, tmp );
 		_add( types.TypeVariable, tmp );
-		_add( types.PrimitiveType, function(){ return this.name(); } );
+		_add( types.PrimitiveType, function(v){ return this.name(); } );
 		
-		_add( types.NoneType, function(){ return 'none'; });
-		_add( types.TopType, function(){ return 'top'; });
+		_add( types.NoneType, function(v){ return 'none'; });
+		_add( types.TopType, function(v){ return 'top'; });
 		
 	})();
 
