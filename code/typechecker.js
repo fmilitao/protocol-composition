@@ -434,52 +434,53 @@ var TypeChecker = (function(AST,exports){
 	 * @param {Type} t2
 	 * @return {Boolean} true if t1 <: t2 (if t1 can be used as t2).
 	 */
-	var subtypeOf = function( t1 , t2 ){	
+	 var subtypeOf = function( t1, t2 ){
+	 	return subtypeAux( t1, t2, new Set() );
+	 }
+
+	var subtypeAux = function( t1 , t2, trail ){
+
 		if( t1 === t2 || equals(t1,t2) ) // A <: A
 			return true;
 		
 		// if mismatch on DefinitionType
 		var def1 = t1.type === types.DefinitionType;
 		var def2 = t2.type === types.DefinitionType;
-// FIXME ------
-		if( def1 ^ def2 ){
-			if( def1 ){
-				t1 = unfold(t1);
-				// if unfolding worked
-				if( t1.type !== types.DefinitionType ){
-					return subtypeOf( t1, t2 );
-				}
-			}
-			if( def2 ){
-				t2 = unfold(t2);
-				// if unfolding worked
-				if( t2.type !== types.DefinitionType ){
-					return subtypeOf( t1, t2 );
-				}
-			}
+
+		if( def1 || def2 ){
+			var key = t1.toString(true) + t2.toString(true);
+
+			// algorithm based on "Subtyping Recursive Types".
+			if( trail.has(key) )
+				return true;
+
+			trail.add(key);
+			t1 = def1 ? unfold(t1) : t1;
+			t2 = def2 ? unfold(t2) : t2;
+			
+			return subtypeAux( t1, t2, trail );
 		}
-// FIXME ------
 
 		// "pure to linear" - ( t1: !A ) <: ( t2: A )
 		if ( t1.type === types.BangType && t2.type !== types.BangType )
-			return subtypeOf( t1.inner(), t2 );
+			return subtypeAux( t1.inner(), t2, trail );
 	
 		// types that can be "banged"
 		if ( t2.type === types.BangType &&
 			( t1.type === types.ReferenceType
 			|| t1.type === types.PrimitiveType
 			|| ( t1.type === types.RecordType && t1.isEmpty() ) ) )
-			return subtypeOf( t1, t2.inner() );
+			return subtypeAux( t1, t2.inner(), trail );
 			
 		// "ref" t1: (ref p) <: !(ref p)
 		if ( t1.type === types.ReferenceType && t2.type === types.BangType )
-			return subtypeOf( t1, t2.inner() );
+			return subtypeAux( t1, t2.inner(), trail );
 		
 		if( t1.type !== types.AlternativeType && t2.type === types.AlternativeType ){
 			// only requirement is that t1 is one of t2's alternative
 			var i2s = t2.inner();
 			for(var j=0;j<i2s.length;++j) {
-				if( subtypeOf(t1,i2s[j]) ){
+				if( subtypeAux( t1, i2s[j], trail ) ){
 					return true;
 				}
 			}
@@ -490,7 +491,7 @@ var TypeChecker = (function(AST,exports){
 			// one of t1s alts is t2
 			var i1s = t1.inner();
 			for(var j=0;j<i1s.length;++j) {
-				if( subtypeOf(i1s[j],t2) ){
+				if( subtypeAux( i1s[j], t2, trail ) ){
 					return true;
 				}
 			}
@@ -512,20 +513,20 @@ var TypeChecker = (function(AST,exports){
 				// if t2 is unit: "top" rule
 				if( t2.inner().type === types.RecordType && t2.inner().isEmpty() )
 					return true;
-				return subtypeOf( t1.inner(), t2.inner() );
+				return subtypeAux( t1.inner(), t2.inner(), trail );
 			case types.ReferenceType:
-				return subtypeOf( t1.location(), t2.location() );
+				return subtypeAux( t1.location(), t2.location(), trail );
 			case types.RelyType: {
-				return subtypeOf( t1.rely(), t2.rely() ) &&
-					subtypeOf( t1.guarantee(), t2.guarantee() );
+				return subtypeAux( t1.rely(), t2.rely(), trail ) &&
+					subtypeAux( t1.guarantee(), t2.guarantee(), trail );
 			}
 			case types.GuaranteeType: {
-				return subtypeOf( t1.guarantee(), t2.guarantee() ) &&
-					subtypeOf( t1.rely(), t2.rely() );
+				return subtypeAux( t1.guarantee(), t2.guarantee(), trail ) &&
+					subtypeAux( t1.rely(), t2.rely(), trail );
 			}
 			case types.FunctionType:
-				return subtypeOf( t2.argument(), t1.argument() )
-					&& subtypeOf( t1.body(), t2.body() );
+				return subtypeAux( t2.argument(), t1.argument(), trail )
+					&& subtypeAux( t1.body(), t2.body(), trail );
 			case types.RecordType:{
 				if( !t1.isEmpty() && t2.isEmpty() )
 					return false;
@@ -535,7 +536,7 @@ var TypeChecker = (function(AST,exports){
 				var t2fields = t2.getFields();				
 				for( var i in t2fields ){
 					if( !t1fields.hasOwnProperty(i) ||
-						!subtypeOf( t1fields[i], t2fields[i] ) ){
+						!subtypeAux( t1fields[i], t2fields[i], trail ) ){
 						return false;
 					}
 				}
@@ -547,13 +548,15 @@ var TypeChecker = (function(AST,exports){
 				if( t1s.length !== t2s.length )
 					return false;
 				for( var i=0;i<t1s.length;++i )
-					if( !subtypeOf( t1s[i], t2s[i] ) )
+					if( !subtypeAux( t1s[i], t2s[i], trail ) )
 						return false;
 				return true;
 			}
+
 			case types.StackedType:
-				return subtypeOf( t1.left(), t2.left() ) &&
-					subtypeOf( t1.right(), t2.right() );
+				return subtypeAux( t1.left(), t2.left(), trail ) &&
+					subtypeAux( t1.right(), t2.right(), trail );
+
 			case types.AlternativeType:{
 				var i1s = t1.inner();
 				var i2s = t2.inner();
@@ -569,7 +572,7 @@ var TypeChecker = (function(AST,exports){
 					var found = false;
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( subtypeOf(curr,tmp) ){
+						if( subtypeAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -597,7 +600,7 @@ var TypeChecker = (function(AST,exports){
 					var found = false;
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( subtypeOf(curr,tmp) ){
+						if( subtypeAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -621,7 +624,7 @@ var TypeChecker = (function(AST,exports){
 					var found = false;
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( subtypeOf(curr,tmp) ){
+						if( subtypeAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -638,14 +641,14 @@ var TypeChecker = (function(AST,exports){
 				for( var i in i1s ){
 					var j = t2.inner(i1s[i]);
 					if( j === undefined || // if tag is missing, or
-						!subtypeOf( t1.inner(i1s[i]), j ) )
+						!subtypeAux( t1.inner(i1s[i]), j, trail ) )
 						return false;
 				}
 				return true;
 			}
 			case types.CapabilityType:
-				return subtypeOf( t1.location(), t2.location() ) &&
-					subtypeOf( t1.value(), t2.value() );
+				return subtypeAux( t1.location(), t2.location(), trail ) &&
+					subtypeAux( t1.value(), t2.value(), trail );
 				
 			case types.ForallType:		
 			case types.ExistsType:{
@@ -653,49 +656,13 @@ var TypeChecker = (function(AST,exports){
 				if( t1.id().type !== t2.id().type )
 					return false;
 
-				return subtypeOf( t1.inner(), t2.inner() );
+				return subtypeAux( t1.inner(), t2.inner(), trail );
 			}
 
 			case types.TypeVariable:
-			case types.LocationVariable: {
-				return t1.index() === t2.index();					
-			}
+			case types.LocationVariable:
+				return t1.index() === t2.index();
 
-			case types.DefinitionType:{
-				if( t1.definition() === t2.definition() ){
-					var t1s = t1.args();
-					var t2s = t2.args();
-					if( t1s.length !== t2s.length )
-						return false;
-					for( var i=0;i<t1s.length;++i )
-						if( !subtypeOf( t1s[i], t2s[i] ) )
-							return false;
-					return true;
-				}
-
-				// else: different definitions
-
-				// uses the type's string representation (with indexes only) as key
-				// the string representation ensures as 'shallow' equality, but will
-				// (unfortunately) ignore types that are equal due to commutativity.
-				var key = t1.toString(true) + t2.toString(true);
-
-// FIXME ------
-				// already seen
-				if( typedef_sub.has( key ) ){
-//console.debug( a+' '+b+' found.');
-					return typedef_sub.get( key );
-				}
-				// assume the same, should fail elsewhere if wrong assuming
-				typedef_sub.set( key, true );
-// FIXME ------
-
-				// unfold and try again
-				var tmp = subtypeOf( unfold(t1), unfold(t2) );
-				typedef_sub.set( key, tmp );
-					
-				return tmp;
-			}
 			default:
 				error( "@subtype: Not expecting " +t1.type );
 		}
@@ -1638,7 +1605,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		// definitions before they are all inserted/defined.
 		this.beginRecDefs = function(){ inRecDef = true; };
 		this.endRecDefs = function(){ inRecDef = false; };
-		this.isInRecDefs = function(){ return inRecDef; };
+		this.isInRecDefs = function(){ return inRecDef; }; //FIXME is this still necessary?
 		
 		this.addType = function(name,array){
 			if( typedefs_args.hasOwnProperty(name) )
