@@ -90,7 +90,7 @@ var TypeChecker = (function(AST,exports){
 			case types.ExistsType:
 			case types.ForallType:
 				// calls appropriate constructor function
-				return new t.constructor( t.id(), shift1( t.inner(), c+1 ) );
+				return new t.constructor( t.id(), shift1( t.inner(), c+1 ), t.bound() );
 
 			case types.ReferenceType:
 				return new ReferenceType( shift1( t.location(), c ) );
@@ -179,7 +179,8 @@ var TypeChecker = (function(AST,exports){
 				if( t1.id().type !== t2.id().type )
 					return false;
 
-				return equalsAux( t1.inner(), t2.inner(), trail );
+				return equalsAux( t1.bound(), t2.bound(), trail ) &&
+					equalsAux( t1.inner(), t2.inner(), trail );
 			}
 			case types.TypeVariable:
 			case types.LocationVariable: {
@@ -339,9 +340,10 @@ var TypeChecker = (function(AST,exports){
 
 			var nvar = t.id();
 			var ninner = t.inner();
+			var nbound = t.bound();
 
 			// to avoid having to switch again, we just use 't' constructor function
-			return new t.constructor( nvar, substitutionAux(ninner,_from,_to) );
+			return new t.constructor( nvar, substitutionAux(ninner,_from,_to), nbound );
 		}
 		case types.ReferenceType:
 			return new ReferenceType( rec(t.location()) );
@@ -628,7 +630,8 @@ var TypeChecker = (function(AST,exports){
 				if( t1.id().type !== t2.id().type )
 					return false;
 
-				return subtypeAux( t1.inner(), t2.inner(), trail );
+				return equals( t1.bound(), t2.bound() ) &&
+					subtypeAux( t1.inner(), t2.inner(), trail );
 			}
 
 			case types.TypeVariable:
@@ -1448,7 +1451,10 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				
 				e.setType( id, variable );
 
-				return new ExistsType( variable, check( ast.type, e ) );
+				var bound = !ast.bound ? TopType : check( ast.bound, e );
+				var type = check( ast.exp, e );
+
+				return new ExistsType( variable, type, bound );
 			};
 			
 			case AST.FORALL:
@@ -1465,7 +1471,10 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				e.setType( id, variable );
 
-				return new ForallType( variable, check( ast.exp, e ) );
+				var bound = !ast.bound ? TopType : check( ast.bound, e );
+				var type = check( ast.exp, e );
+
+				return new ForallType( variable, type, bound );
 			};
 						
 			case AST.NONE_TYPE:

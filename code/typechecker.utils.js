@@ -124,16 +124,18 @@ var TypeChecker = (function( assertF ){
 	);
 	
 	newType('ForallType',
-		function ForallType( id, inner ) {
+		function ForallType( id, inner, bound ) {
 			this.id = function(){ return id; }
 			this.inner = function(){ return inner; }
+			this.bound = function(){ return bound; }
 		}
 	);
 	
 	newType('ExistsType',
-		function ExistsType( id, inner ) {
+		function ExistsType( id, inner, bound ) {
 			this.id = function(){ return id; }
 			this.inner = function(){ return inner; }
+			this.bound = function(){ return bound; }
 		}
 	);
 	
@@ -315,11 +317,11 @@ var TypeChecker = (function( assertF ){
 		} );
 		
 		_add( types.ExistsType, function(v){
-			return 'exists'+(v?'':' '+this.id().name())+'.'+_wrap( this.inner(), v );
+			return 'exists'+(v?'':' '+this.id().name())+'<:'+_wrap( this.bound(), v )+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ForallType, function(v){
-			return 'forall'+(v?'':' '+this.id().name())+'.'+_wrap( this.inner(), v );
+			return 'forall'+(v?'':' '+this.id().name())+'<:'+_wrap( this.bound(), v )+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ReferenceType, function(v){

@@ -8,6 +8,19 @@ typedef X<x,y> = Y[y,x]
 typedef Y<y,x> = X[x,y]
 */
 
-//	equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
-
+equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
 equals forall X.forall X.forall X.X == forall X.forall X.forall X.X
+equals exists X.X == exists Y<:top.Y
+equals forall X.X == forall Z<:top.Z
+
+not equals exists X.X == exists Y<:int.Y
+
+<Z> equals exists X<:Z.X == exists Y<:Z.Y
+
+<Z><W> not equals exists X<:W.X == exists Y<:Z.Y
+
+subtype exists X.X <: exists Y.Y
+subtype exists X<:top.X <: exists Z.Z // implicit top
+subtype exists X<:int.X <: exists W<:int.W
+
+not subtype exists X<:boolean.X <: exists P.P

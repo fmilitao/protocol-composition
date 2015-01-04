@@ -212,7 +212,7 @@ var AST = new function(){
 	}
 	// types
 	this.makeExistsType = function(id,type,bound, info){
-		return aux( this.kinds.EXISTS_TYPE, {id: id, bound: bound, type: type}, info);
+		return aux( this.kinds.EXISTS_TYPE, {id: id, bound: bound, exp: type}, info);
 	}
 	this.makeForallType = function(id,type,bound, info){
 		return aux( this.kinds.FORALL_TYPE, {id: id, bound: bound, exp: type}, info);
