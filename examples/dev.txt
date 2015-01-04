@@ -28,3 +28,5 @@ subtype exists X<:int.X <: exists W<:int.W
 //subtype exists X<:int.X <: exists W<:W.W
 
 not subtype exists X<:boolean.X <: exists P.P
+not subtype exists X<:!int.X <: exists W<:int.W
+not subtype exists X<:int.X <: exists W<:!int.W

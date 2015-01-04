@@ -78,7 +78,6 @@ var receiver = new function(){
 	// to the other listener functions through this var.
 	var ast = null;
 	var typeinfo = null;
-	var autorun = true;
 	
 	var handleError = function(e){
 		if( e.stack )
@@ -110,22 +109,6 @@ var receiver = new function(){
 			send('setStatus','Error!');
 			handleError(e);
 		}
-	};
-	
-	this.AUTO = function(auto){
-//FIXME: this should be removed
-/*
-		try{
-			autorun = auto;
-			if( autorun && ast !== null ){
-				send('println', "<b>FORCED RUN - Result:</b> "+
-					interpreter( ast,
-						function(msg){ send('println',msg.toString()) } ) );
-			}
-		}catch(e){
-			handleError(e);
-		}
-*/
 	};
 	
 	this.CHECKER = function(pos){

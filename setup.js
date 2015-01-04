@@ -57,12 +57,10 @@ const EDITOR = "editor";
 const OUTPUT = "output";
 const STATUS_BAR = "statusbar";
 const EXAMPLES = "examples";
-const AUTORUN = "autorun";
 const TYPING = 'typing';
 const TYPEINFO = 'typeinfo';
 // convenient constants to use with jQuery
 const _OUTPUT_ = "#"+OUTPUT;
-const _AUTORUN_ = "#"+AUTORUN;
 const _EXAMPLES_ = "#"+EXAMPLES;
 const _CURSOR_ = "#cursor-position";
 const _TYPEINFO_ = '#'+TYPEINFO;
@@ -285,21 +283,6 @@ $(document).ready(function() {
     	ctr.prepend("<div class='action'>"+label+"<button class='exbuttong' id="+id+
     		" title="+title+"><b>"+text+"</b></button></div>");
     };
-
-	(function(){ // Auto-Run button
-		actionButton("Autorun: ","autorun",
-			"Autorun may crash tab/browser if your code does not terminate.",
-			"ON");
-
-		var autorun = true;
-		var button = $(_AUTORUN_);
-		button.click( function(event){
-			autorun = !autorun;
-			button.html( autorun ? "<b>ON</b>" : "OFF");
-			comm.autorun(autorun);
-			editor.focus();
-		} );
-	})();
 
 	var typeinfo = true;
 	(function(){ // Typing-information panel.
@@ -629,10 +612,6 @@ $(document).ready(function() {
 
 		this.checker = function(p){
 			this.send('CHECKER', p);
-		};
-
-		this.autorun = function(v){
-			this.send('AUTO', v);
 		};
 
 		this.reset = function(){
