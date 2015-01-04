@@ -21,6 +21,10 @@ not equals exists X.X == exists Y<:int.Y
 
 subtype exists X.X <: exists Y.Y
 subtype exists X<:top.X <: exists Z.Z // implicit top
+
 subtype exists X<:int.X <: exists W<:int.W
+
+// this should fail at the type checking level
+//subtype exists X<:int.X <: exists W<:W.W
 
 not subtype exists X<:boolean.X <: exists P.P

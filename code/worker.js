@@ -159,8 +159,8 @@ if( !isWorker ){
 var printAST = function(ast,r){
 	return "@"+(ast.line+1)+":"+ast.col+'-'
 		+(ast.last_line+1)+':'+ast.last_col+' '+ast.kind
-		+( r!==undefined ? '\n\nType: '+toHTML(r) : '')
-		+'\n'; //+r.toString(true)+'\n';
+		+( r!==undefined ? '\n\nType: '+toHTML(r)+'\n Str: '+r.toString(true) : '')
+		+'\n';
 }
 
 var printConformance = function(cf){
@@ -425,24 +425,20 @@ var toHTML = function (t){
 				res.push( wq( _toHTML( inners[i] ) ) ); 
 			return wq( res.join( wQ(' &#8853; ') ) );
 		}
-		case types.RecursiveType:
-			return '<b>rec</b> '+
-			( t.id().type === types.LocationVariable ?
-				'<span class="type_location">' :
-				'<span class="type_variable">')
-			+t.id().name()+'</span>.'+_toHTML(t.inner());
 		case types.ExistsType:
 			return '&#8707;'+
 			( t.id().type === types.LocationVariable ?
 				'<span class="type_location">' :
 				'<span class="type_variable">')
-			+t.id().name()+'</span>.'+_toHTML(t.inner());
+			+t.id().name()+'</span><:'+_toHTML(t.bound())+'.'
+			+_toHTML(t.inner());
 		case types.ForallType:
 			return '&#8704;'+
 			( t.id().type === types.LocationVariable ?
 				'<span class="type_location">' :
 				'<span class="type_variable">')
-			+t.id().name()+'</span>.'+_toHTML(t.inner());
+			+t.id().name()+'</span><:'+_toHTML(t.bound())+'.'
+			+_toHTML(t.inner());
 		case types.ReferenceType:
 			return "<b>ref</b> "+toHTML(t.location());
 			//'<span class="type_location">'+t.location().name()+'</span>';
@@ -475,7 +471,9 @@ var toHTML = function (t){
 			return '<b>'+t.name()+'</b>';
 		case types.NoneType:
 			return '<b>none</b>';
-		
+		case types.TopType:
+			return '<b>top</b>';
+
 		case types.DefinitionType:{
 			var t_def = '<span class="type_definition">'+t.definition()+'</span>';
 			if( t.args().length === 0 )

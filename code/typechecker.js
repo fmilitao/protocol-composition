@@ -1451,7 +1451,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				
 				e.setType( id, variable );
 
-				var bound = !ast.bound ? TopType : check( ast.bound, e );
+				var bound = !ast.bound ? TopType : check( ast.bound, env );
 				var type = check( ast.exp, e );
 
 				return new ExistsType( variable, type, bound );
@@ -1471,7 +1471,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				e.setType( id, variable );
 
-				var bound = !ast.bound ? TopType : check( ast.bound, e );
+				var bound = !ast.bound ? TopType : check( ast.bound, env );
 				var type = check( ast.exp, e );
 
 				return new ForallType( variable, type, bound );
