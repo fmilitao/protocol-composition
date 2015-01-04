@@ -408,7 +408,7 @@ var TypeChecker = (function(AST,exports){
 	 * @param {Type} t2
 	 * @return {Boolean} true if t1 <: t2 (if t1 can be used as t2).
 	 */
-	 var subtypeOf = function( t1, t2 ){
+	 var subtype = function( t1, t2 ){
 	 	return subtypeAux( t1, t2, new Set() );
 	 }
 
@@ -822,7 +822,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 		assert( p.type === types.RelyType ||
 			('Expecting RelyType, got: '+p.type+'\n'+pp), ast);
 		
-		assert( subtypeOf( s, p.rely() ) ||
+		assert( subtype( s, p.rely() ) ||
 			('Invalid Step: '+s+' VS '+p.rely()), ast );
 		
 		var next = p.guarantee();
@@ -830,7 +830,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 			('Expecting GuaranteeType, got: '+next.type), ast);
 
 		var g = next.guarantee();
-		assert( subtypeOf( g, m ) || ('Incompatible: '+g+' vs '+m), ast );
+		assert( subtype( g, m ) || ('Incompatible: '+g+' vs '+m), ast );
 	
 		return next.rely();
 	}
@@ -975,7 +975,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 			('Expecting RelyType, got: '+p.type+'\n'+p), ast);
 
 		// ensure A <: B where state is A and protocol B => C		
-		assert( subtypeOf( s, p.rely() ) ||
+		assert( subtype( s, p.rely() ) ||
 			('Invalid Step: '+s+' VS '+p.rely()), ast );
 		
 		var next = p.guarantee();
@@ -1045,7 +1045,7 @@ var checkProtocolConformance = function( s, a, b, ast ){
 		assert( p.type === types.RelyType ||
 			('Expecting RelyType, got: '+p.type+'\n'+p), ast);
 		
-		assert( subtypeOf( s, p.rely() ) ||
+		assert( subtype( s, p.rely() ) ||
 			('Expecting: '+p.rely()+' got: '+s), ast );
 		
 		var next = p.guarantee();
@@ -1069,7 +1069,7 @@ var Visited = function(){
 		for( var i=0; i<visited.length; ++i ){
 			var tmp = visited[i];
 // does using subtyping make sense anywhere else?
-			if( subtypeOf(s,tmp[0]) &&
+			if( subtype(s,tmp[0]) &&
 					equals(p,tmp[1]) && 
 					equals(a,tmp[2]) &&
 // intentional: even when b/tmp[3] are left undefined, this is still true.
@@ -1088,10 +1088,10 @@ var Visited = function(){
 		
 		for( var i=0; i<visited.length; ++i ){
 			var tmp = visited[i];
-			if( subtypeOf(s,tmp[0]) &&
-					subtypeOf(p,tmp[1]) && 
-					subtypeOf(a,tmp[2]) &&
-					subtypeOf(b,tmp[3]) )
+			if( subtype(s,tmp[0]) &&
+					subtype(p,tmp[1]) && 
+					subtype(a,tmp[2]) &&
+					subtype(b,tmp[3]) )
 				return true;
 		}
 		
@@ -1243,7 +1243,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			return function( ast, env ){
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
-				var s = subtypeOf(left,right);
+				var s = subtype(left,right);
 				assert( s==ast.value || ('Unexpected Result, got '+s+' expecting '+ast.value), ast );
 				return left;
 			};
@@ -1529,7 +1529,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var c = autoStack ( null, cap, env, ast.type );
 				// make sure that the capabilities that were extracted from 
 				// the typing environment can be used as the written cap.
-				assert( subtypeOf( c , cap ) ||
+				assert( subtype( c , cap ) ||
 					('Incompatible capability "'+c+'" vs "'+cap+'"'), ast.type );
 				return new StackedType( exp, cap );
 			};
@@ -1619,7 +1619,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	var typedef = new TypeDefinition();
 
 	// exporting these functions to facilitate testing.	
-	exports.subtypeOf = subtypeOf;
+	exports.subtype = subtype;
 	exports.equals = equals;
 	exports.typedef = typedef;
 	exports.checkProtocolConformance = checkProtocolConformance;

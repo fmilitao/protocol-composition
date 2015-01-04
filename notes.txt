@@ -8,11 +8,12 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO:
 =====
 
-* Update subtyping rules (and equals too). Define 'unify' function for implicit packing and type/location application.
+* Update subtyping rules. Define 'unify' function for implicit packing and type/location application.
 	unify( type,variable, target )
 		// finds a type to be used with 'variable' such that:
 		// type{RESULT/variable} == target
 		// there must be only ONE result, or it will fail.
+	// can only unify *variables.
 
 CHECKS:
 	subtype A <: exists X.X // X == A
