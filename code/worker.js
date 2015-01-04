@@ -91,6 +91,7 @@ var receiver = new function(){
 			ast = null;
 			typeinfo = {};
 			send('clearAll',null);
+			send('setStatus','Type checking...');
 	
 			ast = parser( data );
 
@@ -103,8 +104,10 @@ var receiver = new function(){
 			}
 			
 			// no errors!
+			send('setStatus','Checked in: '+typeinfo.diff+' ms');
 			send('updateAnnotations', null);
 		}catch(e){
+			send('setStatus','Error!');
 			handleError(e);
 		}
 	};
@@ -156,7 +159,8 @@ if( !isWorker ){
 var printAST = function(ast,r){
 	return "@"+(ast.line+1)+":"+ast.col+'-'
 		+(ast.last_line+1)+':'+ast.last_col+' '+ast.kind
-		+'\n\nType: '+toHTML(r)+'\n'; //+r.toString(true)+'\n';
+		+( r!==undefined ? '\n\nType: '+toHTML(r) : '')
+		+'\n'; //+r.toString(true)+'\n';
 }
 
 var printConformance = function(cf){
@@ -493,6 +497,3 @@ var toHTML = function (t){
 			return null;
 		}
 };
-
-
-

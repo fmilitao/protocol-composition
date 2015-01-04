@@ -562,7 +562,11 @@ $(document).ready(function() {
 	            session.removeMarker( marker );
 	            marker = null;
 	        }
-        }
+        },
+
+        setStatus : function(txt){
+    		$('#status').text(txt);
+    	}
 	};
 
 	var marker = null;
@@ -665,10 +669,4 @@ $(document).ready(function() {
     // editor apparently automatically gets focused, even without this.
     editor.focus();
 
-
-    var setStatus = function(txt){
-    	$('#status').text(txt);
-    };
-
-    setStatus('Ready.'); //FIXME status is never used??
 });
