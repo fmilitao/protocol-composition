@@ -458,7 +458,7 @@ var toHTML = function (t){
 		}
 		case types.TupleType: {
 			var res = [];
-			var values = t.getValues();
+			var values = t.inner();
 			for( var i in values )
 				res.push( toHTML(values[i]) );
 			return "["+res.join(', ')+"]";
