@@ -77,7 +77,8 @@ var TypeChecker = (function(AST,exports){
 
 			case types.AlternativeType:
 			case types.IntersectionType:
-			case types.StarType: {
+			case types.StarType: 
+			case types.TupleType: {
 				var star = new t.constructor();
 				var inners = t.inner();
 				for( var i=0;i<inners.length;++i ){
@@ -105,14 +106,6 @@ var TypeChecker = (function(AST,exports){
 				var fs = t.getFields();
 				for( var i in fs )
 					r.add( i, shift1( fs[i], c ) );
-				return r;
-			}
-
-			case types.TupleType: {
-				var r = new TupleType();
-				var fs = t.getValues();
-				for( var i in fs )
-					r.add( shift1( fs[i], c ) );
 				return r;
 			}
 
@@ -238,8 +231,8 @@ var TypeChecker = (function(AST,exports){
 				return true;
 			} 
 			case types.TupleType: {
-				var t1s = t1.getValues();
-				var t2s = t2.getValues();
+				var t1s = t1.inner();
+				var t2s = t2.inner();
 				if( t1s.length !== t2s.length )
 					return false;
 				for( var i=0;i<t1s.length;++i )
@@ -328,7 +321,8 @@ var TypeChecker = (function(AST,exports){
 		
 		case types.AlternativeType:
 		case types.IntersectionType:
-		case types.StarType: {
+		case types.StarType:
+		case types.TupleType: {
 			var star = new t.constructor();
 			var inners = t.inner();
 			for( var i=0;i<inners.length;++i ){
@@ -336,7 +330,7 @@ var TypeChecker = (function(AST,exports){
 			}	
 			return star;
 		}
-		
+
 		case types.ExistsType: 
 		case types.ForallType: {
 			// updates the indexes (see Types and Programming Languages, Chapter 6)
@@ -360,13 +354,6 @@ var TypeChecker = (function(AST,exports){
 			var fs = t.getFields();
 			for( var i in fs )
 				r.add( i, rec(fs[i]) );
-			return r;
-		}
-		case types.TupleType: {
-			var r = new TupleType();
-			var fs = t.getValues();
-			for( var i in fs )
-				r.add( rec(fs[i]) );
 			return r;
 		}
 		case types.DefinitionType: {
@@ -528,8 +515,8 @@ var TypeChecker = (function(AST,exports){
 				return true;
 			}
 			case types.TupleType: {
-				var t1s = t1.getValues();
-				var t2s = t2.getValues();
+				var t1s = t1.inner();
+				var t2s = t2.inner();
 				if( t1s.length !== t2s.length )
 					return false;
 				for( var i=0;i<t1s.length;++i )

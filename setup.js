@@ -670,5 +670,5 @@ $(document).ready(function() {
     	$('#status').text(txt);
     };
 
-    setStatus('Ready.');
+    setStatus('Ready.'); //FIXME status is never used??
 });

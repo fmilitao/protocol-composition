@@ -90,36 +90,36 @@ var TypeChecker = (function( assertF ){
 		}
 	);
 
+	var _Init = function( obj ){
+		var v = [];
+		obj.add = function( inner ){
+			v.push(inner);
+			return true;
+		}
+		obj.inner = function(){ return v; }
+	}
+
 	newType('StarType',
 		function StarType() {
-			var types = [];
-			this.add = function( inner ){
-				types.push(inner);
-				return true;
-			}
-			this.inner = function(){ return types; }
+			_Init( this );
 		}
 	);
 	
 	newType('AlternativeType',
 		function AlternativeType() {
-			var alts = [];
-			this.add = function( inner ){
-				alts.push(inner);
-				return true;
-			}
-			this.inner = function(){ return alts; }
+			_Init( this );
 		}
 	);
 	
 	newType('IntersectionType',
 		function IntersectionType() {
-			var alts = [];
-			this.add = function( inner ){
-				alts.push(inner);
-				return true;
-			}
-			this.inner = function(){ return alts; }
+			_Init( this );
+		}
+	);
+
+	newType('TupleType',
+		function TupleType(){
+			_Init( this );
 		}
 	);
 	
@@ -175,19 +175,6 @@ var TypeChecker = (function( assertF ){
 		}
 	);
 
-	newType('TupleType',
-		function TupleType(){
-			var values = [];
-			this.add = function(type) {
-				values.push(type);
-				return true;
-			}
-			this.getValues = function(){
-				return values;
-			}
-		}
-	);
-
 	newType('ReferenceType',
 		function ReferenceType( location ){
 			this.location = function(){ return location; }
@@ -208,25 +195,24 @@ var TypeChecker = (function( assertF ){
 		}
 	);
 	
+	var _Variable = function( obj, name, index ){
+		var n = name;
+		var i = index === undefined ? null : index;
+		
+		obj.index = function(){ return i; }
+		obj.name = function(){ return n; }
+		obj.copy = function(j){ return new obj.constructor(name,j); }
+	};
+
 	newType('LocationVariable',
 		function LocationVariable( name, index ){
-			var n = name;
-			var i = index === undefined ? null : index;
-			
-			this.index = function(){ return i; }
-			this.name = function(){ return n; }
-			this.copy = function(j){ return new LocationVariable(name,j); }
+			_Variable( this, name, index );
 		}
 	);
 	
 	newType('TypeVariable',
 		function TypeVariable( name, index ){
-			var n = name;
-			var i = index === undefined ? null : index;
-			
-			this.index = function(){ return i; }
-			this.name = function(){ return n; }
-			this.copy = function(j){ return new TypeVariable(name,j); }
+			_Variable( this, name, index );
 		}
 	);
 	
@@ -358,9 +344,9 @@ var TypeChecker = (function( assertF ){
 		
 		_add( types.TupleType, function(v){
 			var res = [];
-			var fields = this.getValues();
+			var fields = this.inner();
 			for( var i in fields )
-				res.push(i+": "+_wrap( fields[i], v ) );
+				res.push( _wrap( fields[i], v ) );
 			return "["+res.join()+"]";
 		} );
 		
@@ -468,17 +454,10 @@ var TypeChecker = (function( assertF ){
 					return false;
 			return true;
 		});
+		//reuse def.
 		_add( types.IntersectionType, _visitor[types.AlternativeType] );
-		_add( types.StarType, _visitor[types.AlternativeType] ); //reuse def.
-		
-		_add( types.TupleType, function(t,loc){
-			var vs = t.getValues();
-			for( var i in vs ){
-				if( !isFree(vs[i],loc) )
-					return false;
-			}
-			return true;
-		});
+		_add( types.StarType, _visitor[types.AlternativeType] );
+		_add( types.TupleType, _visitor[types.AlternativeType] );
 		
 		_add( types.TypeVariable, function(t,loc){
 			return t.name() !== loc.name();
