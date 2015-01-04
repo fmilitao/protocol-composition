@@ -8,16 +8,6 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO:
 =====
 
-* Fix recursion, use 'trail' (sequential search?) instead of global table. However, current use of global table ensures shallow equality, but DOES NOT consider re-orderings.
-
-bottom <: A
-A <: top
- ---> rec X.X is bottom, i.e. unfolding reaches a fixed point without other path.
- ---> type definitions must be checked for "bottom" types.
-
-
--------
-
 * Update subtyping rules (and equals too). Define 'unify' function for implicit packing and type/location application.
 	unify( type,variable, target )
 		// finds a type to be used with 'variable' such that:

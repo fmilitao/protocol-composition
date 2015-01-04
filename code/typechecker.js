@@ -1614,16 +1614,12 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			inRecDef = false;
 			typedefs = {};
 			typedefs_args = {};
-			// reset typedef equality table
-			typedef_sub = new Map();
 		};
 
 		this.reset();
 	};
 
 	var type_info;
-	//var typedef_eq = new Table();
-	var typedef_sub; // subtyping cache
 	var typedef = new TypeDefinition();
 
 	// exporting these functions to facilitate testing.	

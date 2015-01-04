@@ -78,7 +78,7 @@ var TypeChecker = (function( assertF ){
 	
 	newType('SumType',
 		function SumType() {
-			var tags = {};
+			var tags = {}; // FIXME switch do using Map instead
 			this.add = function( tag, inner ){
 				if ( tags.hasOwnProperty(tag) )
 					return undefined; // already exists!

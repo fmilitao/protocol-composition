@@ -121,11 +121,14 @@ $(document).ready(function() {
 		output.style.top = (h-console_height-controls_height)+"px";
 
 		var typing = document.getElementById(TYPING);
-		typing.style.top = 0+"px";
-		typing.style.left = 0+"px";
+		typing.style.top = bar+"px";
+		typing.style.left = (w/2)+"px";
 		typing.style.maxHeight = h+"px";
-		typing.style.maxWidth = split+"px";
-		TYPE_INFO_WIDTHS = { max : split , limit : w };
+		typing.style.maxWidth = (w/2)+"px";
+		typing.style.opacity = 0.8;
+		TYPE_INFO_WIDTHS = { maxWidth : w, defaultWidth : w/2,
+				minLeft : 0, defaultLeft : (w/2),
+				maxOpacity : 1, defaultOpacity : 0.8 };
 
 	}
 
@@ -332,17 +335,27 @@ $(document).ready(function() {
 		panel.hover(function() {
 	        window.clearTimeout(t);
 	        t = window.setTimeout(function () {
-	            panel.animate({"max-width": TYPE_INFO_WIDTHS.limit }, 'fast');
+	            //panel.animate({"max-width": TYPE_INFO_WIDTHS.limit }, 'fast');
 	            //panel.css('max-width',TYPE_INFO_WIDTHS.limit);
 	            //panel.removeClass('typing_style');
 	            //panel.addClass('typing_show');
+				panel.animate({
+					"left": TYPE_INFO_WIDTHS.minLeft,
+					"max-width" : TYPE_INFO_WIDTHS.maxWidth,
+					"opacity" : TYPE_INFO_WIDTHS.maxOpacity
+					}, 'fast');
 	          }, 500);
 	    });
 	    panel.mouseleave(function() {
 	        window.clearTimeout(t);
 	        t = window.setTimeout(function () {
 	            //panel.css('max-width',TYPE_INFO_WIDTHS.max);
-	            panel.animate({"max-width": TYPE_INFO_WIDTHS.max }, 'slow');
+	            panel.animate({
+	            	"left": TYPE_INFO_WIDTHS.defaultLeft,
+	            	"max-width" : TYPE_INFO_WIDTHS.defaultWidth,
+	            	"opacity" : TYPE_INFO_WIDTHS.defaultOpacity
+	            	}, 'slow');
+	            //panel.animate({"max-width": TYPE_INFO_WIDTHS.max }, 'slow');
 	            //panel.removeClass('typing_show');
 	            //panel.addClass('typing_style');
 	          }, 250);
