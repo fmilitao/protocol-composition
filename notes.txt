@@ -58,3 +58,21 @@ Extra Credits:
 - Types and Programming Languages, Chapter 6 (for De Bruijn stuff).
 - Subtyping Recursive Types, for recursion checks.
 
+
+
+
+			// FIXME old equality of definitions --- is this no longer needed??
+			/*
+			case types.DefinitionType:{
+				if( t1.definition() !== t2.definition() )
+					return false;
+				
+				var t1s = t1.args();
+				var t2s = t2.args();
+				if( t1s.length !== t2s.length )
+					return false;
+				for( var i=0;i<t1s.length;++i )
+					if( !equalsAux( t1s[i], t2s[i], trail ) )
+						return false;
+				return true;
+			} */

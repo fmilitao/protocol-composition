@@ -149,34 +149,31 @@ var TypeChecker = (function(AST,exports){
 	 * @param {Type} b
 	 * @return {Boolean} if the types are equal up to renaming.
 	 */
+	var equals = function( t1, t2 ){
+		return equalsAux( t1, t2, new Set() );
+	}
 
-	var equals = function( t1, t2, shallow){
-		var rec = function(t1,t2){
-			return equals(t1,t2,shallow)
-		};
+	var equalsAux = function( t1, t2, trail ){
 
 		if( t1 === t2 )
 			return true;
 
+		// if mismatch on DefinitionType
 		var def1 = t1.type === types.DefinitionType;
 		var def2 = t2.type === types.DefinitionType;
-		if( def1 ^ def2 && !shallow ){
-//FIXME this is ugly...
-			if( def1 ){
-				t1 = unfold(t1);
-				// if unfolding worked
-				if( t1.type !== types.DefinitionType ){
-					return rec( t1, t2 );
-				}
-			}
-			
-			if( def2 ){
-				t2 = unfold(t2);
-				// if unfolding worked
-				if( t2.type !== types.DefinitionType ){
-					return rec( t1, t2 );
-				}
-			}
+
+		if( def1 || def2 ){
+			var key = t1.toString(true) + t2.toString(true);
+
+			// algorithm based on "Subtyping Recursive Types".
+			if( trail.has(key) )
+				return true;
+
+			trail.add(key);
+			t1 = def1 ? unfold(t1) : t1;
+			t2 = def2 ? unfold(t2) : t2;
+
+			return equalsAux( t1, t2, trail );
 		}
 		
 		if( t1.type !== t2.type )
@@ -189,24 +186,24 @@ var TypeChecker = (function(AST,exports){
 				if( t1.id().type !== t2.id().type )
 					return false;
 
-				return rec( t1.inner(), t2.inner() );
+				return equalsAux( t1.inner(), t2.inner(), trail );
 			}
 			case types.TypeVariable:
 			case types.LocationVariable: {
 				return  t1.index() === t2.index();
 			}
 			case types.FunctionType:
-				return rec( t1.argument(), t2.argument() ) &&
-					rec( t1.body(), t2.body() );
+				return equalsAux( t1.argument(), t2.argument(), trail ) &&
+					equalsAux( t1.body(), t2.body(), trail );
 			case types.BangType:
-				return rec( t1.inner(), t2.inner() );
+				return equalsAux( t1.inner(), t2.inner(), trail );
 			case types.RelyType: {
-				return rec( t1.rely(), t2.rely() ) &&
-					rec( t1.guarantee(), t2.guarantee() );
+				return equalsAux( t1.rely(), t2.rely(), trail ) &&
+					equalsAux( t1.guarantee(), t2.guarantee(), trail );
 			}
 			case types.GuaranteeType: {
-				return rec( t1.guarantee(), t2.guarantee() ) &&
-					rec( t1.rely(), t2.rely() );
+				return equalsAux( t1.guarantee(), t2.guarantee(), trail ) &&
+					equalsAux( t1.rely(), t2.rely(), trail );
 			}
 			case types.SumType: {
 				var t1s = t1.tags();
@@ -216,19 +213,19 @@ var TypeChecker = (function(AST,exports){
 					return false;
 				for( var i=0; i<t1s.length; ++i ){
 					if( t2s.indexOf(t1s[i])===-1 ||
-						!rec( t1.inner(t1s[i]), t2.inner(t1s[i]) ) )
+						!equalsAux( t1.inner(t1s[i]), t2.inner(t1s[i]), trail ) )
 						return false;
 				}
 				return true;
 			}
 			case types.ReferenceType:
-				return rec( t1.location(), t2.location() );
+				return equalsAux( t1.location(), t2.location(), trail );
 			case types.StackedType:
-				return rec( t1.left(), t2.left() ) &&
-					rec( t1.right(), t2.right() );
+				return equalsAux( t1.left(), t2.left(), trail ) &&
+					equalsAux( t1.right(), t2.right(), trail );
 			case types.CapabilityType:
-				return rec( t1.location(), t2.location() ) &&
-					rec( t1.value(), t2.value() );
+				return equalsAux( t1.location(), t2.location(), trail ) &&
+					equalsAux( t1.value(), t2.value(), trail );
 			case types.RecordType: {
 				var t1s = t1.getFields();
 				var t2s = t2.getFields();
@@ -236,7 +233,7 @@ var TypeChecker = (function(AST,exports){
 					return false;
 				for( var i in t2s )
 					if( !t1s.hasOwnProperty(i) || 
-						!rec( t1s[i], t2s[i] ) )
+						!equalsAux( t1s[i], t2s[i], trail ) )
 						return false;
 				return true;
 			} 
@@ -246,7 +243,7 @@ var TypeChecker = (function(AST,exports){
 				if( t1s.length !== t2s.length )
 					return false;
 				for( var i=0;i<t1s.length;++i )
-					if( !rec( t1s[i], t2s[i] ) )
+					if( !equalsAux( t1s[i], t2s[i], trail ) )
 						return false;
 				return true;
 			}
@@ -269,7 +266,7 @@ var TypeChecker = (function(AST,exports){
 					// tries to find matching element
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( rec(curr,tmp) ){
+						if( equalsAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -282,19 +279,7 @@ var TypeChecker = (function(AST,exports){
 				}
 				return true;
 			}
-			case types.DefinitionType:{
-				if( t1.definition() !== t2.definition() )
-					return false;
-				
-				var t1s = t1.args();
-				var t2s = t2.args();
-				if( t1s.length !== t2s.length )
-					return false;
-				for( var i=0;i<t1s.length;++i )
-					if( !rec( t1s[i], t2s[i] ) )
-						return false;
-				return true;
-			}
+
 			default:
 				error( "@equals: Not expecting " +t2.type );
 			}
@@ -457,7 +442,7 @@ var TypeChecker = (function(AST,exports){
 			trail.add(key);
 			t1 = def1 ? unfold(t1) : t1;
 			t2 = def2 ? unfold(t2) : t2;
-			
+
 			return subtypeAux( t1, t2, trail );
 		}
 
