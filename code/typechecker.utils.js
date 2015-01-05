@@ -501,10 +501,11 @@ var TypeChecker = (function( assertF ){
 	 */
 	var Environment = function(up){
 
-		// CAREFUL: '$' cannot be a source-level identifier
-		// LEGACY CODE: '$' was previously used to distinguish between
-		// variables and location/type variables, and so I left it like that.
-		var TYPE_INDEX='$';
+		// CAREFUL: the following cannot be a source-level identifiers.
+		// These chars are used to distinguish between variables, etc. 
+		// that are all sotred in the same map.
+		const  TYPE_INDEX = '$';
+		const BOUND_INDEX = '#';
 		
 		var map = {};
 		var parent = up;
@@ -545,9 +546,15 @@ var TypeChecker = (function( assertF ){
 		this.setType = function(id,value){
 			return this.set(TYPE_INDEX+id,value);
 		}
-
 		this.getType = function(id){
 			return this.get(TYPE_INDEX+id);
+		}
+		// operations over bounds
+		this.setBound = function(id,bound){
+			return this.set(BOUND_INDEX+id,bound);
+		}
+		this.getBound = function(id){
+			return this.get(BOUND_INDEX+id);
 		}
 
 		// returns the depth of 'id' in the spaghetti stack, starting at 0.
@@ -563,12 +570,6 @@ var TypeChecker = (function( assertF ){
 			if( tmp === -1 ) 
 				return tmp;
 			return 1+tmp;
-		}
-		
-		// other...
-		this.size = function(){
-			return Object.keys(map).length+caps.length+
-				( parent === null ? 0 : parent.size() );
 		}
 		
 		this.clone = function(){
