@@ -507,7 +507,7 @@ var TypeChecker = (function( assertF ){
 		const  TYPE_INDEX = '$';
 		const BOUND_INDEX = '#';
 		
-		var map = {};
+		var map = new Map();
 		var parent = up;
 		
 		// scope methods		
@@ -522,15 +522,15 @@ var TypeChecker = (function( assertF ){
 		this.set = function(id,value){
 			// does not search up. ALLOWS NAME COLISIONS/HIDDING with upper levels.
 			// check if 'id' exists at this level
-			if( map.hasOwnProperty(id) )
+			if( map.has(id) )
 				return undefined; // already exists
-			map[id] = value;
+			map.set( id, value );
 			return true; // ok
 		}
 
 		this.get = function(id){
-			if ( map.hasOwnProperty(id) ){
-				return map[id];
+			if ( map.has(id) ){
+				return map.get(id);
 			}
 			if( parent === null )
 				return undefined;
@@ -555,7 +555,7 @@ var TypeChecker = (function( assertF ){
 		// returns the depth of 'id' in the spaghetti stack, starting at 0.
 		// returns -1 if not found.
 		this.getTypeDepth = function(id){
-			if ( map.hasOwnProperty(TYPE_INDEX+id) ){
+			if ( map.has(TYPE_INDEX+id) ){
 				return 0;
 			}
 			if( parent === null )
@@ -572,26 +572,26 @@ var TypeChecker = (function( assertF ){
 				new Environment( parent.clone() ) :
 				new Environment( null );
 
-			for( var i in map ){
+			map.forEach(function(k,v){
 				// assuming it is OK to alias types/content (i.e. all immutable stuff)
-				env.set( i, map[i] );
-			}
+				env.set( k, v );
+			});
 			
 			return env;
 		}
 
 		// no order is guaranteed!
-//FIXME forEach
-		this.visit = function(all,f){
-			for( var i in map ){
+		this.forEach = function(f){
+			map.forEach(function(i,v){
 				var isType = (i[0] === TYPE_INDEX);
 				var isBound = (i[0] === BOUND_INDEX );
 				var id = ( isType || isBound ) ? i.substring(1) : i;
 
-				f( i, id, map[i], isBound, isType );
-			}
-			if( all && parent !== null )
-				parent.visit(all,f);
+				f( i, id, v, isBound, isType );
+			});
+			
+			if( parent !== null )
+				parent.forEach(f);
 		}
 		
 	};

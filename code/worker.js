@@ -183,7 +183,8 @@ var _printEnvironment = function(env){
 	//var delta = [];
 	var visited = [];
 	
-	env.visit( true, // visit all elements 
+	env.forEach( 
+	// on element of the environment
 	function(i, id,val,isBound,isType){
 		// if duplicated do not print, this may happen due to
 		// stack of environments for names (i.e. non type/loc vars).
