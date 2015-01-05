@@ -413,14 +413,16 @@ var toHTML = function (t){
 			( t.id().type === types.LocationVariable ?
 				'<span class="type_location">' :
 				'<span class="type_variable">')
-			+t.id().name()+'</span><:'+_toHTML(t.bound())+'.'
+			+t.id().name()+'</span>'
+			+( t.bound()!==null ?'<:'+_toHTML(t.bound()):'')+'.'
 			+_toHTML(t.inner());
 		case types.ForallType:
 			return '&#8704;'+
 			( t.id().type === types.LocationVariable ?
 				'<span class="type_location">' :
 				'<span class="type_variable">')
-			+t.id().name()+'</span><:'+_toHTML(t.bound())+'.'
+			+t.id().name()+'</span>'
+			+( t.bound()!==null ?'<:'+_toHTML(t.bound()):'')+'.'
 			+_toHTML(t.inner());
 		case types.ReferenceType:
 			return "<b>ref</b> "+toHTML(t.location());

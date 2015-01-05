@@ -84,6 +84,17 @@ var TypeChecker = (function(AST,exports){
 		if( t.type !== a.type )
 			return null; // failed to match
 
+		/* FIXME --- simplify code:
+		var tmp = null;
+		var aux = function(v){
+			if( tmp === null ){
+				tmp = v;
+				return true;
+			}
+			// else must be equals
+			return v !== null !equals( tmp, v );
+		} */
+
 		switch( t.type ){
 			case types.FunctionType: {
 				var arg = unifyAux( x, t.argument(), a.argument(), trail );

@@ -317,11 +317,15 @@ var TypeChecker = (function( assertF ){
 		} );
 		
 		_add( types.ExistsType, function(v){
-			return 'exists'+(v?'':' '+this.id().name())+'<:'+_wrap( this.bound(), v )+'.'+_wrap( this.inner(), v );
+			return 'exists'+(v?'':' '+this.id().name())+
+				+( this.bound()!==null ?'<:'+_wrap( this.bound(), v ):'')
+				+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ForallType, function(v){
-			return 'forall'+(v?'':' '+this.id().name())+'<:'+_wrap( this.bound(), v )+'.'+_wrap( this.inner(), v );
+			return 'forall'+(v?'':' '+this.id().name())+
+				+( this.bound()!==null ?'<:'+_wrap( this.bound(), v ):'')
+				+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ReferenceType, function(v){
