@@ -1593,7 +1593,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return rec;
 			};
 			
-			
 			case AST.SHARE: 
 			return function( ast, env ){
 				var cap = check( ast.type, env );
@@ -1611,8 +1610,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				// returns unit
 				return new BangType(new RecordType());
 			};
-			
-
 			
 			// TYPES
 			case AST.RELY_TYPE: 
@@ -1643,34 +1640,11 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				return new ReferenceType( loc.copy( env.getTypeDepth( id ) ) );
 			};
 			
-			case AST.EXISTS_TYPE: 
-			return function( ast, env ){
-				var id = ast.id;
-				var e = env.newScope();
-				
-				var variable;
-				var bound;
-				if( isTypeVariableName(id) ){
-					variable = new TypeVariable(id,0);
-					bound = !ast.bound ? TopType : check( ast.bound, env );
-				}
-				else{
-					variable = new LocationVariable(id,0);
-					bound = null;
-				}
-				
-				e.setType( id, variable );
-				if( bound !== null )
-					e.setBound( id, bound );
-
-				var type = check( ast.exp, e );
-
-				return new ExistsType( variable, type, bound );
-			};
-			
+			case AST.EXISTS_TYPE:
 			case AST.FORALL:
 			case AST.FORALL_TYPE: 
-			return function( ast, env ){
+			return (function( ctr ){
+				return function( ast, env ){
 				var id = ast.id;
 				var e = env.newScope();
 				
@@ -1691,8 +1665,10 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 				var type = check( ast.exp, e );
 
-				return new ForallType( variable, type, bound );
-			};
+				return new ctr( variable, type, bound );
+			}; })
+			// body is the same, but the CONSTRUCTOR is different:
+			( kind === AST.EXISTS_TYPE ? ExistsType : ForallType );
 						
 			case AST.NONE_TYPE:
 			return function( ast, env ){
