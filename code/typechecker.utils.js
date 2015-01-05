@@ -317,14 +317,14 @@ var TypeChecker = (function( assertF ){
 		} );
 		
 		_add( types.ExistsType, function(v){
-			return 'exists'+(v?'':' '+this.id().name())+
-				+( this.bound()!==null ?'<:'+_wrap( this.bound(), v ):'')
+			return 'exists'+(v?'':' '+this.id().name())
+				+( !this.bound()?'':'<:'+_wrap( this.bound(), v ))
 				+'.'+_wrap( this.inner(), v );
 		} );
 		
 		_add( types.ForallType, function(v){
-			return 'forall'+(v?'':' '+this.id().name())+
-				+( this.bound()!==null ?'<:'+_wrap( this.bound(), v ):'')
+			return 'forall'+(v?'':' '+this.id().name())
+				+( !this.bound() ? '':'<:'+_wrap( this.bound(), v ))
 				+'.'+_wrap( this.inner(), v );
 		} );
 		
@@ -589,7 +589,10 @@ var TypeChecker = (function( assertF ){
 		this.visit = function(all,f){
 			for( var i in map ){
 				var isType = (i[0] === TYPE_INDEX);
-				f(i,map[i],false,isType);
+				var isBound = (i[0] === BOUND_INDEX );
+				var id = ( isType || isBound ) ? i.substring(1) : i;
+
+				f( i, id, map[i], isBound, isType );
 			}
 			if( all && parent !== null )
 				parent.visit(all,f);

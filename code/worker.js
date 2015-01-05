@@ -167,54 +167,55 @@ var printEnvironment = function(env){
 	var res = _printEnvironment(env);
 	
 	var gamma = res.gamma;
-	var delta = res.delta;
+	//var delta = res.delta;
 	
 	gamma.sort(); // to ensure always the same order
 	gamma = gamma.join(',\n    ');
 	
-	delta.sort(); // ...same order
-	delta = delta.join(',\n    ');
+	//delta.sort(); // ...same order
+	//delta = delta.join(',\n    ');
 	
-	return "\u0393 = "+gamma+"\n"+"\u0394 = "+delta;
+	return "\u0393 = "+gamma; //+"\n"+"\u0394 = "+delta;
 }
 
 var _printEnvironment = function(env){
 	var gamma = [];
-	var delta = [];
+	//var delta = [];
 	var visited = [];
 	
 	env.visit( true, // visit all elements 
-	function(id,val,isCap,isType){
+	function(i, id,val,isBound,isType){
 		// if duplicated do not print, this may happen due to
 		// stack of environments for names (i.e. non type/loc vars).
-		if( visited.indexOf(id) !== -1 )
+		if( visited.indexOf(i) !== -1 )
 			return;
-		
-		if( isCap ){
-			delta.push( toHTML(val) );
-			return;
-		}
 		
 		// only non-caps may not be repeated, since caps have null 'id'
-		visited.push(id);
+		visited.push(i);
 		
 		if( isType ){
 			// is a type/location variable
 			if( val.type === types.LocationVariable ){
-				gamma.push('<span class="type_location">'+val.name()+'</span>: <b>loc</b>');
+				gamma.push('<span class="type_location">'+id+'</span>: <b>loc</b>');
 				return;
 			}
 			if( val.type === types.TypeVariable ){
-				gamma.push('<span class="type_variable">'+val.name()+'</span>: <b>type</b>');
+				gamma.push('<span class="type_variable">'+id+'</span>: <b>type</b>');
 				return;
 			}
+		}
+
+		if( isBound ){
+			gamma.push('<span class="type_variable">'+id+'</span> <: '+toHTML(val));
+			return;
 		}
 		
 		if( val.type === types.BangType ){
 			gamma.push('<span class="type_name">'+id+'</span>'+": "+toHTML(val.inner()));
 			return;
 		}			
-		delta.push('<span class="type_name">'+id+'</span>'+": "+toHTML(val));
+		
+		//delta.push('<span class="type_name">'+id+'</span>'+": "+toHTML(val));
 	});
 
 /*
@@ -234,7 +235,7 @@ var _printEnvironment = function(env){
 		e = e.$parent;
 	} */
 	
-	return { delta : delta, gamma : gamma };
+	return { /*delta : delta,*/ gamma : gamma };
 }
 
 

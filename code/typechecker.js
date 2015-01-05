@@ -1697,6 +1697,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				}
 				
 				e.setType( id, variable );
+				if( bound !== null )
+					e.setBound( id, bound );
 
 				var type = check( ast.exp, e );
 
@@ -1721,6 +1723,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				}
 
 				e.setType( id, variable );
+				if( bound !== null )
+					e.setBound( id, bound );
 
 				var type = check( ast.exp, e );
 
