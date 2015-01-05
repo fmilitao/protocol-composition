@@ -1758,12 +1758,12 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 	var type_info;
 	
-	// exporting these functions to facilitate testing.	
 	exports.subtype = subtype;
 	exports.equals = equals;
 	exports.checkProtocolConformance = checkProtocolConformance;
 	
-	exports.check = function(ast,typeinfo,loader){
+	//FIXME move this.
+	exports.check = function( ast, typeinfo ){
 		// stats gathering
 		var start = new Date().getTime();
 		type_info = [];
