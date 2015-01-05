@@ -6,7 +6,7 @@
 //
 
 const isWorker = typeof(window) === 'undefined';
-const IMPORTS = ['../lib/jison.js','parser.js','typechecker.utils.js','typechecker.js'];
+const IMPORTS = ['../lib/jison.js','parser.js','typechecker.types.js','typechecker.js'];
 const GRAMMAR = (isWorker?'':'code/') + 'grammar.jison';
 
 // only loads the following if it is a standalone thread

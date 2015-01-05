@@ -3,9 +3,9 @@
 
 /**
  * INCLUDE parser.js
- * INCLUDE typechecker.utils.js
+ * INCLUDE typechecker.types.js
  * 	AST : AST.kinds, for all AST case analysis needs.
- *  TypeChecker : stuff in typechecker.utils.js
+ *  TypeChecker : stuff in typechecker.types.js
  */
 
 var TypeChecker = (function( AST, exports ){
