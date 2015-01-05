@@ -5,10 +5,10 @@
  * INCLUDE parser.js
  * INCLUDE typechecker.utils.js
  * 	AST : AST.kinds, for all AST case analysis needs.
- *  TypeChecker : for error/assert functions.
+ *  TypeChecker : stuff in typechecker.utils.js
  */
 
-var TypeChecker = (function(AST,exports){
+var TypeChecker = (function( AST, exports ){
 
 	// define constants for convenience
 	const assert = exports.assert;
@@ -40,6 +40,7 @@ var TypeChecker = (function(AST,exports){
 	const GuaranteeType = fct.GuaranteeType;
 
 	const Environment = exports.Environment;
+	const TypeDefinition = exports.TypeDefinition;
 
 	// unify 'x' in 't' to match 'a'
 	var unify = function( x,t, a ){
@@ -868,7 +869,7 @@ var TypeChecker = (function(AST,exports){
 	}	
 	
 	var unfoldDefinition = function(d){
-		if( d.type !== types.DefinitionType || typedef.isInRecDefs() )
+		if( d.type !== types.DefinitionType )
 			return d;
 		var t = typedef.getDefinition(d.definition());
 		var args = d.args();
@@ -1777,44 +1778,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		}
 		return (visitor[ast.kind])( ast, env );
 	}
-		
-	var TypeDefinition = function(){
-		var inRecDef;
-		var typedefs;
-		var typedefs_args;
-
-		// these 3 methods must be used to avoid attempts at resoving recursive
-		// definitions before they are all inserted/defined.
-		this.beginRecDefs = function(){ inRecDef = true; };
-		this.endRecDefs = function(){ inRecDef = false; };
-		this.isInRecDefs = function(){ return inRecDef; }; //FIXME is this still necessary?
-		
-		this.addType = function(name,array){
-			if( typedefs_args.hasOwnProperty(name) )
-				return false;
-			typedefs_args[name] = array;
-			return true;
-		};
-		this.addDefinition = function(name,definition){
-			if( typedefs.hasOwnProperty(name) )
-				return false;
-			typedefs[name] = definition;
-			return true;
-		};
-		this.getType = function(name){
-			return typedefs_args[name];
-		};
-		this.getDefinition = function(name){
-			return typedefs[name];
-		};
-		this.reset = function(){
-			inRecDef = false;
-			typedefs = {};
-			typedefs_args = {};
-		};
-
-		this.reset();
-	};
 
 	var type_info;
 	var typedef = new TypeDefinition();
@@ -1822,7 +1785,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	// exporting these functions to facilitate testing.	
 	exports.subtype = subtype;
 	exports.equals = equals;
-	exports.typedef = typedef;
 	exports.checkProtocolConformance = checkProtocolConformance;
 	
 	exports.check = function(ast,typeinfo,loader){
@@ -1839,7 +1801,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				
 			if( ast.typedefs !== null ){
 
-				// first phase - extract all argument definitions, note that
+				// 1st pass: extract all argument definitions, note that
 				// duplication is not checked at this stage
 				for(var i=0;i<ast.typedefs.length;++i){
 					var it = ast.typedefs[i];
@@ -1861,9 +1823,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 						|| ('Duplicated typedef: '+it.id), it );
 				}
 				
-				// must avoid attempting to unfold what is not yet definied.
-				typedef.beginRecDefs();
-
+				// 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
 				for(var i=0;i<ast.typedefs.length;++i){
 					var type = ast.typedefs[i];						
 					var tmp_env = env;
@@ -1883,11 +1843,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 					assert( typedef.addDefinition(type.id, check(type.type, tmp_env)) 
 						|| ('Duplicated typedef: '+type.id), type );
 				}
-				
-				// ok to allow unfoldings
-				typedef.endRecDefs();
 
-				//check for bottom types.
+				// 3rd pass: check for bottom types.
 				for(var i=0;i<ast.typedefs.length;++i){
 					var type = ast.typedefs[i];
 					var x = typedef.getDefinition(type.id);

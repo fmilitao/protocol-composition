@@ -8,8 +8,7 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO:
 =====
 
-* MISSING SUBTYPING RULES:
-
+* MISSING SUBTYPING RULE:
 
   X <: A in Gamma
 -------------------

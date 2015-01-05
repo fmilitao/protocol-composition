@@ -596,9 +596,40 @@ var TypeChecker = (function( assertF ){
 		
 	};
 
+	var TypeDefinition = function(){
+		var typedefs;
+		var typedefs_args;
+		
+		this.addType = function(name,array){
+			if( typedefs_args.has(name) )
+				return false;
+			typedefs_args.set( name, array );
+			return true;
+		};
+		this.addDefinition = function(name,definition){
+			if( typedefs.has(name) )
+				return false;
+			typedefs.set( name, definition );
+			return true;
+		};
+		this.getType = function(name){
+			return typedefs_args.get(name);
+		};
+		this.getDefinition = function(name){
+			return typedefs.get(name);
+		};
+		this.reset = function(){
+			typedefs = new Map();
+			typedefs_args = new Map();
+		};
+
+		this.reset();
+	};
+
 	exports.assert = assert;
 	exports.error = error;
 	exports.Environment = Environment;
+	exports.TypeDefinition = TypeDefinition;
 	exports.isFree = isFree;
 	exports.types = types;
 	exports.factory = fct;
