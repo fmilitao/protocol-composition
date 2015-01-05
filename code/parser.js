@@ -183,8 +183,8 @@ var AST = new function(){
 	this.makeParameters = function(id,type, info){
 		return aux( this.kinds.PARAM, {id: id, type: type}, info);
 	}
-	this.makeForall = function(id,exp, info){
-		return aux( this.kinds.FORALL, {id: id, exp: exp}, info);
+	this.makeForall = function(id,exp,bound, info){
+		return aux( this.kinds.FORALL, {id: id, exp: exp, bound: bound}, info);
 	}
 	this.makePack = function(id,label,exp, info){
 		return aux( this.kinds.PACK, {id: id, label:label, exp: exp}, info);

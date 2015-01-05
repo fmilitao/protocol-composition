@@ -650,6 +650,9 @@ var TypeChecker = (function(AST,exports){
 			return subtypeAux( t1, t2, trail );
 		}
 
+		if( t2.type === types.TopType && t1.type !== types.LocationVariable )
+			return true;
+
 		// "pure to linear" - ( t1: !A ) <: ( t2: A )
 		if ( t1.type === types.BangType && t2.type !== types.BangType )
 			return subtypeAux( t1.inner(), t2, trail );
@@ -688,16 +691,15 @@ var TypeChecker = (function(AST,exports){
 		}
 
 		if( t2.type === types.ExistsType && t1.type !== types.ExistsType ){
-// FIXME : bound check.
-			// if found unification, successed.
-			if( unify( t2.id(), t2.inner(), t1 ) !== null )
+			// if found unification and it obeys bound, successed.
+			var u = unify( t2.id(), t2.inner(), t1 );
+			if( u !== null && subtype( u, t2.bound() ) )
 				return true;
 		}
 		
 		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
-		// FIXME : bound check.
-			// if found unification, successed.
-			if( unify( t1.id(), t1.inner(), t2 ) !== null )
+			var u = unify( t1.id(), t1.inner(), t2 );
+			if( u !== null && subtype( u, t1.bound() ) )
 				return true;
 		}
 
@@ -1673,14 +1675,18 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var e = env.newScope();
 				
 				var variable;
-				if( isTypeVariableName(id) )
+				var bound;
+				if( isTypeVariableName(id) ){
 					variable = new TypeVariable(id,0);
-				else
+					bound = !ast.bound ? TopType : check( ast.bound, env );
+				}
+				else{
 					variable = new LocationVariable(id,0);
+					bound = null;
+				}
 				
 				e.setType( id, variable );
 
-				var bound = !ast.bound ? TopType : check( ast.bound, env );
 				var type = check( ast.exp, e );
 
 				return new ExistsType( variable, type, bound );
@@ -1693,14 +1699,18 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var e = env.newScope();
 				
 				var variable;
-				if( isTypeVariableName(id) )
+				var bound;
+				if( isTypeVariableName(id) ){
 					variable = new TypeVariable(id,0);
-				else
+					bound = !ast.bound ? TopType : check( ast.bound, env );
+				}
+				else{
 					variable = new LocationVariable(id,0);
+					bound = null;
+				}
 
 				e.setType( id, variable );
 
-				var bound = !ast.bound ? TopType : check( ast.bound, env );
 				var type = check( ast.exp, e );
 
 				return new ForallType( variable, type, bound );
@@ -1746,21 +1756,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 					check( ast.left, env ),
 					check( ast.right, env )
 				);
-			};
-			
-			case AST.CAP_STACK: 
-			return function( ast, env ){
-				var exp = check( ast.exp, env );
-				var cap = check( ast.type, env );
-
-				cap = unfold(cap);
-				
-				var c = autoStack ( null, cap, env, ast.type );
-				// make sure that the capabilities that were extracted from 
-				// the typing environment can be used as the written cap.
-				assert( subtype( c , cap ) ||
-					('Incompatible capability "'+c+'" vs "'+cap+'"'), ast.type );
-				return new StackedType( exp, cap );
 			};
 			
 			case AST.RECORD_TYPE: 
@@ -1881,7 +1876,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 						for(var j=0;j<pars.length;++j){
 							var n = pars[j];
 							args[j] = isTypeVariableName(n) ? 
-								new TypeVariable(n) : new LocationVariable(n);
+								new TypeVariable(n,0) : new LocationVariable(n,0);
 						}
 					}
 					

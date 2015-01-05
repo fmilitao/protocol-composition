@@ -239,7 +239,9 @@ sequence :
 
 forall :
       '<' IDENTIFIER '>' forall
-		{ $$ = [AST.makeForall($2,$4[0],@$)]; }
+		{ $$ = [AST.makeForall($2,$4[0],null,@$)]; }
+	| '<' IDENTIFIER '<:' type_root '>' forall
+		{ $$ = [AST.makeForall($2,$6[0],$4,@$)]; }
     | share
 		{ $$ = $1; }
 	| subtype

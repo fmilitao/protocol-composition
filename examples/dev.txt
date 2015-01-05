@@ -19,8 +19,9 @@ typedef Y<y,x> = X[x,y]
 <A> subtype A <: exists X.X // X == A
 <A> subtype forall X.X <: A // X == A
 
-<A><B> subtype forall X<:B.X <: A // X == A, iff A <: B
-<A><B> subtype A <: exists X<:B.X // X == A, iff A <: B
+// FIXME bound check
+//<B><A <: B> subtype forall X<:B.X <: A // X == A, iff A <: B
+//<B><A <: B> subtype A <: exists X<:B.X // X == A, iff A <: B
 
     subtype label#int + tag#int <: exists X.( label#X + tag#X )
 not subtype label#boolean + tag#int <: exists X.( label#X + tag#X )

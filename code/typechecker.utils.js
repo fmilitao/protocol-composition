@@ -199,7 +199,7 @@ var TypeChecker = (function( assertF ){
 	
 	var _Variable = function( obj, name, index ){
 		var n = name;
-		var i = index === undefined ? null : index;
+		var i = index;
 		
 		obj.index = function(){ return i; }
 		obj.name = function(){ return n; }
