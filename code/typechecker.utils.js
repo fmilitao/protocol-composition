@@ -528,18 +528,13 @@ var TypeChecker = (function( assertF ){
 			return true; // ok
 		}
 
-		this.get = function(id,cond){ // condition for removal
+		this.get = function(id){
 			if ( map.hasOwnProperty(id) ){
-				var tmp = map[id];
-				if( cond !== undefined && cond(tmp) ){
-					// ensures that it is no longer listed
-					delete map[id];
-				}
-				return tmp;
+				return map[id];
 			}
 			if( parent === null )
 				return undefined;
-			return parent.get(id,cond);
+			return parent.get(id);
 		}
 		
 		// operations over TypeVariables / LocationVariables
@@ -586,6 +581,7 @@ var TypeChecker = (function( assertF ){
 		}
 
 		// no order is guaranteed!
+//FIXME forEach
 		this.visit = function(all,f){
 			for( var i in map ){
 				var isType = (i[0] === TYPE_INDEX);

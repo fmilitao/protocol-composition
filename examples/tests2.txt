@@ -1,4 +1,6 @@
 
+// FIXME missing failure tests on conformance
+
 /* === CONFORMANCE TESTS === */
 
 //
@@ -56,6 +58,12 @@ typedef P1<l> = ( Held[l] => Free[l] )
 typedef P3<l> = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] => none )
 
 typedef P4<l> = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] => none )
+
+// ---- ///
+
+//FIXME this does not work because protocol conformance is broken.
+//<p> not share (rw p int) as (rw p int) => none || (rw p int) => none
+
 
 // ---- ///
 

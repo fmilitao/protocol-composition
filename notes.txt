@@ -16,11 +16,10 @@ TODO:
  Gamma |- X <: A
  FIXME: subtyping needs typing environment because of this, but equals does not because variable equality is enough.
  FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
-
+ 	How to represent this?
 
 
 * New Protocol Conformance
-* also define NOT SHARE for testing when sharing should NOT work.
 
 - define error constants/enum instead of having constants spread out through the code.
 
