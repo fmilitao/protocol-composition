@@ -141,7 +141,7 @@ var TypeChecker = (function( assertF ){
 	
 	newType('RecordType',
 		function RecordType(){
-			var fields = {};
+			var fields = {}; //FIXME which to map instead
 			this.add = function(id, type) {
 				if ( fields.hasOwnProperty(id) ){
 					return undefined;
@@ -381,116 +381,6 @@ var TypeChecker = (function( assertF ){
 		_add( types.TopType, function(v){ return 'top'; });
 		
 	})();
-
-	/**
-	 * Searchs types 't' for location variable 'loc'. isFree if NOT present.
-	 * @param {Type} t that is to be traversed
-	 * @param {LocationVariable,TypeVariable} loc that is to be found
-	 * @return {Boolean} true if location variableis NOT in type.
-	 * Note that all variable names collide so that checking for 
-	 * LocationVariable versus TypeVariable is not necessary.
-	 */
-	var isFree = (function(){
-		var _visitor = {};
-		var _add = function( k , fun ){
-			error( !_visitor.hasOwnProperty(k) || ("Duplicated " +k) );
-			_visitor[k] = fun;
-		};
-		
-		_add( types.FunctionType, function(t,loc){
-			return isFree( t.argument(), loc ) && isFree( t.body(), loc );
-		});
-		
-		_add( types.BangType, function(t,loc){
-			return isFree( t.inner(), loc );
-		});
-		
-		_add( types.RelyType, function(t,loc){
-			return isFree( t.rely(), loc ) && isFree( t.guarantee(), loc );
-		});
-		
-		_add( types.GuaranteeType, function(t,loc){
-			return isFree( t.guarantee(), loc ) && isFree( t.rely(), loc );
-		});
- 
-		_add( types.SumType, function(t,loc){
-			var tags = t.tags();
-			for( var i in tags ){
-				if( !isFree(t.inner(tags[i]),loc) )
-					return false; 
-			}	
-			return true;
-		});
-
-		_add( types.ForallType, function(t,loc){
-			if( t.id().name() === loc.name() ) {
-				// the name is already bounded, so loc must be fresh
-				// because it does not occur free inside t.inner()
-				return true;
-			}
-			return isFree(t.id(),loc) && isFree(t.inner(),loc);
-		});
-		_add( types.ExistsType, _visitor[types.ForallType] ); //reuse definition
-
-		_add( types.ReferenceType, function(t,loc){
-			return isFree( t.location(), loc );
-		});
-
-		_add( types.StackedType, function(t,loc){
-			return isFree( t.left(), loc ) && isFree( t.right(), loc );
-		});
-		
-		_add( types.CapabilityType, function(t,loc){
-			return isFree( t.location(), loc ) && isFree( t.value(), loc );
-		});
-
-		_add( types.RecordType, function(t,loc){
-			var fs = t.getFields();
-			for( var i in fs ){
-				if( !isFree(fs[i],loc) )
-					return false;
-			}
-			return true;
-		});
-		
-		_add( types.AlternativeType, function(t,loc){
-			var inners = t.inner();
-			for( var i=0; i<inners.length; ++i )
-				if( !isFree(inners[i],loc) )
-					return false;
-			return true;
-		});
-		//reuse def.
-		_add( types.IntersectionType, _visitor[types.AlternativeType] );
-		_add( types.StarType, _visitor[types.AlternativeType] );
-		_add( types.TupleType, _visitor[types.AlternativeType] );
-		
-		_add( types.TypeVariable, function(t,loc){
-			return t.name() !== loc.name();
-		});
-		_add( types.LocationVariable, _visitor[types.TypeVariable] ); //reuse def.
-		
-		_add( types.PrimitiveType, function(t,loc){ return true; });
-		_add( types.NoneType, _visitor[types.PrimitiveType] );
-		_add( types.TopType, _visitor[types.PrimitiveType] );
-
-		_add( types.DefinitionType, function(t,loc){
-			// t.definition() is a name/identifer.
-			var vs = t.args();
-			for( var i in vs ){
-				if( !isFree(vs[i],loc) )
-					return false;
-			}
-			return true;
-		});
-		
-		// the closure that uses the private _visitor
-		return function (t,loc) {
-			if( !_visitor.hasOwnProperty( t.type ) )
-				error( "@isFree: Not expecting " +t.type );
-			return _visitor[t.type](t,loc);
-		};
-	})();
 	
 	/**
 	 * The typing environment is a spaghetti stack where the parent
@@ -630,7 +520,6 @@ var TypeChecker = (function( assertF ){
 	exports.error = error;
 	exports.Environment = Environment;
 	exports.TypeDefinition = TypeDefinition;
-	exports.isFree = isFree;
 	exports.types = types;
 	exports.factory = fct;
 
