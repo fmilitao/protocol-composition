@@ -1409,18 +1409,6 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 	var hack_info;
 
-	// this wrapper function allows us to inspect the type and envs
-	// of some node, while leaving the checker mostly clean.
-	var check = function(ast,env) {
-		var info = { ast : ast, env : env.clone() };
-		type_info.push( info );
-		var res = check_inner( ast, env );
-		info.res = res;
-		if( ast.kind === AST.SHARE ){
-			info.conformance = hack_info;
-		}
-		return res;
-	};
 
 	/**
 	 * @param {AST} ast, tree to check
@@ -1428,7 +1416,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	 * @return either the type checked for 'ast' or throws a type error with
 	 * 	what failed to type check.
 	 */
-	var setupAST = function( kind ) {
+	var setupAST = function( kind, check ) {
 		
 		switch( kind ) {
 
@@ -1738,118 +1726,149 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 	}
 	
-	var check_inner = (function(){
-		var visitor = {};
-		// setup visitors
-		for( var i in AST ){
-			error( !visitor.hasOwnProperty(i) ||
-					( 'Error @visitor, duplication: '+i ) );
-			// find witch function to call on each AST kind of node
-			visitor[i] = setupAST(i);
+	var checkProgram = function( ast, check ){
+		// pre: ast is program's root
+		error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
+				
+		var typedef = new TypeDefinition();
+		var env = new Environment( null, typedef );
+		
+		// handle type definitions
+		if( ast.typedefs !== null ){
+
+			// 1st pass: extract all argument definitions, note that
+			// duplication is not checked at this stage
+			for(var i=0;i<ast.typedefs.length;++i){
+				var it = ast.typedefs[i];
+				var args = [];
+				var pars = it.pars;
+
+				// only do this if there are any actual definition parameters
+				if( pars !== null ){
+					args = new Array(pars.length);
+					
+					for(var j=0;j<pars.length;++j){
+						var n = pars[j];
+						args[j] = isTypeVariableName(n) ? 
+							new TypeVariable(n,0) : new LocationVariable(n,0);
+					}
+				}
+				
+				assert( typedef.addType(it.id,args) 
+					|| ('Duplicated typedef: '+it.id), it );
+			}
+			
+			// 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
+			for(var i=0;i<ast.typedefs.length;++i){
+				var type = ast.typedefs[i];						
+				var tmp_env = env;
+				var args = typedef.getType(type.id);
+				
+				// sets the variables, if there are any to setup
+				if( args !== null ){
+					for(var j=0;j<args.length;++j){
+						// should be for both LocationVariables and TypeVariables
+						// we must create a new scope to increase the De Bruijn index
+						tmp_env = tmp_env.newScope();
+						tmp_env.setType( args[j].name(), args[j] );
+					}
+				}
+				
+				// map of type names to typechecker types
+				assert( typedef.addDefinition(type.id, check(type.type, tmp_env)) 
+					|| ('Duplicated typedef: '+type.id), type );
+			}
+
+			// 3rd pass: check for bottom types.
+			for(var i=0;i<ast.typedefs.length;++i){
+				var type = ast.typedefs[i];
+				var x = typedef.getDefinition(type.id);
+				var set = new Set();
+				while( x.type === types.DefinitionType ){
+					// note that we use the string-indexOnly representation of the type
+					set.add( x.toString(false) );
+					x = unfoldDefinition(x);
+					// if already seen this unfold, then type is a cycle
+					assert( !set.has( x.toString(false) )
+						|| ('Infinite typedef (i.e. bottom type): '+type.id), type );
+				}
+
+			}
+
 		}
 
-		return function( ast, env ){
-			if( !visitor.hasOwnProperty( ast.kind ) ){
-				error( 'Not expecting '+ast.kind );
-			}
-			return (visitor[ast.kind])( ast, env );
-			};
-		})();
+		// check main expression:
+		var exps = ast.exp;
+		for( var i=0; i<exps.length; ++i ){
+			check( exps[i], env );
+		}
 
-	var type_info;
-	
+		// bogus return... but anyway.
+		return NoneType;
+	}
+
+	// monad like
+	// inspector( ast, env, checkFunction )
+	var buildChecker = function( inspector ){
+		var map = new Map();
+		var aux = function( ast, env ){
+			if( !map.has( ast.kind ) )
+				error( 'Error @buildChecker Not expecting '+ast.kind );
+			return map.get(ast.kind)( ast, env );
+		};
+
+		var tmp = aux;
+		if( inspector ){
+			tmp = function( ast, env ){
+				return inspector( ast, env, aux );
+			};
+		}
+
+		for( var i in AST ){
+			error( !map.has(i) || ( 'Error @buildChecker, duplication: '+i ) );
+			// find function to call on this kind of AST node
+			map.set( i, setupAST( i, tmp ) );
+		}
+
+		return tmp;
+	};
+
 	exports.subtype = subtype;
 	exports.equals = equals;
 	exports.checkProtocolConformance = checkProtocolConformance;
-	
-	//FIXME move this.
-	exports.check = function( ast, typeinfo ){
-		// stats gathering
+
+	exports.check = function( ast, log ){
+		
+		var type_info = [];
+		var inspector = function( ast, env, c ){
+				var info = { ast : ast, env : env.clone() };
+				type_info.push( info );
+				
+				var res = c( ast, env );
+				
+				info.res = res;
+				if( ast.kind === AST.SHARE ){
+					info.conformance = hack_info; //FIXME hack_info
+				}
+				return res;
+			};
+
+		var checker = buildChecker( inspector );
+
+		// timer start
 		var start = new Date().getTime();
-		type_info = [];
-
+		
 		try{
-			error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
-				
-			var typedef = new TypeDefinition();
-			var env = new Environment( null, typedef );
-				
-			if( ast.typedefs !== null ){
-
-				// 1st pass: extract all argument definitions, note that
-				// duplication is not checked at this stage
-				for(var i=0;i<ast.typedefs.length;++i){
-					var it = ast.typedefs[i];
-					var args = [];
-					var pars = it.pars;
-
-					// only do this if there are any actual definition parameters
-					if( pars !== null ){
-						args = new Array(pars.length);
-						
-						for(var j=0;j<pars.length;++j){
-							var n = pars[j];
-							args[j] = isTypeVariableName(n) ? 
-								new TypeVariable(n,0) : new LocationVariable(n,0);
-						}
-					}
-					
-					assert( typedef.addType(it.id,args) 
-						|| ('Duplicated typedef: '+it.id), it );
-				}
-				
-				// 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
-				for(var i=0;i<ast.typedefs.length;++i){
-					var type = ast.typedefs[i];						
-					var tmp_env = env;
-					var args = typedef.getType(type.id);
-					
-					// sets the variables, if there are any to setup
-					if( args !== null ){
-						for(var j=0;j<args.length;++j){
-							// should be for both LocationVariables and TypeVariables
-							// we must create a new scope to increase the De Bruijn index
-							tmp_env = tmp_env.newScope();
-							tmp_env.setType( args[j].name(), args[j] );
-						}
-					}
-					
-					// map of type names to typechecker types
-					assert( typedef.addDefinition(type.id, check(type.type, tmp_env)) 
-						|| ('Duplicated typedef: '+type.id), type );
-				}
-
-				// 3rd pass: check for bottom types.
-				for(var i=0;i<ast.typedefs.length;++i){
-					var type = ast.typedefs[i];
-					var x = typedef.getDefinition(type.id);
-					var set = new Set();
-					while( x.type === types.DefinitionType ){
-						// note that we use the string-indexOnly representation of the type
-						set.add( x.toString(false) );
-						x = unfoldDefinition(x);
-						// if already seen this unfold, then type is a cycle
-						assert( !set.has( x.toString(false) )
-							|| ('Infinite typedef (i.e. bottom type): '+type.id), type );
-					}
-
-				}
-
-			}
-
-			var exps = ast.exp;
-			for( var i=0; i<exps.length; ++i ){
-				check( exps[i], env );
-			}
-			return NoneType;
+			return checkProgram( ast, checker );
 		} finally {
-			if( typeinfo ){
-				typeinfo.diff = (new Date().getTime())-start;
-				typeinfo.info = type_info; 
+			if( log ){
+				log.diff = (new Date().getTime())-start;
+				log.info = type_info; 
 			}
 		}
 
 	};
+
 	return exports;
 })( AST.kinds, TypeChecker ); // required globals
 
