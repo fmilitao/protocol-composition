@@ -8,6 +8,26 @@ typedef X<x,y> = Y[y,x]
 typedef Y<y,x> = X[x,y]
 */
 
+// simple unification checks
+
+<Y> subtype forall X.( label#X + tag#X + blah#X ) <: label#Y + tag#Y + blah#Y
+
+<Y> not subtype forall X.( label#X + tag#X ) <: label#Y + tag#Y + blah#Y
+
+	subtype int -o !int <: exists X.( X -o !X )
+
+<A> subtype A <: exists X.X // X == A
+<A> subtype forall X.X <: A // X == A
+
+<A><B> subtype forall X<:B.X <: A // X == A, iff A <: B
+<A><B> subtype A <: exists X<:B.X // X == A, iff A <: B
+
+    subtype label#int + tag#int <: exists X.( label#X + tag#X )
+not subtype label#boolean + tag#int <: exists X.( label#X + tag#X )
+
+
+// older tests
+
 equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
 equals forall X.forall X.forall X.X == forall X.forall X.forall X.X
 equals exists X.X == exists Y<:top.Y
@@ -30,3 +50,4 @@ subtype exists X<:int.X <: exists W<:int.W
 not subtype exists X<:boolean.X <: exists P.P
 not subtype exists X<:!int.X <: exists W<:int.W
 not subtype exists X<:int.X <: exists W<:!int.W
+

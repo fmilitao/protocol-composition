@@ -41,6 +41,222 @@ var TypeChecker = (function(AST,exports){
 
 	const Environment = exports.Environment;
 
+	// unify 'x' in 't' to match 'a'
+	var unify = function( x,t, a ){
+		if( x.type !== types.LocationVariable && 
+			x.type !== types.TypeVariable ){
+			error( "@unify: can only unify a Type/LocationVariable, got: "+x.type );
+		}
+
+		return unifyAux( x,t,a, new Set() );
+	}
+
+	// returns null when no SINGLE/UNIQUE match found, else type
+	var unifyAux = function( x, t, a, trail ){
+		
+		// base case: variable 'x' is found in 't'
+		if( x.type === t.type && x.index() === t.index() && (
+			// unified type must match x's kind
+			( x.type === types.LocationVariable && a.type === types.LocationVariable ) ||
+			( x.type === types.TypeVariable && a.type !== types.LocationVariable ) ) )
+			return a;
+
+		// if mismatch on DefinitionType
+		var deft = t.type === types.DefinitionType;
+		var defa = a.type === types.DefinitionType;
+
+		if( deft || defa ){
+			var key = t.toString(true) + a.toString(true);
+
+			// assume no match on cycles
+			if( trail.has(key) )
+				return null;
+
+			trail.add(key);
+			t = deft ? unfold(t) : t;
+			a = defa ? unfold(a) : a;
+
+			return unifyAux( x, t, a, trail );
+		}
+
+		// no match a this level, attempt further down.
+
+		if( t.type !== a.type )
+			return null; // failed to match
+
+		switch( t.type ){
+			case types.FunctionType: {
+				var arg = unifyAux( x, t.argument(), a.argument(), trail );
+				var bdy = unifyAux( x, t.body(), a.body(), trail );
+
+				// if both have a match but it is not same type, fail
+				if( arg!==null && bdy!==null && !equals( arg, bdy ) )
+					return null;
+
+				// if not null, just returns null also.
+				return arg===null ? bdy : arg;
+			}
+
+			case types.BangType:
+				return unifyAux( x, t.inner(), a.inner(), trail );
+
+			case types.RelyType:
+			case types.GuaranteeType: {
+				var r = unifyAux( x, t.rely(), a.rely(), trail );
+				var g = unifyAux( x, t.guarantee(), a.guarantee(), trail );
+				
+				if( r!==null && g!==null && !equals( r, g ) )
+					return null;
+
+				return r===null ? g : r ;
+			}
+
+			case types.SumType:{
+				var ts = t.tags();
+				var as = a.tags();
+
+				if( ts.length !== as.length )
+					return null;
+
+				var tmp = null;
+				for( var i in ts ){
+					var ti = ts[i];
+					var ai = as[i];
+					var tt = t.inner(ti);
+					var at = a.inner(ai);
+
+					// missing tag in 'a'
+					if( at === undefined )
+						return null;
+
+					var tmpi = unifyAux( x, tt, at, trail );
+
+					if( tmp === null ){
+						tmp = tmpi;
+					} else {
+						// not all equals, then fail
+						if( tmpi !== null && !equals( tmp, tmpi ) )
+							return null;
+					}
+				}
+
+				return tmp;
+			}
+
+			case types.AlternativeType:
+			case types.IntersectionType:
+			case types.StarType: 
+//FIXME: the order only matters on TupleTypes, not on the above.
+			case types.TupleType: {
+				var ts = t.inner();
+				var as = a.inner();
+
+				if( ts.length !== as.length )
+					return null;
+
+				var tmp = null;
+				for( var i=0; i<ts.length; ++i ){
+					var ti = ts[i];
+					var ai = as[i];
+
+					var tmpi = unifyAux( x, ti, ai, trail );
+
+					if( tmp === null ){
+						tmp = tmpi;
+					} else {
+						// not all equals, then fail
+						if( tmpi !== null && !equals( tmp, tmpi ) )
+							return null;
+					}
+				}
+
+				return tmp;
+			}
+
+			case types.ExistsType:
+			case types.ForallType: {
+//FIXME does unify also operate over *.bound() ??
+				
+				// going inside an existential, we must shift 'x' index
+				var xi = shift1(x,0);
+
+				// these remain intentionally unchanged
+				var ti = t.inner();
+				var ai = a.inner();
+
+				return unifyAux( xi, ti, ai, trail );
+			}
+
+			case types.ReferenceType: {
+				return unifyAux( x, t.location(), a.location(), trail );
+			}
+
+			case types.StackedType: {
+				var l = unifyAux( x, t.left(), a.left(), trail );
+				var r = unifyAux( x, t.right(), a.right(), trail );
+
+				// if both have a match but it is not same type, fail
+				if( l!==null && r!==null && !equals( l, r ) )
+					return null;
+
+				// if not null, just returns null also.
+				return l===null ? r : l;
+			}
+
+			case types.CapabilityType: {
+				var l = unifyAux( x, t.location(), a.location(), trail );
+				var r = unifyAux( x, t.value(), a.value(), trail );
+
+				// if both have a match but it is not same type, fail
+				if( l!==null && r!==null && !equals( l, r ) )
+					return null;
+
+				// if not null, just returns null also.
+				return l===null ? r : l;
+			}
+
+			case types.RecordType: {
+				var ts = t.getFields();
+				var as = a.getFields();
+
+				if( ts.length !== as.length )
+					return null;
+
+				var tmp = null;
+				for( var i in ts ){
+					var ti = ts[i];
+					var ai = as[i];
+
+					// missing tag in 'a'
+					if( ai === undefined )
+						return null;
+
+					var tmpi = unifyAux( x, ti, ai, trail );
+
+					if( tmp === null ){
+						tmp = tmpi;
+					} else {
+						// not all equals, then fail
+						if( tmpi !== null && !equals( tmp, tmpi ) )
+							return null;
+					}
+				}
+
+				return tmp;
+			}
+
+			case types.LocationVariable:
+			case types.TypeVariable:
+			case types.PrimitiveType:
+			case types.NoneType:
+			case types.TopType:
+				return null;
+
+			default:
+				error( "@unifyAux: Not expecting " +t.type );
+		}
+	}
+
 
 	// shifts indexes of free variables in 't' by 1.
 	// t -> type
@@ -126,7 +342,6 @@ var TypeChecker = (function(AST,exports){
 			case types.PrimitiveType:
 			case types.NoneType:
 			case types.TopType:
-
 				return t;
 			default:
 				error( "@shift1: Not expecting " +t.type );
@@ -471,7 +686,21 @@ var TypeChecker = (function(AST,exports){
 			}
 			return false;
 		}
+
+		if( t2.type === types.ExistsType && t1.type !== types.ExistsType ){
+// FIXME : bound check.
+			// if found unification, successed.
+			if( unify( t2.id(), t2.inner(), t1 ) !== null )
+				return true;
+		}
 		
+		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
+		// FIXME : bound check.
+			// if found unification, successed.
+			if( unify( t1.id(), t1.inner(), t2 ) !== null )
+				return true;
+		}
+
 		// all remaining rule require equal kind of type
 		if( t1.type !== t2.type ){
 			return false;
@@ -1445,9 +1674,9 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				
 				var variable;
 				if( isTypeVariableName(id) )
-					variable = new TypeVariable(id);
+					variable = new TypeVariable(id,0);
 				else
-					variable = new LocationVariable(id);
+					variable = new LocationVariable(id,0);
 				
 				e.setType( id, variable );
 
@@ -1465,9 +1694,9 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				
 				var variable;
 				if( isTypeVariableName(id) )
-					variable = new TypeVariable(id);
+					variable = new TypeVariable(id,0);
 				else
-					variable = new LocationVariable(id);
+					variable = new LocationVariable(id,0);
 
 				e.setType( id, variable );
 
