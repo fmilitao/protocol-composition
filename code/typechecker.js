@@ -84,28 +84,23 @@ var TypeChecker = (function(AST,exports){
 		if( t.type !== a.type )
 			return null; // failed to match
 
-		/* FIXME --- simplify code:
 		var tmp = null;
+		// returns whether it should abort, leaves result in 'tmp'
 		var aux = function(v){
 			if( tmp === null ){
 				tmp = v;
 				return true;
 			}
 			// else must be equals
-			return v !== null !equals( tmp, v );
-		} */
+			return v === null || equals( tmp, v );
+		}
 
 		switch( t.type ){
 			case types.FunctionType: {
-				var arg = unifyAux( x, t.argument(), a.argument(), trail );
-				var bdy = unifyAux( x, t.body(), a.body(), trail );
-
-				// if both have a match but it is not same type, fail
-				if( arg!==null && bdy!==null && !equals( arg, bdy ) )
+				if( !aux( unifyAux( x, t.argument(), a.argument(), trail ) )||
+					!aux( unifyAux( x, t.body(), a.body(), trail ) ) )
 					return null;
-
-				// if not null, just returns null also.
-				return arg===null ? bdy : arg;
+				return tmp;
 			}
 
 			case types.BangType:
@@ -113,13 +108,10 @@ var TypeChecker = (function(AST,exports){
 
 			case types.RelyType:
 			case types.GuaranteeType: {
-				var r = unifyAux( x, t.rely(), a.rely(), trail );
-				var g = unifyAux( x, t.guarantee(), a.guarantee(), trail );
-				
-				if( r!==null && g!==null && !equals( r, g ) )
+				if( !aux( unifyAux( x, t.rely(), a.rely(), trail ) ) ||
+					!aux( unifyAux( x, t.guarantee(), a.guarantee(), trail ) ) )
 					return null;
-
-				return r===null ? g : r ;
+				return tmp;
 			}
 
 			case types.SumType:{
@@ -129,26 +121,13 @@ var TypeChecker = (function(AST,exports){
 				if( ts.length !== as.length )
 					return null;
 
-				var tmp = null;
 				for( var i in ts ){
-					var ti = ts[i];
-					var ai = as[i];
-					var tt = t.inner(ti);
-					var at = a.inner(ai);
+					var tt = t.inner( ts[i] );
+					var at = a.inner( as[i] );
 
 					// missing tag in 'a'
-					if( at === undefined )
+					if( at === undefined || !aux( unifyAux( x, tt, at, trail ) ) )
 						return null;
-
-					var tmpi = unifyAux( x, tt, at, trail );
-
-					if( tmp === null ){
-						tmp = tmpi;
-					} else {
-						// not all equals, then fail
-						if( tmpi !== null && !equals( tmp, tmpi ) )
-							return null;
-					}
 				}
 
 				return tmp;
@@ -158,6 +137,7 @@ var TypeChecker = (function(AST,exports){
 			case types.IntersectionType:
 			case types.StarType: 
 //FIXME: the order only matters on TupleTypes, not on the above.
+//FIXME: A * B * C could be matched as X * C, etc.
 			case types.TupleType: {
 				var ts = t.inner();
 				var as = a.inner();
@@ -165,20 +145,9 @@ var TypeChecker = (function(AST,exports){
 				if( ts.length !== as.length )
 					return null;
 
-				var tmp = null;
 				for( var i=0; i<ts.length; ++i ){
-					var ti = ts[i];
-					var ai = as[i];
-
-					var tmpi = unifyAux( x, ti, ai, trail );
-
-					if( tmp === null ){
-						tmp = tmpi;
-					} else {
-						// not all equals, then fail
-						if( tmpi !== null && !equals( tmp, tmpi ) )
-							return null;
-					}
+					if( !aux( unifyAux( x, ts[i], as[i], trail ) ) )
+						return null;
 				}
 
 				return tmp;
@@ -186,7 +155,14 @@ var TypeChecker = (function(AST,exports){
 
 			case types.ExistsType:
 			case types.ForallType: {
-//FIXME does unify also operate over *.bound() ??
+				var tb = t.bound();
+				var ab = a.bound();
+
+				// either have inconsistent 'null'
+				if( ( tb === null ^ ab === null ) || 
+				// or not null, but have invalid matching
+					( tb ===null && ab === null && !aux( unifyAux( x, tb, ab, trail ) ) ) )
+					return null;
 				
 				// going inside an existential, we must shift 'x' index
 				var xi = shift1(x,0);
@@ -195,7 +171,10 @@ var TypeChecker = (function(AST,exports){
 				var ti = t.inner();
 				var ai = a.inner();
 
-				return unifyAux( xi, ti, ai, trail );
+				if( !aux( unifyAux( xi, ti, ai, trail ) ) )
+					return null;
+
+				return tmp;
 			}
 
 			case types.ReferenceType: {
@@ -203,27 +182,17 @@ var TypeChecker = (function(AST,exports){
 			}
 
 			case types.StackedType: {
-				var l = unifyAux( x, t.left(), a.left(), trail );
-				var r = unifyAux( x, t.right(), a.right(), trail );
-
-				// if both have a match but it is not same type, fail
-				if( l!==null && r!==null && !equals( l, r ) )
+				if( !aux( unifyAux( x, t.left(), a.left(), trail ) ) ||
+					!aux( unifyAux( x, t.right(), a.right(), trail ) ) )
 					return null;
-
-				// if not null, just returns null also.
-				return l===null ? r : l;
+				return tmp;
 			}
 
 			case types.CapabilityType: {
-				var l = unifyAux( x, t.location(), a.location(), trail );
-				var r = unifyAux( x, t.value(), a.value(), trail );
-
-				// if both have a match but it is not same type, fail
-				if( l!==null && r!==null && !equals( l, r ) )
+				if( !aux( unifyAux( x, t.location(), a.location(), trail ) ) ||
+					!aux( unifyAux( x, t.value(), a.value(), trail ) ) )
 					return null;
-
-				// if not null, just returns null also.
-				return l===null ? r : l;
+				return tmp;
 			}
 
 			case types.RecordType: {
@@ -233,24 +202,13 @@ var TypeChecker = (function(AST,exports){
 				if( ts.length !== as.length )
 					return null;
 
-				var tmp = null;
 				for( var i in ts ){
 					var ti = ts[i];
 					var ai = as[i];
 
 					// missing tag in 'a'
-					if( ai === undefined )
+					if( ai === undefined || !aux( unifyAux( x, ti, ai, trail ) ) )
 						return null;
-
-					var tmpi = unifyAux( x, ti, ai, trail );
-
-					if( tmp === null ){
-						tmp = tmpi;
-					} else {
-						// not all equals, then fail
-						if( tmpi !== null && !equals( tmp, tmpi ) )
-							return null;
-					}
 				}
 
 				return tmp;
