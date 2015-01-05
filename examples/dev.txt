@@ -10,6 +10,9 @@ typedef Y<y,x> = X[x,y]
 
 // simple unification checks
 
+<t> subtype rw t int <: exists q.rw q int
+
+
 <Y> subtype forall X.( label#X + tag#X + blah#X ) <: label#Y + tag#Y + blah#Y
 
 <Y> not subtype forall X.( label#X + tag#X ) <: label#Y + tag#Y + blah#Y

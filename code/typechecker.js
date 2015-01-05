@@ -662,14 +662,18 @@ var TypeChecker = (function(AST,exports){
 		if( t2.type === types.ExistsType && t1.type !== types.ExistsType ){
 			// if found unification and it obeys bound, successed.
 			var u = unify( t2.id(), t2.inner(), t1 );
-			if( u !== null && subtype( u, t2.bound() ) )
-				return true;
+			if( u === null )
+				return false;
+			var b = t2.bound();
+			return b === null || subtype( u, b );
 		}
 		
 		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
 			var u = unify( t1.id(), t1.inner(), t2 );
-			if( u !== null && subtype( u, t1.bound() ) )
-				return true;
+			if( u === null )
+				return false;
+			var b = t1.bound();
+			return b === null || subtype( u, b );
 		}
 
 		// all remaining rule require equal kind of type
