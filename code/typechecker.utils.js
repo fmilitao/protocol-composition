@@ -389,7 +389,7 @@ var TypeChecker = (function( assertF ){
 	 * 	undefined - new element collides with a previously existing one;
 	 *  null/value - if all OK.
 	 */
-	var Environment = function(up){
+	var Environment = function( parent ){
 
 		// CAREFUL: the following cannot be a source-level identifiers.
 		// These chars are used to distinguish between variables, etc. 
@@ -398,7 +398,6 @@ var TypeChecker = (function( assertF ){
 		const BOUND_INDEX = '#';
 		
 		var map = new Map();
-		var parent = up;
 		
 		// scope methods		
 		this.newScope = function(){
