@@ -8,7 +8,7 @@ typedef X<x,y> = Y[y,x]
 typedef Y<y,x> = X[x,y]
 */
 
-// simple unification checks
+// unification checks
 
 <t> subtype rw t int <: exists q.rw q int
 

@@ -19,7 +19,7 @@ not subtype [a:int,b:boolean] <: [a:int,b:int]
 
 not subtype ![] <: none
 not subtype ![] <: int
-not subtype [a:!int,b:!boolean] <: ![] // FIXME?? 
+not subtype [a:!int,b:!boolean] <: ![]
 
 subtype !int <: ![]
 subtype !boolean <: ![]

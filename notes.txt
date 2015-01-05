@@ -8,15 +8,16 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO:
 =====
 
-* bounds on variables in environment and "<X> e", check bounds when using 'subtype' --- otherwise this is unsound.
-* recheck that subtyping rules are all there.
-MISSING: Gamma |- X <: A iff X <: A in Gamma --- subtyping needs typing environment because of this...
-...but equals does not because variable equality is enough.
-MISSING: purifyRec
-MISSING:
-     Gamma |- A <: B 
- ----------------------- ----> MISSING RULE! BUG!
- Gamma, Gamma' |- A <: B
+* MISSING SUBTYPING RULES:
+
+
+  X <: A in Gamma
+-------------------
+ Gamma |- X <: A
+ FIXME: subtyping needs typing environment because of this, but equals does not because variable equality is enough.
+ FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
+
+
 
 * New Protocol Conformance
 * also define NOT SHARE for testing when sharing should NOT work.
