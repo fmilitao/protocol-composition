@@ -239,9 +239,19 @@ var TypeChecker = (function( assertF ){
 	);
 
 	newType('DefinitionType',
-		function DefinitionType( definition_name, arg ){
+		function DefinitionType( definition_name, arg, typedef ){
 			this.definition = function(){ return definition_name; }
 			this.args = function(){ return arg; }
+			// these fetch from the typedef map
+			this.getDefinition = function(){
+				return typedef.getDefinition(definition_name);
+			}
+			this.getParams = function(){
+				return typedef.getType(definition_name);
+			}
+			this.getTypeDef = function(){
+				return typedef;
+			}
 		}
 	);
 	
@@ -389,7 +399,7 @@ var TypeChecker = (function( assertF ){
 	 * 	undefined - new element collides with a previously existing one;
 	 *  null/value - if all OK.
 	 */
-	var Environment = function( parent ){
+	var Environment = function( parent, typedef ){
 
 		// CAREFUL: the following cannot be a source-level identifiers.
 		// These chars are used to distinguish between variables, etc. 
@@ -398,10 +408,14 @@ var TypeChecker = (function( assertF ){
 		const BOUND_INDEX = '#';
 		
 		var map = new Map();
+
+		this.getTypeDef = function(){
+			return typedef;
+		}
 		
 		// scope methods		
 		this.newScope = function(){
-			return new Environment(this);
+			return new Environment( this, typedef );
 		}
 		this.endScope = function(){
 			return parent;
@@ -458,8 +472,8 @@ var TypeChecker = (function( assertF ){
 		
 		this.clone = function(){
 			var env = parent !== null ?
-				new Environment( parent.clone() ) :
-				new Environment( null );
+				new Environment( parent.clone(), typedef ) :
+				new Environment( null, typedef );
 
 			map.forEach(function(k,v){
 				// assuming it is OK to alias types/content (i.e. all immutable stuff)

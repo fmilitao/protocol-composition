@@ -300,7 +300,7 @@ var TypeChecker = (function( AST, exports ){
 				var tmp = [];
 				for( var i in fs )
 					tmp = tmp.concat( shift1( fs[i], c ) );
-				return new DefinitionType(t.definition(),tmp);
+				return new DefinitionType(t.definition(),tmp,t.getTypeDef());
 			}
 
 			case types.LocationVariable:
@@ -548,7 +548,7 @@ var TypeChecker = (function( AST, exports ){
 			var tmp = [];
 			for( var i in fs )
 				tmp = tmp.concat( rec(fs[i]) );
-			return new DefinitionType(t.definition(),tmp);
+			return new DefinitionType(t.definition(),tmp,t.getTypeDef());
 		}
 
 		// these remain UNCHANGED
@@ -871,9 +871,9 @@ var TypeChecker = (function( AST, exports ){
 	var unfoldDefinition = function(d){
 		if( d.type !== types.DefinitionType )
 			return d;
-		var t = typedef.getDefinition(d.definition());
+		var t = d.getDefinition();
 		var args = d.args();
-		var pars = typedef.getType(d.definition());
+		var pars = d.getParams();
 		// type definitions will only replace Type or Location Variables, we
 		// can use the simpler kind of substitution.
 		for(var i=0;i<args.length;++i){
@@ -1505,6 +1505,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				// the typing environment remains unchanged because all type
 				// definitions and type/location variables should not interfere
 				var label = ast.text;
+				var typedef = env.getTypeDef();
 				var tmp = env.getType( label );
 				// if label matches type in environment, but we only allow
 				// access to type variables and location variables using this
@@ -1515,19 +1516,17 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 						return tmp.copy( env.getTypeDepth(label) );
 				}
 				
-				// look for type definitions
+				// look for type definitions with 0 arguments
 				var lookup_args = typedef.getType(label);
-
-				// if found something, that is not yet defined
-				if( lookup_args !== undefined &&
-						lookup_args.length === 0 )
-					return new DefinitionType(label, new Array(0));
+				if( lookup_args !== undefined && lookup_args.length === 0 )
+					return new DefinitionType( label, [], typedef );
 		
 				assert( 'Unknown type '+label, ast);
 			};
 			
 			case AST.DEFINITION_TYPE:
 			return function( ast, env ){
+				var typedef = env.getTypeDef();
 				var id = ast.name;
 				var args = ast.args;
 				var t_args = typedef.getType(id);
@@ -1555,7 +1554,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 					arguments[i] = tmp;
 				}
 				
-				return new DefinitionType(id,arguments);
+				return new DefinitionType( id, arguments, typedef );
 			};
 			
 			case AST.TAGGED: 
@@ -1739,25 +1738,26 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 	}
 	
-	var visitor = {};
-	// setup visitors
-	for( var i in AST ){
-		error( !visitor.hasOwnProperty(i) ||
-				( 'Error @visitor, duplication: '+i ) );
-		// find witch function to call on each AST kind of node
-		visitor[i] = setupAST(i);
-	}
-	
-	var check_inner = function( ast, env ){
-		if( !visitor.hasOwnProperty( ast.kind ) ){
-			error( 'Not expecting '+ast.kind );
+	var check_inner = (function(){
+		var visitor = {};
+		// setup visitors
+		for( var i in AST ){
+			error( !visitor.hasOwnProperty(i) ||
+					( 'Error @visitor, duplication: '+i ) );
+			// find witch function to call on each AST kind of node
+			visitor[i] = setupAST(i);
 		}
-		return (visitor[ast.kind])( ast, env );
-	}
+
+		return function( ast, env ){
+			if( !visitor.hasOwnProperty( ast.kind ) ){
+				error( 'Not expecting '+ast.kind );
+			}
+			return (visitor[ast.kind])( ast, env );
+			};
+		})();
 
 	var type_info;
-	var typedef = new TypeDefinition();
-
+	
 	// exporting these functions to facilitate testing.	
 	exports.subtype = subtype;
 	exports.equals = equals;
@@ -1771,9 +1771,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		try{
 			error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
 				
-			// reset typechecke's state.
-			typedef.reset();
-			var env = new Environment(null);
+			var typedef = new TypeDefinition();
+			var env = new Environment( null, typedef );
 				
 			if( ast.typedefs !== null ){
 
