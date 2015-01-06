@@ -19,6 +19,7 @@ PEDNING BUGS:
  FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
  	How to represent this?
 
+* grammar is messy, but defining operator precendence in jison is not working?!
 
 TODO:
 =====

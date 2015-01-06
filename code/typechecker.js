@@ -760,6 +760,9 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
 				
+// TODO check well formed protocol, only then do conformance.
+// TODO: fix conformance first, then do well-formed?
+
 				/* Protocol conformance, goes through all possible "alias
 				 * interleaving" and ensure all those possibilities are considered
 				 * in both protocols.
@@ -776,7 +779,8 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			return function( ast, env ){
 				var rely = check( ast.left, env );
 				var guarantee = check( ast.right, env );
-				if( guarantee.type !== types.GuaranteeType ){
+				if( guarantee.type !== types.GuaranteeType &&
+					guarantee.type !== types.ForallType ){ // FIXME
 					guarantee = new GuaranteeType( guarantee, NoneType );
 				}
 				return new RelyType( rely, guarantee );

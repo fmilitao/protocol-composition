@@ -2,7 +2,7 @@
 // new protocols:
 
 
-/* === Pipe Example === */
+// === Pipe Example ===
 
 typedef  Node<p> = exists q.( (rw p (Node#![element: int, next: ref q])) * (H[q]) )
 typedef Close<p> = rw p (Close#![])
@@ -14,27 +14,39 @@ typedef H<p> = ( Node[p] => Node[p] ; Node[p] ) (+)
 				( Empty[p] => Empty[p] ; H[p] ) // retries
 
 
-/* === Existential-Universal Split === */
+<q> share Empty[q] as T[q] || H[q]
+
+/*
+
+// === Existential-Universal Split ===
 
 // v1
-typedef Nothing<p> = exists X.( rw p X => rw p X ; Nothing )
-typedef    Full<B> = rw p B => forall Y.( rw p Y ; Full[Y] )
+typedef Nothing<p> = exists X.( rw p X => rw p X ; Nothing[p] )
+typedef  Full<p,B> = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 // v2
-typedef Any = exists Y.( rw p Y => forall X.( rw p Y ; Any ) )
+typedef Any<p> = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
 
 // v3
 typedef W = int -o int
 typedef Q = int -o boolean
 
 typedef AO = ![add: W]
-typedef AR = ![add: W, remove Q]
+typedef AR = ![add: W, remove: Q]
 
-typedef AddOnly      = exists X <: AO.( rw p X => rw p X ; AddOnly )
-typedef AddRemove<B> = rw p B => forall Y <: AR.( rw p Y ; AddRemove[Y] )
+typedef AddOnly<p>     = exists X <: AO.( rw p X => rw p X ; AddOnly[p] )
+typedef AddRemove<p,B> = rw p B => forall Y <: AR.( rw p Y ; AddRemove[p,Y] )
 
 
-/* === Asymmetrically Shared Pair === */
+
+
+
+
+
+
+/*
+
+// === Asymmetrically Shared Pair ===
 
 //FIXME way to define convenient location variable constant?
 typedef P<p,A,B> = rw p [A,B]
@@ -42,7 +54,7 @@ typedef L<p,A> = exists C.( P[p,A,C] => forall A0.( P[p,A0,C] ; L[p,A0] ))
 typedef R<p,A> = exists D.( P[p,D,A] => forall A0.( P[p,D,A0] ; R[p,A0] ))
 
 
-/* === Extending Existing Step === */
+// === Extending Existing Step ===
 
 // v0
 typedef Hold0<p> = ( rw p Held#[] => rw p Held#[] ; Hold0[p] ) &
@@ -61,14 +73,16 @@ typedef Hold1[p] = ( rw p Held#inner#[] => rw p Held#Inner#[] ; Hold1[p] )
 					(+) ( rw p Held#Done#int => rw p Free#int )
 typedef Hold2[p] = (rw p Held#Inner#[] => rw p Held#Done#int)
 
-/* === JOIN === */
+// === JOIN ===
+
 typedef Empty<t> = rw t Empty#[]
 typedef Done<t> = rw t Done#int
 
 typedef Join<t> = Empty[t] => Done[t] ; none
 typedef  End<t> = ( Empty[t] => Empty[t] ; End[t] ) (+) ( Done[t] => Done[t] ; Done[t] )
 
-/* === Futures === */
+// === Futures ===
+
 typedef E = rw t Empty#[]
 typedef D = rw t Done#A
 typedef D<X> = rw t Done#X
@@ -79,7 +93,7 @@ typedef Future = ( E => E ; Future ) (+) ( D => D ; D )
 				& ( E => E ; X ) (+) exists Y.( D[Y] => D[Y] ; X )
 
 
-/* === OLD RE-SPLIT EXAMPLES === */
+// === OLD RE-SPLIT EXAMPLES ===
 
 // 1.
 typedef R = E => E ; R & E => N (+) C; ( ( N => N ; N ) (+) ( C => C ; C ) )
@@ -108,6 +122,7 @@ typedef J11A = ( R => R; J11A ) (+) ( D => D; D )
 typedef L = H => F ; F => F; F
 typedef LL = ( H => F ; none ) (+) ( F => F ; F )
 
+*/
 
 // old stuff, still needed for some checks:
 

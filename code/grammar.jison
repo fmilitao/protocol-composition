@@ -54,6 +54,7 @@
 <<EOF>>               return 'EOF'
 /lex
 
+
 %start file
 
 %% /* language grammar */
@@ -67,10 +68,7 @@ file :
 
 type_root :
 	  type_rg
-	| FORALL IDENTIFIER '.' type_root
-		{ $$ = AST.makeForallType($2,$4,null,@$); }
-	| FORALL IDENTIFIER '<:' type_root '.' type_root
-		{ $$ = AST.makeForallType($2,$6,$4,@$); }
+	| forall
 	| EXISTS IDENTIFIER '.' type_root
 		{ $$ = AST.makeExistsType($2,$4,null,@$); }
 	| EXISTS IDENTIFIER '<:' type_root '.' type_root
@@ -79,13 +77,20 @@ type_root :
 		{ $$ = AST.makeAlternativeType($1,@$); }
 	| intersection_type // same.
 		{ $$ = AST.makeIntersectionType($1,@$); }
-	| type_rg '{' type_root '/' id '}'
+	| type_fun '{' type_root '/' id '}'
 		{ $$ = AST.makeSubstitution($1,$3,$5,@$); }
+	;
+
+forall :
+	  FORALL IDENTIFIER '.' type_root
+		{ $$ = AST.makeForallType($2,$4,null,@$); }
+	| FORALL IDENTIFIER '<:' type_root '.' type_root
+		{ $$ = AST.makeForallType($2,$6,$4,@$); }
 	;
 
 type_rg :
 	  type_fun
-	| type_fun '=>' type_rg
+	| type_fun '=>' type_root
 		{ $$ = AST.makeRelyType($1,$3,@$); }
 	| type_fun ';' type_rg
 		{ $$ = AST.makeGuaranteeType($1,$3,@$); }
