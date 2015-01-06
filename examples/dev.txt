@@ -1,4 +1,116 @@
 
+// new protocols:
+
+
+/* === Pipe Example === */
+
+typedef  Node<p> = exists q.( (rw p (Node#![element: int, next: ref q])) * (H[q]) )
+typedef Close<p> = rw p (Close#![])
+typedef Empty<p> = rw p (Empty#![])
+
+typedef T<p> = Empty[p] => ( Close[p] (+) Node[p] ) ; none
+typedef H<p> = ( Node[p] => Node[p] ; Node[p] ) (+)
+				( Close[p] => Close[p] ; Close[p] ) (+)
+				( Empty[p] => Empty[p] ; H[p] ) // retries
+
+
+/* === Existential-Universal Split === */
+
+// v1
+typedef Nothing<p> = exists X.( rw p X => rw p X ; Nothing )
+typedef    Full<B> = rw p B => forall Y.( rw p Y ; Full[Y] )
+
+// v2
+typedef Any = exists Y.( rw p Y => forall X.( rw p Y ; Any ) )
+
+// v3
+typedef W = int -o int
+typedef Q = int -o boolean
+
+typedef AO = ![add: W]
+typedef AR = ![add: W, remove Q]
+
+typedef AddOnly      = exists X <: AO.( rw p X => rw p X ; AddOnly )
+typedef AddRemove<B> = rw p B => forall Y <: AR.( rw p Y ; AddRemove[Y] )
+
+
+/* === Asymmetrically Shared Pair === */
+
+//FIXME way to define convenient location variable constant?
+typedef P<p,A,B> = rw p [A,B]
+typedef L<p,A> = exists C.( P[p,A,C] => forall A0.( P[p,A0,C] ; L[p,A0] ))
+typedef R<p,A> = exists D.( P[p,D,A] => forall A0.( P[p,D,A0] ; R[p,A0] ))
+
+
+/* === Extending Existing Step === */
+
+// v0
+typedef Hold0<p> = ( rw p Held#[] => rw p Held#[] ; Hold0[p] ) &
+					( rw p Held#[] => rw p Free#int ; none )
+typedef Wait0<p> = ( rw p Held#[] => rw p Held#[] ; Wait0[p] ) (+)
+					( rw p Free#int => rw p Free#int ; rw p Free#int )
+
+// v1
+typedef Wait[p] = exists A.( ( rw p Held#A => rw p Held#A ; Wait[p] ) 
+					(+) ( rw p Free#int => rw p Free#int ; rw p Free#int ) )
+typedef Hold[p,A] = ( rw p Held#A => forall B.( rw p Held#B ; Hold[B] ) )
+					& ( rw p Held#A => rw p Free#int ; none )
+
+// v2 - re-split of Hold
+typedef Hold1[p] = ( rw p Held#inner#[] => rw p Held#Inner#[] ; Hold1[p] )
+					(+) ( rw p Held#Done#int => rw p Free#int )
+typedef Hold2[p] = (rw p Held#Inner#[] => rw p Held#Done#int)
+
+/* === JOIN === */
+typedef Empty<t> = rw t Empty#[]
+typedef Done<t> = rw t Done#int
+
+typedef Join<t> = Empty[t] => Done[t] ; none
+typedef  End<t> = ( Empty[t] => Empty[t] ; End[t] ) (+) ( Done[t] => Done[t] ; Done[t] )
+
+/* === Futures === */
+typedef E = rw t Empty#[]
+typedef D = rw t Done#A
+typedef D<X> = rw t Done#X
+
+//typedef Join, same as before
+typedef Future = ( E => E ; Future ) (+) ( D => D ; D )
+				// ensures D#? remains intact
+				& ( E => E ; X ) (+) exists Y.( D[Y] => D[Y] ; X )
+
+
+/* === OLD RE-SPLIT EXAMPLES === */
+
+// 1.
+typedef R = E => E ; R & E => N (+) C; ( ( N => N ; N ) (+) ( C => C ; C ) )
+// splits into:
+typedef R0 = E => N (+) C ; none
+typedef R1 = E => E; R1 (+) ( N => N ; N ) (+) ( C => C;C )
+
+// 2. U splits arbitrarily
+typedef U = NE (+) E => NE ; UN
+typedef UN = NE => NE ; UN
+
+// 3.
+typedef M = N => P ; M
+typedef MM = ( P => N; M ) & ( N => P; MM )
+
+// 4.
+typedef J = ( (F => F; J) & (F => R; R => R; R) )
+typedef J0 = F => R ; none
+typedef J1 = ( F => F ; J1 ) (+) ( R => R ; R )
+// re-split:
+typedef J10 = ( F => F; J10 ) (+) ( R => D )
+typedef J11 = ( F => F; J11 ) (+) J11A
+typedef J11A = ( R => R; J11A ) (+) ( D => D; D )
+
+// 5.
+typedef L = H => F ; F => F; F
+typedef LL = ( H => F ; none ) (+) ( F => F ; F )
+
+
+// old stuff, still needed for some checks:
+
 /*
 // these types are invalid because they are bottom types.
 typedef X = X
@@ -12,6 +124,7 @@ typedef Y<y,x> = X[x,y]
 //<B><A <: B> subtype forall X<:B.X <: A // X == A, iff A <: B
 //<B><A <: B> subtype A <: exists X<:B.X // X == A, iff A <: B
 
-
 // this should fail at the type creation level, since W is not bound on the right of <:
 //subtype exists X<:int.X <: exists W<:W.W
+
+share none as none || none

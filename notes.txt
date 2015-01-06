@@ -23,7 +23,15 @@ PEDNING BUGS:
 TODO:
 =====
 
-* New Protocol Conformance
+* Protocol Well-Formedness:
+	- isProtocol( type ) true if type contains a protocol, false if non-protocol type
+	- check that each RelyType and GuaranteeType refer the same set of locations (location set invariant)
+	- (+) ensure distinctness in alternative triggers (distinct alternative)
+	- abstractions:
+		+ same level abstraction must only refer X <: P where isProtocol(P)
+		+ or X must also be at the guarantee type unabstracted?
+
+* Protocol Conformance:
 
 - define error constants/enum instead of having constants spread out through the code.
 
