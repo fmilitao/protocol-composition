@@ -326,6 +326,7 @@ $(document).ready(function() {
 				panel.animate({
 					"left": TYPE_INFO_WIDTHS.minLeft,
 					"max-width" : TYPE_INFO_WIDTHS.maxWidth,
+					"width" : TYPE_INFO_WIDTHS.maxWidth,
 					"opacity" : TYPE_INFO_WIDTHS.maxOpacity
 					}, 'fast');
 	          }, 500);
@@ -337,6 +338,7 @@ $(document).ready(function() {
 	            panel.animate({
 	            	"left": TYPE_INFO_WIDTHS.defaultLeft,
 	            	"max-width" : TYPE_INFO_WIDTHS.defaultWidth,
+	            	"width" : "auto",
 	            	"opacity" : TYPE_INFO_WIDTHS.defaultOpacity
 	            	}, 'slow');
 	            //panel.animate({"max-width": TYPE_INFO_WIDTHS.max }, 'slow');
