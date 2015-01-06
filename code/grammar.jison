@@ -54,6 +54,13 @@
 <<EOF>>               return 'EOF'
 /lex
 
+%left '-o' '#'
+%left '+'
+%right '=>' ';'
+%left FORALL EXISTS
+%left '{'
+%left '::' '*' '(+)' '&'
+%left '!' RW 
 
 %start file
 
@@ -66,131 +73,106 @@ file :
 
 // TYPES
 
-type_root :
-	  type_rg
-	| forall
-	| EXISTS IDENTIFIER '.' type_root
-		{ $$ = AST.makeExistsType($2,$4,null,@$); }
-	| EXISTS IDENTIFIER '<:' type_root '.' type_root
-		{ $$ = AST.makeExistsType($2,$6,$4,@$); }
-	| alternative_type // groups all alternatives, easier commutative ops.
-		{ $$ = AST.makeAlternativeType($1,@$); }
-	| intersection_type // same.
-		{ $$ = AST.makeIntersectionType($1,@$); }
-	| type_fun '{' type_root '/' id '}'
-		{ $$ = AST.makeSubstitution($1,$3,$5,@$); }
-	;
+type_root : t { $$ = $1; };
 
-forall :
-	  FORALL IDENTIFIER '.' type_root
-		{ $$ = AST.makeForallType($2,$4,null,@$); }
-	| FORALL IDENTIFIER '<:' type_root '.' type_root
-		{ $$ = AST.makeForallType($2,$6,$4,@$); }
-	;
 
-type_rg :
-	  type_fun
-	| type_fun '=>' type_root
-		{ $$ = AST.makeRelyType($1,$3,@$); }
-	| type_fun ';' type_rg
-		{ $$ = AST.makeGuaranteeType($1,$3,@$); }
-	;
+t :
 
-type_fun :
-	  type_cap
-	| type_fun '-o' type_cap
-		{ $$ = AST.makeFunType($1,$3,@$); }
-	| IDENTIFIER '[' type_list ']'
-		{ $$ = AST.makeDefinitionType($1,$3,@$); }
-	;
-
-type_cap :
-	  type
-	| type_cap '::' type
-		{ $$ = AST.makeStackedType($1,$3,@$); }
-	| type '*' star_type
-		{ $$ = AST.makeStarType([$1].concat($3),@$); }
-	| sum_type
-		{ $$ = AST.makeSumType($1,@$); }
-	;
-
-id :
-	IDENTIFIER
-	 	{ $$ = AST.makeNameType(yytext,@$); }
-	;
-
-type :
-	 '!' type
- 	  	{ $$ = AST.makeBangType($2,@$); }
-	| id
-	 	{ $$ = $1; }
-	| REF IDENTIFIER
-	 	{ $$ = AST.makeRefType($2,@$); }
-	| '(' type_root ')'
-	 	{ $$ = $2; }
-	| RW IDENTIFIER type
-		{ $$ = AST.makeCapabilityType($2,$3,@$); }
-	| '[' ']'
-	 	{ $$ = AST.makeRecordType([],@$); }
-	| '[' field_types ']'
-	 	{ $$ = AST.makeRecordType($2,@$); }
-	| '[' type_list ']'
-		{ $$ = AST.makeTupleType($2,@$); }
-	| NONE
+	// base type
+	  NONE
 		{ $$ = AST.makeNoneType(@$); }
 	| TOP
 		{ $$ = AST.makeTopType(@$); }
-	// Primitive Types
 	| INT_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| BOOLEAN_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
 	| STRING_TYPE
 	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
+
+
+	| '!' t
+ 	  	{ $$ = AST.makeBangType($2,@$); }
+	| id
+	 	{ $$ = $1; }
+	| REF IDENTIFIER
+	 	{ $$ = AST.makeRefType($2,@$); }
+	| '(' t ')'
+	 	{ $$ = $2; }
+	| RW IDENTIFIER t
+		{ $$ = AST.makeCapabilityType($2,$3,@$); }
+
+	| '[' ']'
+	 	{ $$ = AST.makeRecordType([],@$); }
+	| '[' field_types ']'
+	 	{ $$ = AST.makeRecordType($2,@$); }
+	| '[' type_list ']'
+		{ $$ = AST.makeTupleType($2,@$); }
+
+	| FORALL IDENTIFIER '.' t
+		{ $$ = AST.makeForallType($2,$4,null,@$); }
+	| FORALL IDENTIFIER '<:' t '.' t
+		{ $$ = AST.makeForallType($2,$6,$4,@$); }
+	| EXISTS IDENTIFIER '.' t
+		{ $$ = AST.makeExistsType($2,$4,null,@$); }
+	| EXISTS IDENTIFIER '<:' t '.' t
+		{ $$ = AST.makeExistsType($2,$6,$4,@$); }
+
+
+	| t '{' t '/' id '}'
+		{ $$ = AST.makeSubstitution($1,$3,$5,@$); }
+
+
+	| sum_type
+		{ $$ = AST.makeSumType($1,@$); }
+
+	| t '=>' t
+		{ $$ = AST.makeRelyType($1,$3,@$); }
+	| t ';' t
+		{ $$ = AST.makeGuaranteeType($1,$3,@$); }
+
+	| t '-o' t
+		{ $$ = AST.makeFunType($1,$3,@$); }
+	| IDENTIFIER '[' type_list ']'
+		{ $$ = AST.makeDefinitionType($1,$3,@$); }
+
+
+	| t '::' t
+		{ $$ = AST.makeStackedType($1,$3,@$); }
+
+	// these collapse their arguments for convenience
+	| t '*' t
+		{ $$ = AST.makeStarType($1,$3,@$); }
+	| t '&' t
+		{ $$ = AST.makeIntersectionType($1,$3,@$); }
+	| t '(+)' t
+		{ $$ = AST.makeAlternativeType($1,$3,@$); }
+
 	;
 
-tagged :
-	IDENTIFIER '#' type
-	 	{ $$ = AST.makeTaggedType($1,$3,@$); }
-	;
-
-intersection_type :
-	  type_fun '&' type_fun
-	  	{ $$ = [$1,$3]; }
-	| intersection_type '&' type_fun
-		{ $$ = $1.concat([$3]); }
-	;
-
-alternative_type :
-	  type_fun '(+)' type_fun
-	  	{ $$ = [$1,$3]; }
-	| alternative_type '(+)' type_fun
-		{ $$ = $1.concat([$3]); }
-	;
-	
-star_type :
-	  type
-	  	{ $$ = [$1]; }
-	| type '*' star_type
-		{ $$ = [$1].concat($3); }
-	;
 
 sum_type :
-	tagged
-		{ $$ = [$1]; }
-	| tagged '+' sum_type
-		{ $$ = [$1].concat($3); }
+	  IDENTIFIER '#' t
+		{ $$ = [AST.makeTaggedType($1,$3,@$)]; }
+	| IDENTIFIER '#' t '+' sum_type
+		{ $$ = [AST.makeTaggedType($1,$3,@$)].concat($5); }
 	;
 
 type_list :
-	type_root
+	 t
 		{ $$ = [$1]; }
-	| type_root ',' type_list
-		{ $$ = [$1].concat($3); }
+	| type_list ',' t
+		{ $1.push($3); $$ = $1; }
+	;
+
+
+id :
+	IDENTIFIER
+	 	{ $$ = AST.makeNameType(yytext,@$); }
 	;
 
 field_type :
-	IDENTIFIER ':' type_root
+	IDENTIFIER ':' t
 		{ $$ = AST.makeFieldType($1,$3,@$); }
 	;
 	

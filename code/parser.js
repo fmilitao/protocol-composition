@@ -232,15 +232,35 @@ var AST = new function(){
 	this.makeSumType = function(sums, info){
 		return aux( this.kinds.SUM_TYPE, {sums:sums}, info);
 	}
-	this.makeStarType = function(types, info){
+
+	var merge = function(kind,l,r){
+		var tmp = [];
+		if( l.kind === kind ){
+			tmp = tmp.concat(l.types);
+		}
+		else
+			tmp.push(l);
+		if( r.kind === kind ){
+			tmp = tmp.concat(r.types);
+		}
+		else
+			tmp.push(r);
+		return tmp;
+	}
+	this.makeStarType = function(l,r,info){
+		var types = merge( this.kinds.STAR_TYPE, l, r ); 
 		return aux( this.kinds.STAR_TYPE, {types:types}, info);
 	}
-	this.makeIntersectionType = function(types, info){
+	this.makeIntersectionType = function(l,r,info){
+		var types = merge( this.kinds.INTERSECTION_TYPE, l, r ); 
 		return aux( this.kinds.INTERSECTION_TYPE, {types: types}, info);
 	}
-	this.makeAlternativeType = function(types, info){
+	this.makeAlternativeType = function(l,r,info){
+		var types = merge( this.kinds.ALTERNATIVE_TYPE, l, r ); 
 		return aux( this.kinds.ALTERNATIVE_TYPE, {types: types}, info);
 	}
+
+
 	this.makeFunType = function(arg,exp, info){
 		return aux( this.kinds.FUN_TYPE, {arg: arg, exp: exp}, info);
 	}
