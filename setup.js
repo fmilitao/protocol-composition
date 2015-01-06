@@ -46,6 +46,7 @@ if( !worker_enabled ){
 	importScript('lib/jison.js');
 	importScript('code/parser.js');
 	importScript('code/typechecker.types.js');
+	importScript('code/typechecker.utils.js');
 	importScript('code/typechecker.js');
 	importScript('code/worker.js');
 	console.log('done.');

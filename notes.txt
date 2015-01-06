@@ -5,8 +5,10 @@ Grammar is limited to only check 'equals', 'subtype' and 'share' (and substituti
 Instead of recursion, we have 'typedef' for clarity.
 
 
-TODO:
-=====
+PEDNING BUGS:
+=============
+
+* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bouned quantification.
 
 * MISSING SUBTYPING RULE:
 
@@ -17,6 +19,9 @@ TODO:
  FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
  	How to represent this?
 
+
+TODO:
+=====
 
 * New Protocol Conformance
 
