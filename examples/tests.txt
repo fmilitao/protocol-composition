@@ -96,3 +96,40 @@ not subtype exists X.X <: exists Z.!Z
 <X><Y><Z> not subtype X <: X & Z
 <Z><X>    not subtype X <: X & Z
 
+/* ====== */
+
+<t> subtype rw t int <: exists q.rw q int
+    subtype int -o !int <: exists X.( X -o !X )
+
+<Y> subtype forall X.( label#X + tag#X + blah#X ) <: label#Y + tag#Y + blah#Y
+<Y> not subtype forall X.( label#X + tag#X ) <: label#Y + tag#Y + blah#Y
+
+<A> subtype A <: exists X.X // X == A
+<A> subtype forall X.X <: A // X == A
+
+    subtype label#int + tag#int <: exists X.( label#X + tag#X )
+not subtype label#boolean + tag#int <: exists X.( label#X + tag#X )
+
+/* ====== */
+
+equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
+equals forall X.forall X.forall X.X == forall X.forall X.forall X.X
+equals exists X.X == exists Y<:top.Y
+equals forall X.X == forall Z<:top.Z
+
+not equals exists X.X == exists Y<:int.Y
+
+<Z> equals exists X<:Z.X == exists Y<:Z.Y
+
+<Z><W> not equals exists X<:W.X == exists Y<:Z.Y
+
+subtype exists X.X <: exists Y.Y
+subtype exists X<:top.X <: exists Z.Z // implicit top
+
+subtype exists X<:int.X <: exists W<:int.W
+
+not subtype exists X<:boolean.X <: exists P.P
+not subtype exists X<:!int.X <: exists W<:int.W
+not subtype exists X<:int.X <: exists W<:!int.W
+
+

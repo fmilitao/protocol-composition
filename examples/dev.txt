@@ -8,50 +8,10 @@ typedef X<x,y> = Y[y,x]
 typedef Y<y,x> = X[x,y]
 */
 
-// unification checks
-
-<t> subtype rw t int <: exists q.rw q int
-
-
-<Y> subtype forall X.( label#X + tag#X + blah#X ) <: label#Y + tag#Y + blah#Y
-
-<Y> not subtype forall X.( label#X + tag#X ) <: label#Y + tag#Y + blah#Y
-
-	subtype int -o !int <: exists X.( X -o !X )
-
-<A> subtype A <: exists X.X // X == A
-<A> subtype forall X.X <: A // X == A
-
-// FIXME bound check
+// FIXME bound check, requires subtype fix to include typing environment
 //<B><A <: B> subtype forall X<:B.X <: A // X == A, iff A <: B
 //<B><A <: B> subtype A <: exists X<:B.X // X == A, iff A <: B
 
-    subtype label#int + tag#int <: exists X.( label#X + tag#X )
-not subtype label#boolean + tag#int <: exists X.( label#X + tag#X )
 
-
-// older tests
-
-equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
-equals forall X.forall X.forall X.X == forall X.forall X.forall X.X
-equals exists X.X == exists Y<:top.Y
-equals forall X.X == forall Z<:top.Z
-
-not equals exists X.X == exists Y<:int.Y
-
-<Z> equals exists X<:Z.X == exists Y<:Z.Y
-
-<Z><W> not equals exists X<:W.X == exists Y<:Z.Y
-
-subtype exists X.X <: exists Y.Y
-subtype exists X<:top.X <: exists Z.Z // implicit top
-
-subtype exists X<:int.X <: exists W<:int.W
-
-// this should fail at the type checking level
+// this should fail at the type creation level, since W is not bound on the right of <:
 //subtype exists X<:int.X <: exists W<:W.W
-
-not subtype exists X<:boolean.X <: exists P.P
-not subtype exists X<:!int.X <: exists W<:int.W
-not subtype exists X<:int.X <: exists W<:!int.W
-
