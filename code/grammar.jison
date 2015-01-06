@@ -8,7 +8,7 @@
 
 \s+                   /* skip whitespace */
 \/\/.*                /* skip comments */
-"/*"(.|\n|\r)*?"*/"   /* skip multiline comment */
+"/*"(.|\n|\r)*?"*/"   /* skip multiline comments */
 "int"                 return 'INT_TYPE'
 "boolean"             return 'BOOLEAN_TYPE'
 "string"              return 'STRING_TYPE'
@@ -53,6 +53,8 @@
 [a-zA-Z0-9_]+         return 'IDENTIFIER'
 <<EOF>>               return 'EOF'
 /lex
+
+/* operator associations and precedence */
 
 %left '-o' '#'
 %left '+'
@@ -143,6 +145,8 @@ t
 		{ $$ = AST.makeAlternativeType($1,$3,@$); }
 	;
 
+// AUX
+
 sum_type
 	: IDENTIFIER '#' t
 		{ $$ = [AST.makeTaggedType($1,$3,@$)]; }
@@ -156,7 +160,6 @@ type_list
 	| type_list ',' t
 		{ $1.push($3); $$ = $1; }
 	;
-
 
 id :
 	IDENTIFIER
@@ -183,6 +186,8 @@ ids_list
 	;
 
 // PROGRAM
+// FIXME: is it possible to remove unnecessary keywords?
+// TODO: confirm priorities make sense and are intuitive, specially functions and stacking.
 
 program
 	: sequence
