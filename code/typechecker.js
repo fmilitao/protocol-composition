@@ -112,6 +112,7 @@ var TypeChecker = (function( AST, exports ){
 				if( !isTypeVariableName( t.id() ) ){
 					// then is location variable
 					// and we must remove it, if present, from the set
+//FIXME wait... this makes no sense to allow?!
 					tmp.delete( t.id().name() );
 				}
 
@@ -134,12 +135,60 @@ var TypeChecker = (function( AST, exports ){
 	}
 
 	var wfProtocol = function( p ){
+// FIXME this is a huge mess
+
 // FIXME termination not gauranteed?! needs to watchout for cycles.
 		if( !isProtocol(p) )
 			return false;
 
 		switch( p.type ){
+			case types.NoneType:
+				return new Set(); // empty set
 
+			case types.RelyType: {
+				var r = locSet( t.rely() );
+				var g = locSet( t.guarantee() );
+//TODO check they are the same
+
+				return wfProtocol( t.rely() ) && wfProtocol( t.guarantee() );
+			}
+			
+			case types.GuaranteeType:
+				return wfProtocol( t.guarantee() ) && wfProtocol( t.rely() );
+
+			case types.AlternativeType: {
+//FIXME needs to check there is a different trigger
+				// all must be valid protocols
+			}
+
+			case types.IntersectionType: {
+				// all must be valid protocols
+				var ts = t.inner();
+
+				for( var i=0; i<ts.length; ++i ){
+					if( !wfProtocol( ts[i] ) )
+						return false;
+				}
+				
+				return true;
+			}
+
+			case types.StarType: {
+//FIXME OK for some to not be valid protocols?
+				return true;
+			}
+
+			case types.ExistsType:
+			case types.ForallType:{
+				// FIXME	
+			}
+
+			case types.DefinitionType:
+// FIXME termination not gauranteed?! needs to watchout for cycles.
+				return wfProtocol( unfold(t) );
+
+			default:
+				error( '@wfProtocol: invalid type, got: '+t.type );
 		}
 		return true;
 	}
