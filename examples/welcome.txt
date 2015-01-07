@@ -12,10 +12,10 @@ typedef Buggy<q,l> = tag#(ref q) + teg#(ref l)
 typedef H<p> =
 			( rw p !(Empty#[]) => rw p !(Empty#[]) ; H[p] ) (+)
 			( rw p !(Closed#[]) => none ) (+) 
-			( rw p (Node#[int,exists q.(!ref q :: (H[q]) )]) => none )
+			( rw p (Node#[int,exists q.(!ref q :: H[q] )]) => none )
 
-typedef T<p> =  rw p !(Empty#[]) =>
-	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: (H[q]))])) )
+typedef T<p> = rw p !(Empty#[]) =>
+	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: H[q])])) )
 
 // subtyping
     subtype [a:int,b:int] <: [a:int]
@@ -38,5 +38,5 @@ not equals forall X.forall Y.([X,Y]) == forall X.forall Y.([Y,X])
 
 // sharing
 	 share A as A => none ; none || none
-<l> share (rw l !(Empty#![])) as H[l] || T[l]
+<l> share (rw l !Empty#![]) as H[l] || T[l]
 

@@ -30,7 +30,7 @@ typedef Receiver   <f,c> = F[f,c] => R[f,c]
 typedef Compressor <f,c> = ( F[f,c] => F[f,c] ; Compressor[f,c] ) (+) 
 									( R[f,c] => D[f,c] )
 
-typedef Storer  <f,c> = ( F[f,c] => F[f,c] ; Storer[f,c]) (+) Storer_[f,c] 
+typedef Storer  <f,c> = ( F[f,c] => F[f,c] ; Storer[f,c] ) (+) Storer_[f,c] 
 typedef Storer_ <f,c> = ( R[f,c] => R[f,c] ; Storer_[f,c] ) (+) ( D[f,c] => none )
 
 typedef TMP  <f,c> = ( F[f,c] => F[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
@@ -44,8 +44,8 @@ typedef TMP_ <f,c> = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f
 // embedded in the resulting protocols.
 
 // useful states
-typedef Held<t> = rw t (Held#[])
-typedef Free<t> = rw t (Free#int)
+typedef Held<t> = rw t Held#[]
+typedef Free<t> = rw t Free#int
 
 // sharing protocols
 typedef A<p> = ( Held[p] => Held[p] ; A[p] ) & ( Held[p] => Held[p] ; A[p] )
@@ -72,7 +72,7 @@ typedef P4<l> = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] 
 
 // ---- //
 
-<l> share (rw l !(Empty#![])) as Head[l] || Tail[l]
+<l> share (rw l !Empty#![]) as Head[l] || Tail[l]
 
 // ---- //
 
