@@ -123,7 +123,7 @@ var TypeChecker = (function( AST, exports ){
 					// then is location variable
 					// and we must remove it, if present, from the set
 //FIXME wait... this makes no sense to allow?!
-					tmp.delete( t.id().name() );
+					tmp.delete( id );
 				}
 
 				return tmp;
@@ -133,7 +133,7 @@ var TypeChecker = (function( AST, exports ){
 				return locSet( t.location() );
 
 			case types.LocationVariable:
-				return new Set( [t.id().name()]) ;
+				return new Set( [t.name()]) ;
 
 			case types.DefinitionType:
 // FIXME termination not gauranteed?! needs to watchout for cycles.
@@ -431,21 +431,21 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 		}
 	}
 
-	var wfProtocol = function( p ){
+	var wfProtocol = function( t ){
 // FIXME this is a huge mess
 // FIXME termination not guaranteed?! needs to watchout for cycles.
-		if( !isProtocol(p) )
+		if( !isProtocol(t) )
 			return false;
 
-		switch( p.type ){
+		switch( t.type ){
 			case types.NoneType:
-				return new Set(); // empty set
+				return true; // empty set
 
 			case types.RelyType: {
 				var r = locSet( t.rely() );
 				var g = locSet( t.guarantee() );
 
-				if( r.size() !== g.size() )
+				if( r.size !== g.size )
 					return false;
 
 				var tmp = true;
@@ -457,7 +457,7 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 				if( !tmp )
 					return false;
 
-				return wfProtocol( t.rely() ) && wfProtocol( t.guarantee() );
+				return true; //TODO wfProtocol( t.rely() ) && wfProtocol( t.guarantee() );
 			}
 			
 			case types.GuaranteeType:
@@ -467,6 +467,7 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 //FIXME needs to check there is a different trigger
 				// all must be valid protocols
 //FIXME how does this work when there are existentials??
+				return true;
 			}
 
 			case types.IntersectionType: {
@@ -489,6 +490,7 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			case types.ExistsType:
 			case types.ForallType:{
 				// FIXME problem when defining P * exists q.(A), etc.
+				return true;
 			}
 
 			case types.DefinitionType:
@@ -557,83 +559,85 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 		return true;
 	}
 
+	var visited = function( visited, work ){
+		if( visited.contains( work ) )
+			return true;
 
+		// check if contains same state, ignoring environment (only the indexes matter )
+		// ( ($\Gamma$ = $\Gamma', t : \kb{loc}$) and ($t \notin s$) and ($t \notin p$) and ($t \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) ) //by (cf:WeakeningLoc)
 
-/*
-\begin{lstlisting}[style=ALGO]
-fun visited( ($\Gamma$,$s$,$p$,$q$), v ) =
-	( ($\Gamma$,$s$,$p$,$q$) $\in$ v ) // visited configuration
-	or
-	( ($\Gamma$ = $\Gamma', t : \kb{loc}$) and ($t \notin s$) and ($t \notin p$) and ($t \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) ) //by (cf:WeakeningLoc)
-	or
-	( ($\Gamma$ = $\Gamma', X : \kb{type}, X <: A$) and ($X \notin s$) and ($X \notin p$) and ($X \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) // by (cf:WeakeningType)
-	or 
-	( ($\Gamma$,$s'$,$p'$,$q'$) $\in$ v and ($\Gamma |- s <: s'$) and ($\Gamma |- p' <: p$) and ($\Gamma |- q' <: q$) ) // by (cf:Subsumption)
-\end{lstlisting}
+		// check if contains same state, up to subtyping
+		// ( ($\Gamma$,$s'$,$p'$,$q'$) $\in$ v and ($\Gamma |- s <: s'$) and ($\Gamma |- p' <: p$) and ($\Gamma |- q' <: q$) ) // by (cf:Subsumption)
 
-\newpage
-\begin{lstlisting}[style=ALGO]
-fun stepState( work, $\Gamma$, $s$, $p$ ) =
-	$p$ = unfold($p$); // $\red{I don't like this.}$
-	$s$ = unfold($s$); // $\red{I don't like this.}$
+		return false;
+	}
 
-	if $p = \none$ then
-		addWork( work, $\Gamma$, $s$, $\none$ ) // by (step:None)
-		return true
+	var stepState = function( work, g, s, p ){
+		p = unfold(p); // I don't like this
+		s = unfold(s); // I don't like this
 
-	if $s = p$ then
-		addWork( work, $\Gamma$, $\none$, $\none$ ) // by  (step:Recovery)
-		return true
+		if( p.type === types.NoneType ){
+			// by (step:None)
+			// no need to add work, we already know this configuration steps
+			//addWork( work, g, s, p );
+			return true;
+		}
+
+		if( equals(s,p) ){
+			// by (step:Recovery)
+			addWork( work, g, NoneType, NoneType );
+			return true;
+		}
+
+		if( p.type === types.AlternativeType ){
+			var ps = p.inner();
+			// by (step:Alternative)
+			for( var i=0; i<ps.length; ++i ){
+				if( stepState( work, g, s, ps[i] ) )
+					return true;
+			}
+			return false;
+		}
 		
-	if $p = A_0 \oplus A_1$ then
-		return stepState( work, $\Gamma$, $s$, $A_0$ ) or stepState( work, $\Gamma$, $s$, $A_1$ ) // by  (step:Alternative)
+		// attempts to find matching type/location to open existential
+		if( p.type === types.ExistsType ){
+			// TODO: bound
+			// by (step:Open-Type)
+			// by (step:Open-Loc)
+			var u = unifyState( s, p.id(), p.inner() );
+			// substitute, check bound
+			return u !== null && stepState( work, s, u );
+		}
 
-// attempts to find matching type/location to open existential
-	if $p = \exists t.P$ and unifyState($s$,$t$,$P$) = $q$ then
-		return stepState( work, $\Gamma$, $s$, $P\{q/t\}$ ) // by (step:Open-Type)
+		// FIXME, equality is too strong, we need to find the type that is CONTAINED in 's' such that '... * A' (due to framing)
+		// by (step:Frame)
+		if( p.type === types.RelyType && equals( p.rely(), s ) ){
+			// case analysis on the guarantee type, 'b'
+			var b = p.guarantee();
+
+			// by (step:Step)
+			if( b.type === types.GuaranteeType ){
+				addWork( work, g, b.guarantee(), b.rely() );
+				return true;
+			}
 		
-	if $p = \exists X <: A.P$ and unifyState($s$,$X$,$P$) = $C$ then
-		return stepState( work, $\Gamma$, $s$, $P\{C/X\}$ ) // by (step:Open-Loc)
-	
-	if $p = A => b$ and $s = A$ then
-		// case analysis on the guarantee type, 'b'
-	
-		if $b = B;C$ then
-			addWork( work, $\Gamma$, $B$, $C$ ); // by (step:Step)
-			return true
-	
-		if $b = \forall X <: B.( C; D )$ and $s = A$ then
-			addWork( work, $(\Gamma, X : \kb{type}, X <: B)$, $C$, $D$ ) // by (step:Step-Type)
-			return true
+			// by (step:Step-Type)
+			// by (step:Step-Loc)
+			if( b.type === types.ForallType ){
+				var i = b.inner();
+				var gg = g.newScope();
+				//TODO add type and bound
+				addWork( work, g, i.guarantee(), i.rely() );
+				return true;
+			}
 
-		if $b = \forall t.( B; C )$ and $s = A$ then
-			addWork( work, $(\Gamma, t : \kb{loc})$, $B$, $C$ ) // by (step:Step-Loc)
-			return true
+			return false;
+		}
 
-// the following use (step:Frame)
-	if $p = A => b$ and $s = A * S$ then
-		// case analysis on the guarantee type, 'b'
-	
-		if $b = B;C$ then
-			addWork( work, $\Gamma$, $B * S$, $C$ ) // by (step:Step)
-			return true
-	
-		if $b = \forall X <: B.( C; D )$ and $s = A$ then
-			addWork( work, $(\Gamma, X : \kb{type}, X <: B)$, $C * S$, $D$ ) // by (step:Step-Type)
-			return true
+		return false
+	}
 
-		if $b = \forall t.( B; C )$ and $s = A$ then
-			addWork( $(\Gamma, t : \kb{loc})$, $B * S$, $C$ ) // by (step:Step-Loc)
-			return true
-
-	return false
-\end{lstlisting}
-*/
-
-
-
-	// Protocol-Protocol Split
-//TODO copy paste from document
+//TODO: Protocol-Protocol Split
 
 	/**
 	 * @param {AST} ast, tree to check
@@ -820,10 +824,6 @@ fun stepState( work, $\Gamma$, $s$, $p$ ) =
 
 				var res = conformanceStateProtocol( env, cap, left, right );
 				// checkProtocolConformance(cap, left, right, ast);
-				
-				assert( wfProtocol( left ) || ('Invalid protocol: '+left) , ast.a);
-				assert( wfProtocol( right ) || ('Invalid protocol: '+right) , ast.b);
-
 
 				// Protocol conformance, goes through all possible "alias
 				// interleaving" and ensure all those possibilities are considered
