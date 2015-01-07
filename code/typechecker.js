@@ -48,6 +48,11 @@ var TypeChecker = (function( AST, exports ){
 	const subtype = exports.subtype;
 	const equals = exports.equals;
 
+	// TypeVariables must be upper cased.
+	var isTypeVariableName = function(n){
+		return n[0] === n[0].toUpperCase();
+	}
+
 	//
 	// Auxiliary Definitions
 	//
@@ -136,8 +141,7 @@ var TypeChecker = (function( AST, exports ){
 
 	var wfProtocol = function( p ){
 // FIXME this is a huge mess
-
-// FIXME termination not gauranteed?! needs to watchout for cycles.
+// FIXME termination not guaranteed?! needs to watchout for cycles.
 		if( !isProtocol(p) )
 			return false;
 
@@ -148,7 +152,18 @@ var TypeChecker = (function( AST, exports ){
 			case types.RelyType: {
 				var r = locSet( t.rely() );
 				var g = locSet( t.guarantee() );
-//TODO check they are the same
+
+				if( r.size() !== g.size() )
+					return false;
+
+				var tmp = true;
+				r.forEach(function(v){
+					if( !g.has(v) )
+						tmp = false;
+				});
+				// some missing element
+				if( !tmp )
+					return false;
 
 				return wfProtocol( t.rely() ) && wfProtocol( t.guarantee() );
 			}
@@ -159,6 +174,7 @@ var TypeChecker = (function( AST, exports ){
 			case types.AlternativeType: {
 //FIXME needs to check there is a different trigger
 				// all must be valid protocols
+//FIXME how does this work when there are existentials??
 			}
 
 			case types.IntersectionType: {
@@ -180,7 +196,7 @@ var TypeChecker = (function( AST, exports ){
 
 			case types.ExistsType:
 			case types.ForallType:{
-				// FIXME	
+				// FIXME problem when defining P * exists q.(A), etc.
 			}
 
 			case types.DefinitionType:
@@ -193,10 +209,139 @@ var TypeChecker = (function( AST, exports ){
 		return true;
 	}
 
-	// TypeVariables must be upper cased.
-	var isTypeVariableName = function(n){
-		return n[0] === n[0].toUpperCase();
+	// State-Protocol Split
+	var conformanceState = function( g, s, p, q ){
+		var work = {}
+		var visited = {};
+		addWork( work, g, s, p, q );
+		return checkConformance( work, visited );
 	}
+
+	//And auxiliary function that adds work by breaking down the protocols and state into workable chunks:
+	var addWork = function( work, g, s, p, q ){
+		if( s.type === types.AlternativeType ){
+			// by (cf:Alternative)
+			var si = s.inner();
+			for( var i=0; i<si; ++i )
+				addWork( work, g, si[i], p , q );
+			return;
+		}
+
+		if( p.type === types.IntersectionType ){
+			// by (cf:IntersectionL)
+			var pi = p.inner();
+			for( var i=0; i<pi; ++i )
+				addWork( work, g, s, pi[i] , q );
+			return;
+		}
+
+		if( q.type === types.IntersectionType ){
+			// by (cf:IntersectionR)
+			var qi = q.inner();
+			for( var i=0; i<qi; ++i )
+				addWork( work, g, s, p, qi[i] );
+			return;
+		}
+
+		// base case
+		work.add( g, s, p, q );
+	}
+
+	var checkConformance = function( work, visited ){
+		while( !work.isEmpty() ){
+			var w = work.pop();
+			
+			if( !visited.contains( w ) ){
+				var g = w.g;
+				var a = w.s;
+				var p = w.p;
+				var q = w.q;
+			
+				if( !stepState( g, a, p, work ) ||
+					!stepState( g, a, q, work ) )
+					return false;
+			}
+		}
+		return true;
+	}
+
+
+
+/*
+\begin{lstlisting}[style=ALGO]
+fun visited( ($\Gamma$,$s$,$p$,$q$), v ) =
+	( ($\Gamma$,$s$,$p$,$q$) $\in$ v ) // visited configuration
+	or
+	( ($\Gamma$ = $\Gamma', t : \kb{loc}$) and ($t \notin s$) and ($t \notin p$) and ($t \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) ) //by (cf:WeakeningLoc)
+	or
+	( ($\Gamma$ = $\Gamma', X : \kb{type}, X <: A$) and ($X \notin s$) and ($X \notin p$) and ($X \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) // by (cf:WeakeningType)
+	or 
+	( ($\Gamma$,$s'$,$p'$,$q'$) $\in$ v and ($\Gamma |- s <: s'$) and ($\Gamma |- p' <: p$) and ($\Gamma |- q' <: q$) ) // by (cf:Subsumption)
+\end{lstlisting}
+
+\newpage
+\begin{lstlisting}[style=ALGO]
+fun stepState( work, $\Gamma$, $s$, $p$ ) =
+	$p$ = unfold($p$); // $\red{I don't like this.}$
+	$s$ = unfold($s$); // $\red{I don't like this.}$
+
+	if $p = \none$ then
+		addWork( work, $\Gamma$, $s$, $\none$ ) // by (step:None)
+		return true
+
+	if $s = p$ then
+		addWork( work, $\Gamma$, $\none$, $\none$ ) // by  (step:Recovery)
+		return true
+		
+	if $p = A_0 \oplus A_1$ then
+		return stepState( work, $\Gamma$, $s$, $A_0$ ) or stepState( work, $\Gamma$, $s$, $A_1$ ) // by  (step:Alternative)
+
+// attempts to find matching type/location to open existential
+	if $p = \exists t.P$ and unifyState($s$,$t$,$P$) = $q$ then
+		return stepState( work, $\Gamma$, $s$, $P\{q/t\}$ ) // by (step:Open-Type)
+		
+	if $p = \exists X <: A.P$ and unifyState($s$,$X$,$P$) = $C$ then
+		return stepState( work, $\Gamma$, $s$, $P\{C/X\}$ ) // by (step:Open-Loc)
+	
+	if $p = A => b$ and $s = A$ then
+		// case analysis on the guarantee type, 'b'
+	
+		if $b = B;C$ then
+			addWork( work, $\Gamma$, $B$, $C$ ); // by (step:Step)
+			return true
+	
+		if $b = \forall X <: B.( C; D )$ and $s = A$ then
+			addWork( work, $(\Gamma, X : \kb{type}, X <: B)$, $C$, $D$ ) // by (step:Step-Type)
+			return true
+
+		if $b = \forall t.( B; C )$ and $s = A$ then
+			addWork( work, $(\Gamma, t : \kb{loc})$, $B$, $C$ ) // by (step:Step-Loc)
+			return true
+
+// the following use (step:Frame)
+	if $p = A => b$ and $s = A * S$ then
+		// case analysis on the guarantee type, 'b'
+	
+		if $b = B;C$ then
+			addWork( work, $\Gamma$, $B * S$, $C$ ) // by (step:Step)
+			return true
+	
+		if $b = \forall X <: B.( C; D )$ and $s = A$ then
+			addWork( work, $(\Gamma, X : \kb{type}, X <: B)$, $C * S$, $D$ ) // by (step:Step-Type)
+			return true
+
+		if $b = \forall t.( B; C )$ and $s = A$ then
+			addWork( $(\Gamma, t : \kb{loc})$, $B * S$, $C$ ) // by (step:Step-Loc)
+			return true
+
+	return false
+\end{lstlisting}
+*/
+
+
+
+	// Protocol-Protocol Split
+//TODO copy paste from document
 
 	/**
 	 * @param {AST} ast, tree to check
