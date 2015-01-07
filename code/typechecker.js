@@ -53,7 +53,7 @@ var TypeChecker = (function( AST, exports ){
 	//
 
 	var isProtocol = function( t ){
-		switch( t ){
+		switch( t.type ){
 			case types.NoneType:
 				return true;
 			case types.RelyType:
@@ -70,6 +70,9 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return true;
 			}
+			case types.DefinitionType:
+//FIXME: termination not guaranteed
+				return isProtocol( unfold(t) );
 			default:
 				return false;
 		}
@@ -109,17 +112,17 @@ var TypeChecker = (function( AST, exports ){
 				if( !isTypeVariableName( t.id() ) ){
 					// then is location variable
 					// and we must remove it, if present, from the set
-					tmp.remove( t.id() );
+					tmp.delete( t.id().name() );
 				}
 
 				return tmp;
 			}
 
 			case types.CapabilityType:
-				return new Set( [t.location()] );
+				return locSet( t.location() );
 
 			case types.LocationVariable:
-				return new Set( [t]) ;
+				return new Set( [t.id().name()]) ;
 
 			case types.DefinitionType:
 // FIXME termination not gauranteed?! needs to watchout for cycles.
@@ -131,7 +134,13 @@ var TypeChecker = (function( AST, exports ){
 	}
 
 	var wfProtocol = function( p ){
-		// FIXME incomplete.
+// FIXME termination not gauranteed?! needs to watchout for cycles.
+		if( !isProtocol(p) )
+			return false;
+
+		switch( p.type ){
+
+		}
 		return true;
 	}
 
