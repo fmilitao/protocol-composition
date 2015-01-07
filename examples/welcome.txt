@@ -39,6 +39,6 @@ not equals forall X<:int.forall X<:boolean.forall X<:string.X == forall X<:strin
 <X> equals X{A/X} == A
 
 // sharing
-	 share A as A => none ; none || none
-<l> share (rw l !Empty#![]) as H[l] || T[l]
+//	 share A as A => none ; none || none
+<l> share (rw l !(Empty#![])) as H[l] || T[l]
 
