@@ -140,7 +140,7 @@ var TypeChecker = (function( AST, exports ){
 				return locSet( unfold(t) );
 
 			default:
-				error( '@locSet: invalid type, got: '+t.type );
+				error( '@locSet: invalid type, got: '+t.type+' '+t );
 		}
 	}
 
@@ -216,65 +216,81 @@ var TypeChecker = (function( AST, exports ){
 		return true;
 	}
 
+	//
 	// State-Protocol Split
-	var conformanceState = function( g, s, p, q ){
-		var work = {}
-		var visited = {};
+	//
+
+	var conformanceStateProtocol = function( g, s, p, q ){
+		var work = [];
+		var visited = [];
 		addWork( work, g, s, p, q );
-		return checkConformance( work, visited );
+		return checkSPConformance( work, visited );
 	}
 
-	//And auxiliary function that adds work by breaking down the protocols and state into workable chunks:
+	// Auxiliary function that adds work by breaking down the
+	// protocols and state into smaller, when possible.
 	var addWork = function( work, g, s, p, q ){
+		// by (cf:Alternative)
 		if( s.type === types.AlternativeType ){
-			// by (cf:Alternative)
 			var si = s.inner();
-			for( var i=0; i<si; ++i )
+			for( var i=0; i<si.length; ++i )
 				addWork( work, g, si[i], p , q );
 			return;
 		}
 
+		// by (cf:IntersectionL)
 		if( p.type === types.IntersectionType ){
-			// by (cf:IntersectionL)
 			var pi = p.inner();
-			for( var i=0; i<pi; ++i )
+			for( var i=0; i<pi.length; ++i )
 				addWork( work, g, s, pi[i] , q );
 			return;
 		}
 
+		// by (cf:IntersectionR)
 		if( q.type === types.IntersectionType ){
-			// by (cf:IntersectionR)
 			var qi = q.inner();
-			for( var i=0; i<qi; ++i )
+			for( var i=0; i<qi.length; ++i )
 				addWork( work, g, s, p, qi[i] );
 			return;
 		}
 
 		// base case
-		work.add( g, s, p, q );
+		work.push( { g: g, s: s, p: p, q: q } );
 	}
 
-	var checkConformance = function( work, visited ){
-		while( !work.isEmpty() ){
+	var checkSPConformance = function( work, visited ){
+//debugger
+//var i=0;
+		while( work.length > 0 ){
 			var w = work.pop();
-			
-			if( !visited.contains( w ) ){
+
+			if( !contains( visited, w ) ){
 				var g = w.g;
 				var a = w.s;
 				var p = w.p;
 				var q = w.q;
+
+//console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			
-				if( !stepState( g, a, p, work ) ||
-					!stepState( g, a, q, work ) )
+				if( !stepState( work, g, a, p, q, true ) || 
+					!stepState( work, g, a, q, p, false ) )
 					return false;
+
+				visited.push( w );
 			}
 		}
 		return true;
 	}
 
-	var visited = function( visited, work ){
-		if( visited.contains( work ) )
-			return true;
+	var contains = function( visited, w ){
+		for( var i in visited ){
+			var v = visited[i];
+			// for now ignore 'g'
+			if( equals( v.s, w.s ) &&
+				equals( v.p, w.p ) &&
+				equals( v.q, w.q ) )
+				return true;
+		}
 
 		// check if contains same state, ignoring environment (only the indexes matter )
 		// ( ($\Gamma$ = $\Gamma', t : \kb{loc}$) and ($t \notin s$) and ($t \notin p$) and ($t \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) ) //by (cf:WeakeningLoc)
@@ -285,9 +301,16 @@ var TypeChecker = (function( AST, exports ){
 		return false;
 	}
 
-	var stepState = function( work, g, s, p ){
-		p = unfold(p); // I don't like this
+	var stepState = function( work, g, s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
+		p = unfold(p); // I don't like this
+
+		var addW = function( g, s, p ){
+			if( isLeft )
+				addWork( work, g, s, p, q );
+			else
+				addWork( work, g, s, q, p );
+		};
 
 		if( p.type === types.NoneType ){
 			// by (step:None)
@@ -298,7 +321,7 @@ var TypeChecker = (function( AST, exports ){
 
 		if( equals(s,p) ){
 			// by (step:Recovery)
-			addWork( work, g, NoneType, NoneType );
+			addW( g, NoneType, NoneType );
 			return true;
 		}
 
@@ -306,7 +329,7 @@ var TypeChecker = (function( AST, exports ){
 			var ps = p.inner();
 			// by (step:Alternative)
 			for( var i=0; i<ps.length; ++i ){
-				if( stepState( work, g, s, ps[i] ) )
+				if( stepState( work, g, s, ps[i], q, isLeft ) )
 					return true;
 			}
 			return false;
@@ -319,7 +342,7 @@ var TypeChecker = (function( AST, exports ){
 			// by (step:Open-Loc)
 			var u = unifyState( s, p.id(), p.inner() );
 			// substitute, check bound
-			return u !== null && stepState( work, s, u );
+			return u !== null && stepState( work, g, s, u, q, isLeft );
 		}
 
 		// FIXME, equality is too strong, we need to find the type that is CONTAINED in 's' such that '... * A' (due to framing)
@@ -330,7 +353,7 @@ var TypeChecker = (function( AST, exports ){
 
 			// by (step:Step)
 			if( b.type === types.GuaranteeType ){
-				addWork( work, g, b.guarantee(), b.rely() );
+				addW( g, b.guarantee(), b.rely() );
 				return true;
 			}
 		
@@ -340,14 +363,14 @@ var TypeChecker = (function( AST, exports ){
 				var i = b.inner();
 				var gg = g.newScope();
 				//TODO add type and bound
-				addWork( work, g, i.guarantee(), i.rely() );
+				addW( g, i.guarantee(), i.rely() );
 				return true;
 			}
 
 			return false;
 		}
 
-		return false
+		return false;
 	}
 
 //TODO: Protocol-Protocol Split
@@ -534,10 +557,11 @@ var TypeChecker = (function( AST, exports ){
 				// Protocol conformance, goes through all possible "alias
 				// interleaving" and ensure all those possibilities are considered
 				// in both protocols.
-console.log( 'conformance check disabled' );
+
+				var res = conformanceStateProtocol( env, cap, left, right );
 				// checkProtocolConformance(cap, left, right, ast);
 				
-				assert( ast.value || ('Unexpected Result, got '+true+' expecting '+ast.value) , ast);
+				assert( ast.value === res || ('Unexpected Result, got '+res+' expecting '+ast.value) , ast);
 				
 				// returns unit
 				return new BangType(new RecordType());
@@ -786,13 +810,16 @@ console.log( 'conformance check disabled' );
 	var inspector = function( ast, env, c ){
 			var info = { ast : ast, env : env.clone() };
 			type_info.push( info );
-			
+
 			var res = c( ast, env );
-			
 			info.res = res;
+
+/*
 			if( ast.kind === AST.SHARE ){
-				info.conformance = hack_info; //FIXME hack_info
+				info.conformance = hack_info; //FIXME
 			}
+			*/
+
 			return res;
 		};
 	var checker = buildChecker( inspector );
@@ -816,24 +843,20 @@ console.log( 'conformance check disabled' );
 
 	};
 
-
-
-
+	return exports;
 
 //
 // ======================= STUFF BELOW IS DEPRECATED ===========================
 //
 
-
+/*
 
 //
 // Protocol Conformance
 //
 
-/*
- * Extracts the initial state of a protocol, or undefined if it is not a
- * protocol that was given as argument.
- */
+// Extracts the initial state of a protocol, or undefined if it is not a
+// protocol that was given as argument.
 var getInitialState = function( p ){
 	p = unfold(p);
 	switch(p.type){
@@ -883,9 +906,7 @@ var getInitialState = function( p ){
 	}
 }
 
-/**
- * Protocol Conformance
- */
+// OLD Protocol Conformance
 var checkProtocolConformance = function( s, a, b, ast ){
 	var initial = getInitialState(s);
 	
@@ -896,13 +917,11 @@ var checkProtocolConformance = function( s, a, b, ast ){
 	}
 };
 
-	/**
-	 * Checks if 'p' accepts 's' with resulting guarantee of 'm'.
-	 * @param 's' - initial state
-	 * @param 'p' - protocol
-	 * @param 'm' - state to match
-	 * @return residual protocol of 'p'
-	 */
+	// Checks if 'p' accepts 's' with resulting guarantee of 'm'.
+	// @param 's' - initial state
+	// @param 'p' - protocol
+	// @param 'm' - state to match
+	// @return residual protocol of 'p'
 	var simM = function( s, p, m, ast ){
 		
 		// unfold definition
@@ -1064,12 +1083,10 @@ var checkProtocolConformance = function( s, a, b, ast ){
 		return [p];
 	}
 	
-	/**
-	 * @param 's' state
-	 * @param 'p' protocol
-	 * @param 'o' protocol to match with result of moving p with s.
-	 * @returns the next state of moving both protocols with 's'.
-	 */
+	// @param 's' state
+	// @param 'p' protocol
+	// @param 'o' protocol to match with result of moving p with s.
+	// @returns the next state of moving both protocols with 's'.
 	var simP = function( s, p, o, ast ){
 
 		// unfold definitions
@@ -1136,11 +1153,10 @@ var checkProtocolConformance = function( s, a, b, ast ){
 		return { state: next.guarantee(), protocol: next.rely(), other: m };
 	}
 	
-	/**
-	 * Does single step on protocol 'p' with state 's'. Result is an array with
-	 * all possible steps that can be taken. Each entry with object to label
-	 * the next state as 's' and the residual protocol as 'p'.
-	 */
+	
+	// Does single step on protocol 'p' with state 's'. Result is an array with
+	// all possible steps that can be taken. Each entry with object to label
+	// the next state as 's' and the residual protocol as 'p'.
 	var step = function(s,p, ast){
 		// unfold definitions
 		p = unfold(p);
@@ -1367,14 +1383,9 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 
 
+*/
 
 
-
-
-
-
-
-	return exports;
 	
 })( AST.kinds, TypeChecker ); // required globals
 

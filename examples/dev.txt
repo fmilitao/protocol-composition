@@ -142,4 +142,4 @@ typedef Y<y,x> = X[x,y]
 // this should fail at the type creation level, since W is not bound on the right of <:
 //subtype exists X<:int.X <: exists W<:W.W
 
-share none as none || none
+// share none as none || none
