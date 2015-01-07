@@ -6,12 +6,12 @@
 //
 // Pipe
 //
-typedef Head<p> =
+typedef Head[p] =
 			( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
 			( rw p !(Closed#[]) => none ) (+) 
 			( rw p (Node#[int,exists q.(!ref q :: (Head[q]) )]) => none )
 
-typedef Tail<p> =  rw p !(Empty#[]) =>
+typedef Tail[p] =  rw p !(Empty#[]) =>
 	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: (Head[q]))])) )
 
 
@@ -22,19 +22,19 @@ typedef Tail<p> =  rw p !(Empty#[]) =>
 // Note: the second split generates an additional line on the conformance table
 // due to a subtyping algorithm limitation (on expanding definitions.)
 
-typedef F<f,c> = rw f (Free#[]) * rw c []
-typedef R<f,c> = rw f  (Raw#[]) * rw c int
-typedef D<f,c> = rw f (Done#[]) * rw c boolean
+typedef F[f,c] = rw f (Free#[]) * rw c []
+typedef R[f,c] = rw f  (Raw#[]) * rw c int
+typedef D[f,c] = rw f (Done#[]) * rw c boolean
 
-typedef Receiver   <f,c> = F[f,c] => R[f,c]
-typedef Compressor <f,c> = ( F[f,c] => F[f,c] ; Compressor[f,c] ) (+) 
+typedef Receiver   [f,c] = F[f,c] => R[f,c]
+typedef Compressor [f,c] = ( F[f,c] => F[f,c] ; Compressor[f,c] ) (+) 
 									( R[f,c] => D[f,c] )
 
-typedef Storer  <f,c> = ( F[f,c] => F[f,c] ; Storer[f,c] ) (+) Storer_[f,c] 
-typedef Storer_ <f,c> = ( R[f,c] => R[f,c] ; Storer_[f,c] ) (+) ( D[f,c] => none )
+typedef Storer  [f,c] = ( F[f,c] => F[f,c] ; Storer[f,c] ) (+) Storer_[f,c] 
+typedef Storer_ [f,c] = ( R[f,c] => R[f,c] ; Storer_[f,c] ) (+) ( D[f,c] => none )
 
-typedef TMP  <f,c> = ( F[f,c] => F[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
-typedef TMP_ <f,c> = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f,c] => none )
+typedef TMP  [f,c] = ( F[f,c] => F[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
+typedef TMP_ [f,c] = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f,c] => none )
 
 //
 // Tests
@@ -44,20 +44,20 @@ typedef TMP_ <f,c> = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f
 // embedded in the resulting protocols.
 
 // useful states
-typedef Held<t> = rw t Held#[]
-typedef Free<t> = rw t Free#int
+typedef Held[t] = rw t Held#[]
+typedef Free[t] = rw t Free#int
 
 // sharing protocols
-typedef A<p> = ( Held[p] => Held[p] ; A[p] ) & ( Held[p] => Held[p] ; A[p] )
-typedef B<p> = ( Held[p] => Held[p] ; B[p] ) & ( Held[p] => Free[p] ; Free[p] => none )
+typedef A[p] = ( Held[p] => Held[p] ; A[p] ) & ( Held[p] => Held[p] ; A[p] )
+typedef B[p] = ( Held[p] => Held[p] ; B[p] ) & ( Held[p] => Free[p] ; Free[p] => none )
 
-typedef P<l> = ( Held[l] => Held[l] ; P[l] ) & ( Held[l] => Free[l] ; Free[l] => none )
-typedef P0<l> = ( Held[l] => Held[l] ; P0[l] ) (+) ( Free[l] => none )
-typedef P1<l> = ( Held[l] => Free[l] )
+typedef P[l] = ( Held[l] => Held[l] ; P[l] ) & ( Held[l] => Free[l] ; Free[l] => none )
+typedef P0[l] = ( Held[l] => Held[l] ; P0[l] ) (+) ( Free[l] => none )
+typedef P1[l] = ( Held[l] => Free[l] )
 
-typedef P3<l> = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] => none )
+typedef P3[l] = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] => none )
 
-typedef P4<l> = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] => none )
+typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] => none )
 
 // ---- ///
 

@@ -4,12 +4,12 @@
 
 // === Pipe Example ===
 
-typedef  Node<p> = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
-typedef Close<p> = rw p Close#![]
-typedef Empty<p> = rw p Empty#![]
+typedef  Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
+typedef Close[p] = rw p Close#![]
+typedef Empty[p] = rw p Empty#![]
 
-typedef T<p> = Empty[p] => ( Close[p] (+) Node[p] ) ; none
-typedef H<p> = ( Node[p] => Node[p] ; Node[p] ) (+)
+typedef T[p] = Empty[p] => ( Close[p] (+) Node[p] ) ; none
+typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 				( Close[p] => Close[p] ; Close[p] ) (+)
 				( Empty[p] => Empty[p] ; H[p] ) // retries
 

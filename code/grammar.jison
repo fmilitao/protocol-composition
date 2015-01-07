@@ -63,7 +63,8 @@
 %left '{'
 %right '::' 
 %left '*' '(+)' '&'
-%left '!' RW 
+%left '!' RW
+%left ','
 
 %start file
 
@@ -178,13 +179,6 @@ field_types
 		{ $$ = [$1].concat($3); }
 	;
 
-ids_list
-	: IDENTIFIER
-		{ $$ = [$1]; }
-	| IDENTIFIER ',' ids_list
-		{ $$ = [$1].concat($3); }
-	;
-
 // PROGRAM
 
 program
@@ -204,13 +198,15 @@ typedefs
 typedef
 	: TYPEDEF IDENTIFIER '=' t
 		{ $$ = AST.makeTypedef($2,$4,null,@$); }
-	| TYPEDEF IDENTIFIER typedef_pars '=' t
-		{ $$ = AST.makeTypedef($2,$5,$3,@$); }
+	| TYPEDEF IDENTIFIER '[' ids_list ']' '=' t
+		{ $$ = AST.makeTypedef($2,$7,$4,@$); }
 	;
 
-typedef_pars :
-	'<' ids_list '>'
-		{ $$ = $2; }
+ids_list
+	: IDENTIFIER
+		{ $$ = [$1]; }
+	| ids_list ',' ids_list
+		{ $$ = $1.concat($3); }
 	;
 
 sequence
