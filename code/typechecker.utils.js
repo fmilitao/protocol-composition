@@ -362,7 +362,7 @@ var TypeChecker = (function( exports ){
 				return equalsAux( t1.bound(), t2.bound(), trail ) &&
 					equalsAux( t1.inner(), t2.inner(), trail );
 			}
-			case types.TypeVariable:
+			case types.TypeVariable: //FIXME needs to also check bounds are equal.
 			case types.LocationVariable: {
 				return  t1.index() === t2.index();
 			}
@@ -877,6 +877,7 @@ var TypeChecker = (function( exports ){
 	}
 
 	exports.unfold = unfold;
+	exports.unfoldDefinition = unfoldDefinition;
 	exports.substitution = substitution;
 	exports.subtype = subtype;
 	exports.equals = equals;

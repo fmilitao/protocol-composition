@@ -44,6 +44,7 @@ var TypeChecker = (function( AST, exports ){
 	const TypeDefinition = exports.TypeDefinition;
 
 	const unfold = exports.unfold;
+	const unfoldDefinition = exports.unfoldDefinition;
 	const substitution = exports.substitution;
 	const subtype = exports.subtype;
 	const equals = exports.equals;
@@ -300,7 +301,8 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 				subtype( v.q, w.q ) )
 				return true;
 
-			// TODO by weakening, careful since bounds must match too.
+			// TODO by weakening, careful since bounds must match too?
+			// MESSY on how to type check this case.
 */
 		}
 
@@ -366,6 +368,8 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			// by (step:Step-Type)
 			// by (step:Step-Loc)
 			if( b.type === types.ForallType ){
+				// FIXME: how does this affect existing De Bruijn indexes?
+				// FIXME: don't type definitions also imply a shift in the indexes? (new bind)
 				var i = b.inner();
 				var id = b.id();
 				var name = id.name();
