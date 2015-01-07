@@ -260,7 +260,7 @@ var TypeChecker = (function( AST, exports ){
 
 	var checkSPConformance = function( work, visited ){
 //debugger
-//var i=0;
+var i=0;
 		while( work.length > 0 ){
 			var w = work.pop();
 
@@ -270,7 +270,7 @@ var TypeChecker = (function( AST, exports ){
 				var p = w.p;
 				var q = w.q;
 
-//console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
+console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			
 				if( !stepState( work, g, a, p, q, true ) || 
 					!stepState( work, g, a, q, p, false ) )
@@ -285,18 +285,24 @@ var TypeChecker = (function( AST, exports ){
 	var contains = function( visited, w ){
 		for( var i in visited ){
 			var v = visited[i];
+			
+			// by equality
 			// for now ignore 'g'
 			if( equals( v.s, w.s ) &&
 				equals( v.p, w.p ) &&
 				equals( v.q, w.q ) )
 				return true;
+
+/*
+			// TODO by subsumption
+			if( subtype( w.s, v.s ) &&
+				subtype( v.p, w.p ) &&
+				subtype( v.q, w.q ) )
+				return true;
+
+			// TODO by weakening, careful since bounds must match too.
+*/
 		}
-
-		// check if contains same state, ignoring environment (only the indexes matter )
-		// ( ($\Gamma$ = $\Gamma', t : \kb{loc}$) and ($t \notin s$) and ($t \notin p$) and ($t \notin q$) and visited( ($\Gamma'$,$s$,$p$,$q$), v ) ) //by (cf:WeakeningLoc)
-
-		// check if contains same state, up to subtyping
-		// ( ($\Gamma$,$s'$,$p'$,$q'$) $\in$ v and ($\Gamma |- s <: s'$) and ($\Gamma |- p' <: p$) and ($\Gamma |- q' <: q$) ) // by (cf:Subsumption)
 
 		return false;
 	}
@@ -312,22 +318,22 @@ var TypeChecker = (function( AST, exports ){
 				addWork( work, g, s, q, p );
 		};
 
+		// by (step:None)
 		if( p.type === types.NoneType ){
-			// by (step:None)
 			// no need to add work, we already know this configuration steps
 			//addWork( work, g, s, p );
 			return true;
 		}
 
+		// by (step:Recovery)
 		if( equals(s,p) ){
-			// by (step:Recovery)
 			addW( g, NoneType, NoneType );
 			return true;
 		}
 
+		// by (step:Alternative)
 		if( p.type === types.AlternativeType ){
 			var ps = p.inner();
-			// by (step:Alternative)
 			for( var i=0; i<ps.length; ++i ){
 				if( stepState( work, g, s, ps[i], q, isLeft ) )
 					return true;
@@ -345,8 +351,8 @@ var TypeChecker = (function( AST, exports ){
 			return u !== null && stepState( work, g, s, u, q, isLeft );
 		}
 
-		// FIXME, equality is too strong, we need to find the type that is CONTAINED in 's' such that '... * A' (due to framing)
-		// by (step:Frame)
+		// TODO: by (step:Frame) --- equality is too strong, we need to find the type that is CONTAINED in 's' such that '... * A' (due to framing)
+
 		if( p.type === types.RelyType && equals( p.rely(), s ) ){
 			// case analysis on the guarantee type, 'b'
 			var b = p.guarantee();
@@ -361,13 +367,24 @@ var TypeChecker = (function( AST, exports ){
 			// by (step:Step-Loc)
 			if( b.type === types.ForallType ){
 				var i = b.inner();
+				var id = b.id();
+				var name = id.name();
+				var bound = b.bound();
+
 				var gg = g.newScope();
-				//TODO add type and bound
-				addW( g, i.guarantee(), i.rely() );
+
+				gg.setType( name, id );
+				if( bound !== null )
+					gg.setBound( name, bound );
+
+				addW( gg, i.guarantee(), i.rely() );
 				return true;
 			}
 
-			return false;
+			// assume case is that of omitted '; none' a 'b' is the new state.
+			// assume that type was previously checked to be well-formed.
+			addW( g, b, NoneType );
+			return true;
 		}
 
 		return false;
@@ -572,11 +589,6 @@ var TypeChecker = (function( AST, exports ){
 			return function( ast, env ){
 				var rely = check( ast.left, env );
 				var guarantee = check( ast.right, env );
-				if( guarantee.type !== types.GuaranteeType &&
-					guarantee.type !== types.ForallType ){
-					// FIXME make protocol conformance OK with missing '; none' instead of adding it here.
-					guarantee = new GuaranteeType( guarantee, NoneType );
-				}
 				return new RelyType( rely, guarantee );
 			};
 			
