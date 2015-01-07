@@ -132,4 +132,6 @@ not subtype exists X<:boolean.X <: exists P.P
 not subtype exists X<:!int.X <: exists W<:int.W
 not subtype exists X<:int.X <: exists W<:!int.W
 
+     equals exists X<:int.X == exists Y<:int.Y
+ not equals exists X<:int.X == exists Y<:boolean.Y
 
