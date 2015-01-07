@@ -79,7 +79,6 @@ var TypeChecker = (function( AST, exports ){
 			case types.DefinitionType:
 //FIXME: termination not guaranteed
 				return isProtocol( unfold(t) );
-
 			default:
 				return false;
 		}
@@ -123,8 +122,7 @@ var TypeChecker = (function( AST, exports ){
 				if( !isTypeVariableName( id ) ){
 					// then is location variable
 					// and we must remove it, if present, from the set
-//FIXME wait... this makes no sense to allow?!
-					tmp.delete( id );
+					tmp.delete( t.id().name() );
 				}
 
 				return tmp;
@@ -134,7 +132,7 @@ var TypeChecker = (function( AST, exports ){
 				return locSet( t.location() );
 
 			case types.LocationVariable:
-				return new Set( [t.name()]) ;
+				return new Set( [t.id().name()]) ;
 
 			case types.DefinitionType:
 // FIXME termination not gauranteed?! needs to watchout for cycles.
@@ -433,7 +431,13 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 	}
 
 	var wfProtocol = function( p ){
-		// FIXME incomplete.
+// FIXME termination not gauranteed?! needs to watchout for cycles.
+		if( !isProtocol(p) )
+			return false;
+
+		switch( p.type ){
+
+		}
 		return true;
 	}
 
