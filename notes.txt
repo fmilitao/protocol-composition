@@ -8,12 +8,6 @@ Instead of recursion, we have 'typedef' for clarity.
 PEDNING BUGS:
 =============
 
-* equals also need typing environment to ensure that bounds are the same:
- // test
-     equals exists X<:int.X == exists Y<:int.Y
- not equals exists X<:int.X == exists Y<:boolean.Y
-
-
 * FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bouned quantification.
 
 * MISSING SUBTYPING RULE:
@@ -21,9 +15,23 @@ PEDNING BUGS:
   X <: A in Gamma
 -------------------
  Gamma |- X <: A
- FIXME: subtyping needs typing environment because of this -- EQUALS ALSO NEEDS THIS!
+ FIXME: subtyping needs typing environment because of this. (equals does not but uses syntactic equality)
  FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
  	How to represent this?
+
+// needs: getBound( ID, DEPTH ) // to account for De Bruijn indexes.
+
+// tests:
+< X<:int, Y<:int >
+	subtype X <: Y
+
+< X<:int, Y<:int >
+	not equals X == Y
+// ...
+
+* FIXME: missing bounds on type definitions.
+// test:
+typedef N[A, B <: int] = N[int,int]
 
 * grammar is messy, but defining operator precendence in jison is not working?!
 
