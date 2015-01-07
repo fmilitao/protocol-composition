@@ -186,8 +186,6 @@ ids_list
 	;
 
 // PROGRAM
-// FIXME: is it possible to remove unnecessary keywords?
-// TODO: confirm priorities make sense and are intuitive, specially functions and stacking.
 
 program
 	: sequence

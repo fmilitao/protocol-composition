@@ -2,20 +2,20 @@
 // The other files should contain the main tests and examples.
 
 typedef A = int
-
 typedef X = exists A.forall B.( a#A + b#B )
+typedef F = !int -o boolean -o string
+typedef C<A,B> = int :: A :: B
 
 typedef Y<x> = boolean{int/x}
 
 typedef Buggy<q,l> = tag#(ref q) + teg#(ref l)
 
-typedef H<p> =
-			( rw p !(Empty#[]) => rw p !(Empty#[]) ; H[p] ) (+)
-			( rw p !(Closed#[]) => none ) (+) 
-			( rw p (Node#[int,exists q.(!ref q :: H[q] )]) => none )
+typedef H<p> =	( (rw p !Empty#[]) => (rw p !Empty#[]) ; H[p] ) (+)
+				( (rw p !Closed#[]) => none ) (+) 
+				( (rw p Node#[int,exists q.(!ref q :: H[q])]) => none )
 
-typedef T<p> = rw p !(Empty#[]) =>
-	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: H[q])])) )
+typedef T<p> =	(rw p !Empty#[]) =>
+				( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: H[q])]) )
 
 // subtyping
     subtype [a:int,b:int] <: [a:int]
@@ -28,7 +28,7 @@ not subtype int <: boolean
     equals forall X.(X{int/X}) == forall Y.int
 not equals int == boolean
 not equals int == !int
-not equals forall X.forall Y.([X,Y]) == forall X.forall Y.([Y,X])
+not equals forall X.forall Y.[X,Y] == forall X.forall Y.[Y,X]
 
 	equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
 	equals exists X.(forall X.exists X.X){int/X} == exists X.forall X.exists X.X

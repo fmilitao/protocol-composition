@@ -44,15 +44,16 @@ STYLE:
 
 FIXME --- GRAMMAR:
 ==================
-* grammar simplifications to remove some unnecessary parenthesis on 'share' constructs, etc.
-* TODO: read jison documentation on token precedences.
+
+* FIXME: is it possible to remove unnecessary keywords (such as 'subtype' and 'equals')?
 
  not A <: A // subtype test
  not A == A // equality test
  	--> PROBLEM: ambiguity in the grammar!
+ 
  share A as B, C, D, E;
  share D as D, D;
-
+ 	--> PROBLEM: implicit associativity.
 
 Extra Credits:
 ==============
