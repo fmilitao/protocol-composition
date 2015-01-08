@@ -583,11 +583,11 @@ var TypeChecker = (function( exports ){
 	 * @param {Type} t2
 	 * @return {Boolean} true if t1 <: t2 (if t1 can be used as t2).
 	 */
-	 var subtype = function( t1, t2, env ){
-	 	return subtypeAux( t1, t2, env, new Set() );
+	 var subtype = function( t1, t2 ){
+	 	return subtypeAux( t1, t2, new Set() );
 	 }
 
-	var subtypeAux = function( t1 , t2, env, trail ){
+	var subtypeAux = function( t1 , t2, trail ){
 
 		if( t1 === t2 || equals(t1,t2) ) // A <: A
 			return true;
@@ -607,7 +607,7 @@ var TypeChecker = (function( exports ){
 			t1 = def1 ? unfold(t1) : t1;
 			t2 = def2 ? unfold(t2) : t2;
 
-			return subtypeAux( t1, t2, env, trail );
+			return subtypeAux( t1, t2, trail );
 		}
 
 		if( t2.type === types.TopType && t1.type !== types.LocationVariable )
@@ -623,24 +623,24 @@ var TypeChecker = (function( exports ){
 
 		// "pure to linear" - ( t1: !A ) <: ( t2: A )
 		if ( t1.type === types.BangType && t2.type !== types.BangType )
-			return subtypeAux( t1.inner(), t2, env, trail );
+			return subtypeAux( t1.inner(), t2, trail );
 	
 		// types that can be "banged"
 		if ( t2.type === types.BangType &&
 			( t1.type === types.ReferenceType
 			|| t1.type === types.PrimitiveType
 			|| ( t1.type === types.RecordType && t1.isEmpty() ) ) )
-			return subtypeAux( t1, t2.inner(), env, trail );
+			return subtypeAux( t1, t2.inner(), trail );
 			
 		// "ref" t1: (ref p) <: !(ref p)
 		if ( t1.type === types.ReferenceType && t2.type === types.BangType )
-			return subtypeAux( t1, t2.inner(), env, trail );
+			return subtypeAux( t1, t2.inner(), trail );
 		
 		if( t1.type !== types.AlternativeType && t2.type === types.AlternativeType ){
 			// only requirement is that t1 is one of t2's alternative
 			var i2s = t2.inner();
 			for(var j=0;j<i2s.length;++j) {
-				if( subtypeAux( t1, i2s[j], env, trail ) ){
+				if( subtypeAux( t1, i2s[j], trail ) ){
 					return true;
 				}
 			}
@@ -651,7 +651,7 @@ var TypeChecker = (function( exports ){
 			// one of t1s alts is t2
 			var i1s = t1.inner();
 			for(var j=0;j<i1s.length;++j) {
-				if( subtypeAux( i1s[j], t2, env, trail ) ){
+				if( subtypeAux( i1s[j], t2, trail ) ){
 					return true;
 				}
 			}
@@ -664,7 +664,7 @@ var TypeChecker = (function( exports ){
 			if( u === null )
 				return false;
 			var b = t2.bound();
-			return b === null || subtypeAux( u, b, env, trail );
+			return b === null || subtypeAux( u, b, trail );
 		}
 		
 		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
@@ -672,7 +672,7 @@ var TypeChecker = (function( exports ){
 			if( u === null )
 				return false;
 			var b = t1.bound();
-			return b === null || subtypeAux( u, b, env, trail );
+			return b === null || subtypeAux( u, b, trail );
 		}
 
 		// all remaining rule require equal kind of type
@@ -690,20 +690,20 @@ var TypeChecker = (function( exports ){
 				// if t2 is unit: "top" rule
 				if( t2.inner().type === types.RecordType && t2.inner().isEmpty() )
 					return true;
-				return subtypeAux( t1.inner(), t2.inner(), env, trail );
+				return subtypeAux( t1.inner(), t2.inner(), trail );
 			case types.ReferenceType:
-				return subtypeAux( t1.location(), t2.location(), env, trail );
+				return subtypeAux( t1.location(), t2.location(), trail );
 			case types.RelyType: {
-				return subtypeAux( t1.rely(), t2.rely(), env, trail ) &&
-					subtypeAux( t1.guarantee(), t2.guarantee(), env, trail );
+				return subtypeAux( t1.rely(), t2.rely(), trail ) &&
+					subtypeAux( t1.guarantee(), t2.guarantee(), trail );
 			}
 			case types.GuaranteeType: {
-				return subtypeAux( t1.guarantee(), t2.guarantee(), env, trail ) &&
-					subtypeAux( t1.rely(), t2.rely(), env, trail );
+				return subtypeAux( t1.guarantee(), t2.guarantee(), trail ) &&
+					subtypeAux( t1.rely(), t2.rely(), trail );
 			}
 			case types.FunctionType:
-				return subtypeAux( t2.argument(), t1.argument(), env, trail )
-					&& subtypeAux( t1.body(), t2.body(), env, trail );
+				return subtypeAux( t2.argument(), t1.argument(), trail )
+					&& subtypeAux( t1.body(), t2.body(), trail );
 			case types.RecordType:{
 				if( !t1.isEmpty() && t2.isEmpty() )
 					return false;
@@ -713,7 +713,7 @@ var TypeChecker = (function( exports ){
 				var t2fields = t2.getFields();				
 				for( var i in t2fields ){
 					if( !t1fields.hasOwnProperty(i) ||
-						!subtypeAux( t1fields[i], t2fields[i], env, trail ) ){
+						!subtypeAux( t1fields[i], t2fields[i], trail ) ){
 						return false;
 					}
 				}
@@ -725,14 +725,14 @@ var TypeChecker = (function( exports ){
 				if( t1s.length !== t2s.length )
 					return false;
 				for( var i=0;i<t1s.length;++i )
-					if( !subtypeAux( t1s[i], t2s[i], env, trail ) )
+					if( !subtypeAux( t1s[i], t2s[i], trail ) )
 						return false;
 				return true;
 			}
 
 			case types.StackedType:
-				return subtypeAux( t1.left(), t2.left(), env, trail ) &&
-					subtypeAux( t1.right(), t2.right(), env, trail );
+				return subtypeAux( t1.left(), t2.left(), trail ) &&
+					subtypeAux( t1.right(), t2.right(), trail );
 
 			case types.AlternativeType:{
 				var i1s = t1.inner();
@@ -749,7 +749,7 @@ var TypeChecker = (function( exports ){
 					var found = false;
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( subtypeAux( curr, tmp, env, trail ) ){
+						if( subtypeAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -777,7 +777,7 @@ var TypeChecker = (function( exports ){
 					var found = false;
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( subtypeAux( curr, tmp, env, trail ) ){
+						if( subtypeAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -801,7 +801,7 @@ var TypeChecker = (function( exports ){
 					var found = false;
 					for(var j=0;j<tmp_i2s.length;++j){
 						var tmp = tmp_i2s[j];
-						if( subtypeAux( curr, tmp, env, trail ) ){
+						if( subtypeAux( curr, tmp, trail ) ){
 							tmp_i2s.splice(j,1); // removes element
 							found = true;
 							break; // continue to next
@@ -818,14 +818,14 @@ var TypeChecker = (function( exports ){
 				for( var i in i1s ){
 					var j = t2.inner(i1s[i]);
 					if( j === undefined || // if tag is missing, or
-						!subtypeAux( t1.inner(i1s[i]), j, env, trail ) )
+						!subtypeAux( t1.inner(i1s[i]), j, trail ) )
 						return false;
 				}
 				return true;
 			}
 			case types.CapabilityType:
-				return subtypeAux( t1.location(), t2.location(), env, trail ) &&
-					subtypeAux( t1.value(), t2.value(), env, trail );
+				return subtypeAux( t1.location(), t2.location(), trail ) &&
+					subtypeAux( t1.value(), t2.value(), trail );
 				
 			case types.ForallType:		
 			case types.ExistsType:{
@@ -834,12 +834,8 @@ var TypeChecker = (function( exports ){
 					return false;
 				if( !equals( t1.bound(), t2.bound() ) )
 					return false;
-
-				var i = t1.id();
-				// name does not matter here since we will be fetching by depth.
-				var e = env.newScope( i.name(), i, t1.bound() );
 				
-				return subtypeAux( t1.inner(), t2.inner(), e, trail );
+				return subtypeAux( t1.inner(), t2.inner(), trail );
 			}
 
 			case types.TypeVariable:

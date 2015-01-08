@@ -609,7 +609,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			return function( ast, env ){
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
-				var s = subtype( left, right, env );
+				var s = subtype( left, right );
 				assert( s==ast.value || ('Unexpected Result, got '+s+' expecting '+ast.value), ast );
 				return left;
 			};
