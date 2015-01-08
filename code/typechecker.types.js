@@ -259,10 +259,8 @@ var TypeChecker = (function( assertF ){
 	// if indexesOnly == true then it will only print variable's indexes, not their names.
 	(function(){
 
-//FIXME switch to AST like style to enable detecting missing types.
-
 		// defines which types get wrapping parenthesis
-		var _wrap = function(t,v){
+		var wrap = function(t,v){
 			if( t.type === types.ReferenceType ||
 				t.type === types.FunctionType ||
 				t.type === types.StackedType ||
@@ -273,136 +271,168 @@ var TypeChecker = (function( assertF ){
 				}
 			return t.toString(v);
 		};
-		var _add = function(t,fun){
+		
+		var setupToString = function(type){
+			switch( type ){
+				
+				case types.FunctionType:
+				return function( v ){
+					return wrap( this.argument(), v )+" -o "+wrap( this.body(), v );
+				};
+				
+				case types.BangType:
+				return function( v ){
+					return "!"+wrap( this.inner(), v );
+				};
+
+				case types.RelyType:
+				return function( v ){
+					return wrap( this.rely(), v )+' => '+wrap( this.guarantee(), v );
+				};
+
+				case types.GuaranteeType:
+				return function( v ){
+					return wrap( this.guarantee(), v )+' ; '+wrap( this.rely(), v );
+				};
+		
+				case types.SumType:
+				return function( v ){
+					var tags = this.tags();
+					var res = [];
+					for( var i in tags ){
+						res.push( tags[i]+'#'+wrap( this.inner(tags[i]), v ) ); 
+					}	
+					return res.join('+');
+				};
+
+				case types.StarType:
+				return function( v ){
+					var inners = this.inner();
+					var res = [];
+					for( var i=0; i<inners.length; ++i )
+						res.push( wrap( inners[i], v ) ); 
+					return res.join(' * ');
+				};
+		
+				case types.AlternativeType:
+				return function( v ){
+					var inners = this.inner();
+					var res = [];
+					for( var i=0; i<inners.length; ++i )
+						res.push( wrap( inners[i], v ) ); 
+					return res.join(' (+) ');
+				};
+				
+				case types.IntersectionType:
+				return function( v ){
+					var inners = this.inner();
+					var res = [];
+					for( var i=0; i<inners.length; ++i )
+						res.push( wrap( inners[i], v ) ); 
+					return res.join(' & ');
+				};
+				
+				case types.ExistsType:
+				return function( v ){
+					return 'exists'+(v?'':' '+this.id().name())
+						+( !this.bound()?'':'<:'+wrap( this.bound(), v ))
+						+'.'+wrap( this.inner(), v );
+				};
+				
+				case types.ForallType:
+				return function( v ){
+					return 'forall'+(v?'':' '+this.id().name())
+						+( !this.bound() ? '':'<:'+wrap( this.bound(), v ))
+						+'.'+wrap( this.inner(), v );
+				};
+		
+				case types.ReferenceType:
+				return function( v ){
+					return "ref "+wrap( this.location(), v );
+				};
+		
+				case types.CapabilityType:
+				return function( v ){
+					return 'rw '+wrap( this.location(), v )+' '+wrap( this.value(), v );
+				};
+				
+				case types.StackedType:
+				return function( v ){
+					return wrap( this.left(), v )+' :: '+wrap( this.right(), v );
+				};
+		
+				case types.RecordType:
+				return function( v ){
+					var res = [];
+					var fields = this.getFields();
+					for( var i in fields )
+						res.push(i+": "+wrap( fields[i], v ) );
+					return "["+res.join()+"]";
+				};
+				
+				case types.TupleType:
+				return function( v ){
+					var res = [];
+					var fields = this.inner();
+					for( var i in fields )
+						res.push( wrap( fields[i], v ) );
+					return "["+res.join()+"]";
+				};
+				
+				case types.DefinitionType:
+				return function(v){
+					if( this.args().length > 0 ){
+						var args = this.args();
+						var tmp = [];
+						for( var i=0; i<args.length;++i ){
+							tmp.push( wrap( args[i], v ) );
+						}
+						return wrap( this.definition(), v )+'['+ tmp.join() +']';
+					}
+					return wrap( this.definition(), v );
+				};
+
+				case types.LocationVariable:
+				case types.TypeVariable:
+				return function( v ){
+					if( !v )
+						return this.name()+'^'+this.index();
+					
+					var str = '';
+					// only add type bound if it is a TypeVariable
+					if( this.type === types.TypeVariable ){
+						var b = this.bound();
+						// with a valid bound
+						if( b !== null ) {
+							// for clarity we use '$' instead of '<:'
+							str = '$'+b.toString(v);
+						}
+					}
+
+					return this.index()+str;
+				};
+
+				case types.PrimitiveType:
+				return function(v){ return this.name(); };
+		
+				case types.NoneType:
+				return function(v){ return 'none'; };
+				
+				case types.TopType:
+				return function(v){ return 'top'; };
+
+				default:
+				error( '@setupToString: Not expecting type: '+type );
+			}
+		}
+
+		// add toString to all types
+		for( var i in types ){
+			var t = types[i];
+			var fun = setupToString( t );
 			error( !fct[t].hasOwnProperty('toString') || ("Duplicated " +t) );
 			fct[t].prototype.toString = fun;
-		};
-		
-		_add( types.FunctionType, function(v){
-			return _wrap( this.argument(), v )+" -o "+_wrap( this.body(), v );
-		} );
-		
-		_add( types.BangType, function(v){
-			return "!"+_wrap( this.inner(), v );
-		} );
-
-		_add( types.RelyType, function(v){
-			return _wrap( this.rely(), v )+' => '+_wrap( this.guarantee(), v );
-		} );
-
-		_add( types.GuaranteeType, function(v){
-			return _wrap( this.guarantee(), v )+' ; '+_wrap( this.rely(), v );
-		} );
-		
-		_add( types.SumType, function(v){
-			var tags = this.tags();
-			var res = [];
-			for( var i in tags ){
-				res.push( tags[i]+'#'+_wrap( this.inner(tags[i]), v ) ); 
-			}	
-			return res.join('+');
-		} );
-
-		_add( types.StarType, function(v){
-			var inners = this.inner();
-			var res = [];
-			for( var i=0; i<inners.length; ++i )
-				res.push( _wrap( inners[i], v ) ); 
-			return res.join(' * ');
-		} );
-		
-		_add( types.AlternativeType, function(v){
-			var inners = this.inner();
-			var res = [];
-			for( var i=0; i<inners.length; ++i )
-				res.push( _wrap( inners[i], v ) ); 
-			return res.join(' (+) ');
-		} );
-		
-		_add( types.IntersectionType, function(v){
-			var inners = this.inner();
-			var res = [];
-			for( var i=0; i<inners.length; ++i )
-				res.push( _wrap( inners[i], v ) ); 
-			return res.join(' & ');
-		} );
-		
-		_add( types.ExistsType, function(v){
-			return 'exists'+(v?'':' '+this.id().name())
-				+( !this.bound()?'':'<:'+_wrap( this.bound(), v ))
-				+'.'+_wrap( this.inner(), v );
-		} );
-		
-		_add( types.ForallType, function(v){
-			return 'forall'+(v?'':' '+this.id().name())
-				+( !this.bound() ? '':'<:'+_wrap( this.bound(), v ))
-				+'.'+_wrap( this.inner(), v );
-		} );
-		
-		_add( types.ReferenceType, function(v){
-			return "ref "+_wrap( this.location(), v );
-		} );
-		
-		_add( types.CapabilityType, function(v){
-			return 'rw '+_wrap( this.location(), v )+' '+_wrap( this.value(), v );
-		} );
-		
-		_add( types.StackedType, function(v){
-			return _wrap( this.left(), v )+' :: '+_wrap( this.right(), v );
-		} );
-		
-		_add( types.RecordType, function(v){
-			var res = [];
-			var fields = this.getFields();
-			for( var i in fields )
-				res.push(i+": "+_wrap( fields[i], v ) );
-			return "["+res.join()+"]";
-		} );
-		
-		_add( types.TupleType, function(v){
-			var res = [];
-			var fields = this.inner();
-			for( var i in fields )
-				res.push( _wrap( fields[i], v ) );
-			return "["+res.join()+"]";
-		} );
-		
-		_add( types.DefinitionType, function(v){
-			if( this.args().length > 0 ){
-				var args = this.args();
-				var tmp = [];
-				for( var i=0; i<args.length;++i ){
-					tmp.push( _wrap( args[i], v ) );
-				}
-				return _wrap( this.definition(), v )+'['+ tmp.join() +']';
-			}
-			return _wrap( this.definition(), v );
-		} );
-		
-		var tmp = function( v ){
-			if( !v )
-				return this.name()+'^'+this.index();
-			
-			var str = '';
-			// only add type bound if it is a TypeVariable
-			if( this.type === types.TypeVariable ){
-				var b = this.bound();
-				// with a valid bound
-				if( b !== null ) {
-					// for clarity we use '$' instead of '<:'
-					str = '$'+b.toString(v);
-				}
-			}
-
-			return this.index()+str;
-		};
-
-		_add( types.LocationVariable, tmp );
-		_add( types.TypeVariable, tmp );
-		_add( types.PrimitiveType, function(v){ return this.name(); } );
-		
-		_add( types.NoneType, function(v){ return 'none'; });
-		_add( types.TopType, function(v){ return 'top'; });
+		}
 		
 	})();
 	
