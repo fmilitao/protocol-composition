@@ -702,13 +702,13 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 
 					if( t_args[i].type === types.LocationVariable ){
 						assert( ( tmp.type === types.LocationVariable ) ||
-							( 'Argument '+i+' is not LocationVariable: '+tmp.type ), 
+							( 'Argument #'+i+' is not LocationVariable: '+tmp.type ), 
 							args[i] );
 					}
 					
 					if( t_args[i].type === types.TypeVariable ){
 						assert( ( tmp.type !== types.LocationVariable ) ||
-							( 'Argument '+i+' should not be LocationVariable' ), 
+							( 'Argument #'+i+' cannot be a LocationVariable' ), 
 							args[i] );
 					}
 					
@@ -813,11 +813,11 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				var variable;
 				var bound;
 				if( isTypeVariableName(id) ){
-					variable = new TypeVariable(id,0);
 					bound = !ast.bound ? TopType : check( ast.bound, env );
+					variable = new TypeVariable( id, 0, bound );
 				}
 				else{
-					variable = new LocationVariable(id,0);
+					variable = new LocationVariable( id, 0 );
 					bound = null;
 				}
 
@@ -922,7 +922,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 					for(var j=0;j<pars.length;++j){
 						var n = pars[j];
 						args[j] = isTypeVariableName(n) ? 
-							new TypeVariable(n,0) : new LocationVariable(n,0);
+							new TypeVariable(n,0,null) : new LocationVariable(n,0);
 					}
 				}
 				
@@ -945,6 +945,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				}
 				
 				// map of type names to typechecker types
+// FIXME needs to ensure that definition is not a locationvariable?
 				assert( typedef.addDefinition(type.id, check(type.type, tmp_env)) 
 					|| ('Duplicated typedef: '+type.id), type );
 			}

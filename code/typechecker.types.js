@@ -197,13 +197,11 @@ var TypeChecker = (function( assertF ){
 		}
 	);
 	
-	var _Variable = function( obj, name, index ){
-		var n = name;
-		var i = index;
-		
-		obj.index = function(){ return i; }
-		obj.name = function(){ return n; }
-		obj.copy = function(j){ return new obj.constructor(name,j); }
+	var _Variable = function( obj, name, index, bound ){
+		obj.index = function(){ return index; }
+		obj.name = function(){ return name; }
+		obj.bound = function(){ return bound; }
+		obj.copy = function(j){ return new obj.constructor(name,j,bound); }
 	};
 
 	newType('LocationVariable',
@@ -213,8 +211,8 @@ var TypeChecker = (function( assertF ){
 	);
 	
 	newType('TypeVariable',
-		function TypeVariable( name, index ){
-			_Variable( this, name, index );
+		function TypeVariable( name, index, bound ){
+			_Variable( this, name, index, bound );
 		}
 	);
 	
@@ -378,11 +376,22 @@ var TypeChecker = (function( assertF ){
 			return _wrap( this.definition(), v );
 		} );
 		
-		var tmp = function(v){
+		var tmp = function( v ){
 			if( !v )
-				return this.name()+'^'+this.index(); 
-			return this.index();
+				return this.name()+'^'+this.index();
+			
+			var str = '';
+			// only add type bound if it is a TypeVariable
+			if( this.type === types.TypeVariable ){
+				var b = this.bound();
+				// with a valid bound
+				if( b !== null )
+					str = '<:'+b.toString(v);
+			}
+
+			return this.index()+str;
 		};
+
 		_add( types.LocationVariable, tmp );
 		_add( types.TypeVariable, tmp );
 		_add( types.PrimitiveType, function(v){ return this.name(); } );

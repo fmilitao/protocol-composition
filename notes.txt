@@ -4,11 +4,9 @@ Protocol Conformance Checker
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
+BUGS:
+=====
 
-PEDNING BUGS:
-=============
-
-* FIXME: bug on creating the string key that is used to detect cycles in subtyping. This rule needs to consider different type bounds or it may be unsound. Example: H[0,1]  where 1 is different depending on the context.
 
 TODO:
 =====

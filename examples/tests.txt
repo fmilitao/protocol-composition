@@ -1,4 +1,16 @@
 
+
+// the following would generate a 'trail' collision
+// if DeBruijn did not include bounds on type variables
+
+typedef D[A] = A
+
+< X <: int >
+ not subtype a#D[X] + b#exists X<:boolean.D[X]
+          <: a#int  + b#exists Y<:boolean.int
+
+// --------------
+
     subtype forall X<:int.X <: int
     subtype forall X<:int.X <: forall X<:int.int
 not subtype forall X.int <: forall X<:int.X

@@ -614,11 +614,10 @@ var TypeChecker = (function( exports ){
 			return true;
 
 		// if X <: A is in environment
-		if( t1.type === types.TypeVariable && env !== undefined ){
-			// TODO remove guard on env due to buggy conformance
-			var bound = env.getBound( t1.index() );
+		if( t1.type === types.TypeVariable ){
+			var bound = t1.bound();
 
-			if( bound !== null && bound !== undefined && equals( bound, t2 ) )
+			if( bound !== null && equals( bound, t2 ) )
 				return true;
 		}
 
