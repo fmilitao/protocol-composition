@@ -1,3 +1,8 @@
+
+    subtype forall X<:int.X <: int
+    subtype forall X<:int.X <: forall X<:int.int
+not subtype forall X.int <: forall X<:int.X
+
 /* === SUBTYPING TESTS === */
 
     subtype int <: int

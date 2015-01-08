@@ -617,6 +617,7 @@ var TypeChecker = (function( exports ){
 		if( t1.type === types.TypeVariable && env !== undefined ){
 			// TODO remove guard on env due to buggy conformance
 			var bound = env.getBound( t1.index() );
+
 			if( bound !== null && bound !== undefined && equals( bound, t2 ) )
 				return true;
 		}
@@ -835,15 +836,11 @@ var TypeChecker = (function( exports ){
 				if( !equals( t1.bound(), t2.bound() ) )
 					return false;
 
-/*
-FIXME
-				var e = env.newScope();
+				var i = t1.id();
 				// name does not matter here since we will be fetching by depth.
-				var n = t1.id().name();
-				e.setType( n );
-				e.setBound( n, t1.bound() );
-*/
-				return subtypeAux( t1.inner(), t2.inner(), env, trail );
+				var e = env.newScope( i.name(), i, t1.bound() );
+				
+				return subtypeAux( t1.inner(), t2.inner(), e, trail );
 			}
 
 			case types.TypeVariable:
