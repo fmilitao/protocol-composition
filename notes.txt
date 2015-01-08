@@ -19,7 +19,6 @@ PEDNING BUGS:
  FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
  	How to represent this?
 
-
 // needs: getBound( ID, DEPTH ) // to account for De Bruijn indexes.
 
 // tests:

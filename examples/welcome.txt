@@ -39,4 +39,3 @@ not equals forall X.forall Y.[X,Y] == forall X.forall Y.[Y,X]
 // sharing
 //	 share A as A => none ; none || none
 <l> share (rw l !Empty#![]) as H[l] || T[l]
-
