@@ -8,18 +8,7 @@ Instead of recursion, we have 'typedef' for clarity.
 PEDNING BUGS:
 =============
 
-* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bouned quantification.
-
-* MISSING SUBTYPING RULE:
-
-  X <: A in Gamma
--------------------
- Gamma |- X <: A
- FIXME: subtyping needs typing environment because of this, but equals does not because variable equality is enough.
- FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
- 	How to represent this?
-
-
+* FIXME: bug on creating the string key that is used to detect cycles in subtyping. This rule needs to consider different type bounds or it may be unsound. Example: H[0,1]  where 1 is different depending on the context.
 
 TODO:
 =====
