@@ -613,7 +613,13 @@ var TypeChecker = (function( exports ){
 		if( t2.type === types.TopType && t1.type !== types.LocationVariable )
 			return true;
 
-//FIXME missing rule X <: A in environment
+		// if X <: A is in environment
+		if( t1.type === types.TypeVariable && env !== undefined ){
+			// TODO remove guard on env due to buggy conformance
+			var bound = env.getBound( t1.index() );
+			if( bound !== null && bound !== undefined && equals( bound, t2 ) )
+				return true;
+		}
 
 		// "pure to linear" - ( t1: !A ) <: ( t2: A )
 		if ( t1.type === types.BangType && t2.type !== types.BangType )
