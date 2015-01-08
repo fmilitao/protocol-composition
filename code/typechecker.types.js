@@ -454,6 +454,16 @@ var TypeChecker = (function( assertF ){
 		this.getBound = function(id){
 			return this.get(BOUND_INDEX+id);
 		}
+//FIXME: deprecated
+		this.getBoundFromDepth = function( id, depth ){
+			if( depth === 0 )
+				// may return undefined if 'id' does not exist
+				return map.get(BOUND_INDEX+id);
+
+			if( parent === null )
+				return undefined;
+			return parent.getBoundFromDepth( id, depth-1 );
+		}
 
 		// returns the depth of 'id' in the spaghetti stack, starting at 0.
 		// returns -1 if not found.
