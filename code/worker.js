@@ -164,79 +164,40 @@ var printConformance = function(cf){
 }
 
 var printEnvironment = function(env){
-	var res = _printEnvironment(env);
+	var gamma = _printEnvironment(env);
 	
-	var gamma = res.gamma;
-	//var delta = res.delta;
-	
-	gamma.sort(); // to ensure always the same order
 	gamma = gamma.join(',\n    ');
 	
-	//delta.sort(); // ...same order
-	//delta = delta.join(',\n    ');
-	
-	return "\u0393 = "+gamma; //+"\n"+"\u0394 = "+delta;
+	if( gamma === '' )
+		gamma = '&empty;';
+
+	return "\u0393 = "+gamma;
 }
 
 var _printEnvironment = function(env){
 	var gamma = [];
-	//var delta = [];
-	var visited = [];
 	
 	env.forEach( 
 	// on element of the environment
-	function(i, id,val,isBound,isType){
-		// if duplicated do not print, this may happen due to
-		// stack of environments for names (i.e. non type/loc vars).
-		if( visited.indexOf(i) !== -1 )
+	function( i, id, type, bound ){
+
+		if( id === undefined || id === null )
 			return;
-		
-		// only non-caps may not be repeated, since caps have null 'id'
-		visited.push(i);
-		
-		if( isType ){
-			// is a type/location variable
-			if( val.type === types.LocationVariable ){
-				gamma.push('<span class="type_location">'+id+'</span>: <b>loc</b>');
-				return;
-			}
-			if( val.type === types.TypeVariable ){
-				gamma.push('<span class="type_variable">'+id+'</span>: <b>type</b>');
-				return;
-			}
+
+		if( type.type === types.LocationVariable ){
+			gamma.push('<span class="type_location">'+id+'<sup>'+i+'</sup></span>: <b>loc</b>');
+		}
+		if( type.type === types.TypeVariable ){
+			gamma.push('<span class="type_variable">'+id+'<sup>'+i+'</sup></span>: <b>type</b>');
 		}
 
-		if( isBound ){
-			gamma.push('<span class="type_variable">'+id+'</span> <: '+toHTML(val));
-			return;
+		if( bound !== null && bound !== undefined ){
+			gamma.push('<span class="type_variable">'+id+'<sup>'+i+'</span> <: '+toHTML(bound));
 		}
 		
-		if( val.type === types.BangType ){
-			gamma.push('<span class="type_name">'+id+'</span>'+": "+toHTML(val.inner()));
-			return;
-		}			
-		
-		//delta.push('<span class="type_name">'+id+'</span>'+": "+toHTML(val));
 	});
-
-/*
-	var e = env;
-	while( e !== null ){
-		if( e.$defocus_guarantee !== null ){
-			var tmp = _printEnvironment(e.$defocus_env).delta;
-			if( tmp.length > 0 ){
-				tmp.sort(); // ...same order
-				tmp = tmp.join(', ');
-			}else{
-				tmp = '&#8709;';
-			}
-			delta.push( toHTML(e.$defocus_guarantee) +wq( wQ(' &#9659; ')+wq(tmp) ) );
-			break;
-		}
-		e = e.$parent;
-	} */
 	
-	return { /*delta : delta,*/ gamma : gamma };
+	return gamma;
 }
 
 

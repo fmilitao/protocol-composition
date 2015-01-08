@@ -399,112 +399,68 @@ var TypeChecker = (function( assertF ){
 	 * 	undefined - new element collides with a previously existing one;
 	 *  null/value - if all OK.
 	 */
-	var Environment = function( parent, typedef ){
-
-		// CAREFUL: the following cannot be a source-level identifiers.
-		// These chars are used to distinguish between variables, etc. 
-		// that are all sotred in the same map.
-		const  TYPE_INDEX = '$';
-		const BOUND_INDEX = '#';
-		
-		var map = new Map();
+	var Gamma = function( typedef, parent, id, type, bound ){
+		// id, type, bound are left undefined when called with:
+		// new Gamma( typedef, null );
 
 		this.getTypeDef = function(){
 			return typedef;
 		}
 		
 		// scope methods		
-		this.newScope = function(){
-			return new Environment( this, typedef );
+		this.newScope = function( id, type, bound ){
+			return new Gamma( typedef, this, id, type, bound );
 		}
 		this.endScope = function(){
 			return parent;
 		}
-		
-		// operations over IDENTIFIERS
-		this.set = function(id,value){
-			// does not search up. ALLOWS NAME COLISIONS/HIDDING with upper levels.
-			// check if 'id' exists at this level
-			if( map.has(id) )
-				return undefined; // already exists
-			map.set( id, value );
-			return true; // ok
-		}
 
-		this.get = function(id){
-			if ( map.has(id) ){
-				return map.get(id);
-			}
+		// getters
+		this.getType = function( index ) {
+			if( index === 0 )
+				return type;
+			if( parent === null || index < 0 )
+				return undefined;
+			return parent.getType( index-1 );
+		}
+		this.getBound = function( index ){
+			if( index === 0 )
+				return bound;
+			if( parent === null || index < 0 )
+				return undefined;
+			return parent.getBound( index-1 );
+		}
+		this.getTypeByName = function( name ) {
+			if( name === id )
+				return type;
 			if( parent === null )
 				return undefined;
-			return parent.get(id);
-		}
-		
-		// operations over TypeVariables / LocationVariables
-		this.setType = function(id,value){
-			return this.set(TYPE_INDEX+id,value);
-		}
-		this.getType = function(id){
-			return this.get(TYPE_INDEX+id);
-		}
-		// operations over bounds
-		this.setBound = function(id,bound){
-			return this.set(BOUND_INDEX+id,bound);
-		}
-		this.getBound = function(id){
-			return this.get(BOUND_INDEX+id);
-		}
-//FIXME: deprecated
-		this.getBoundFromDepth = function( id, depth ){
-			if( depth === 0 )
-				// may return undefined if 'id' does not exist
-				return map.get(BOUND_INDEX+id);
-
-			if( parent === null )
-				return undefined;
-			return parent.getBoundFromDepth( id, depth-1 );
+			return parent.getTypeByName( name );
 		}
 
-		// returns the depth of 'id' in the spaghetti stack, starting at 0.
-		// returns -1 if not found.
-		this.getTypeDepth = function(id){
-			if ( map.has(TYPE_INDEX+id) ){
+		// returns the depth of 'name' in the spaghetti stack.
+		// return: starts at 0, -1 if not found.
+		this.getNameIndex = function( name ){
+			if ( id === name ){
 				return 0;
 			}
 			if( parent === null )
 				return -1; // not found
 
-			var tmp = parent.getTypeDepth(id);
+			var tmp = parent.getNameIndex( name );
 			if( tmp === -1 ) 
 				return tmp;
 			return 1+tmp;
 		}
-		
-		this.clone = function(){
-			var env = parent !== null ?
-				new Environment( parent.clone(), typedef ) :
-				new Environment( null, typedef );
 
-			map.forEach(function(k,v){
-				// assuming it is OK to alias types/content (i.e. all immutable stuff)
-				env.set( k, v );
-			});
-			
-			return env;
-		}
+		this.forEach = function( f, i ){
+			if( i === undefined )
+				i = 0;
 
-		// no order is guaranteed!
-		this.forEach = function(f){
-			map.forEach(function(i,v){
-				var isType = (i[0] === TYPE_INDEX);
-				var isBound = (i[0] === BOUND_INDEX );
-				var id = ( isType || isBound ) ? i.substring(1) : i;
-
-				f( i, id, v, isBound, isType );
-			});
+			f( i, id, type, bound );
 			
 			if( parent !== null )
-				parent.forEach(f);
+				parent.forEach( f, i+1 );
 		}
 		
 	};
@@ -541,7 +497,7 @@ var TypeChecker = (function( assertF ){
 
 	exports.assert = assert;
 	exports.error = error;
-	exports.Environment = Environment;
+	exports.Gamma = Gamma;
 	exports.TypeDefinition = TypeDefinition;
 	exports.types = types;
 	exports.factory = fct;

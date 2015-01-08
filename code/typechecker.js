@@ -40,7 +40,7 @@ var TypeChecker = (function( AST, exports ){
 	const DefinitionType = fct.DefinitionType;
 	const GuaranteeType = fct.GuaranteeType;
 
-	const Environment = exports.Environment;
+	const Gamma = exports.Gamma;
 	const TypeDefinition = exports.TypeDefinition;
 
 	const unfold = exports.unfold;
@@ -667,14 +667,14 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 				// definitions and type/location variables should not interfere
 				var label = ast.text;
 				var typedef = env.getTypeDef();
-				var tmp = env.getType( label );
+				var tmp = env.getTypeByName( label );
 				// if label matches type in environment, but we only allow
 				// access to type variables and location variables using this
 				// AST.kind --- all other uses are assumed to be recursives.
 				if( tmp !== undefined &&
 					( tmp.type === types.TypeVariable ||
 					  tmp.type === types.LocationVariable ) ){
-						return tmp.copy( env.getTypeDepth(label) );
+						return tmp.copy( env.getNameIndex(label) );
 				}
 				
 				// look for type definitions with 0 arguments
@@ -796,12 +796,12 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			case AST.REF_TYPE: 
 			return function( ast, env ){
 				var id = ast.text;
-				var loc = env.getType( id );
+				var loc = env.getTypeByName( id );
 				
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast );
 				
-				return new ReferenceType( loc.copy( env.getTypeDepth( id ) ) );
+				return new ReferenceType( loc.copy( env.getNameIndex( id ) ) );
 			};
 			
 			case AST.EXISTS_TYPE:
@@ -809,9 +809,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			case AST.FORALL_TYPE: 
 			return (function( ctr ){
 				return function( ast, env ){
-				var id = ast.id;
-				var e = env.newScope();
-				
+				var id = ast.id;				
 				var variable;
 				var bound;
 				if( isTypeVariableName(id) ){
@@ -823,10 +821,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 					bound = null;
 				}
 
-				e.setType( id, variable );
-				if( bound !== null )
-					e.setBound( id, bound );
-
+				var e = env.newScope( id, variable, bound );
 				var type = check( ast.exp, e );
 
 				return new ctr( variable, type, bound );
@@ -860,12 +855,12 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			case AST.CAP_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
-				var loc = env.getType( id );
+				var loc = env.getTypeByName( id );
 				
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast);
 
-				return new CapabilityType( loc.copy( env.getTypeDepth( id ) ), check( ast.type, env ) );
+				return new CapabilityType( loc.copy( env.getNameIndex( id ) ), check( ast.type, env ) );
 			};
 			
 			case AST.STACKED_TYPE: 
@@ -908,7 +903,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 		error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
 				
 		var typedef = new TypeDefinition();
-		var env = new Environment( null, typedef );
+		var env = new Gamma( typedef, null );
 		
 		// handle type definitions
 		if( ast.typedefs !== null ){
@@ -939,15 +934,13 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 			for(var i=0;i<ast.typedefs.length;++i){
 				var type = ast.typedefs[i];						
 				var tmp_env = env;
-				var args = typedef.getType(type.id);
+				var args = typedef.getType( type.id );
 				
 				// sets the variables, if there are any to setup
 				if( args !== null ){
 					for(var j=0;j<args.length;++j){
 						// should be for both LocationVariables and TypeVariables
-						// we must create a new scope to increase the De Bruijn index
-						tmp_env = tmp_env.newScope();
-						tmp_env.setType( args[j].name(), args[j] );
+						tmp_env = tmp_env.newScope( args[j].name(), args[j], null );
 					}
 				}
 				
@@ -1014,7 +1007,7 @@ var conformanceStateProtocol = function( s, a, b, ast ){
 	// all these variable could be local variables of 'exports.check'
 	var type_info = [];
 	var inspector = function( ast, env, c ){
-			var info = { ast : ast, env : env.clone() };
+			var info = { ast : ast, env : env };
 			type_info.push( info );
 			
 			var res = c( ast, env );
