@@ -1,13 +1,24 @@
 
+typedef H[X] = forall Y <: X.H[Y] // FIXME: does this cause infinite unfolds?
+
+typedef T = forall X. forall Y <: X. [ X , Y ]
 
 // the following would generate a 'trail' collision
-// if DeBruijn did not include bounds on type variables
+// if DeBruijn indexes did not include the bound on type variables
 
 typedef D[A] = A
 
 < X <: int >
  not subtype a#D[X] + b#exists X<:boolean.D[X]
           <: a#int  + b#exists Y<:boolean.int
+
+<X> equals (forall Y <: X.H[Y]){int/X} == forall Y <: int.H[Y]
+
+//FIXME: do these terminate? SHOULD THEY?
+    equals H[int] == H[int]
+not equals H[int] == H[boolean]
+
+< X> not equals (forall Y <: X.H[Y]){boolean/X} == H[int]
 
 // --------------
 

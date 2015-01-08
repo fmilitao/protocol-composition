@@ -7,6 +7,7 @@ Instead of recursion, we have 'typedef' for clarity.
 BUGS:
 =====
 
+* FIXME: forbid undecidable case.
 
 TODO:
 =====

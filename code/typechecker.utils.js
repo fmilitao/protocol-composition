@@ -513,13 +513,17 @@ var TypeChecker = (function( exports ){
 
 		case types.ExistsType: 
 		case types.ForallType: {
+			var nvar = t.id();
+			var ninner = t.inner();
+			// this is before we shift
+			var nbound = t.bound();
+			if( nbound !== null ){
+				nbound = substitutionAux(nbound,from,to);
+			}
+
 			// updates the indexes (see Types and Programming Languages, Chapter 6)
 			var _to = shift1(to,0);
 			var _from = shift1(from,0);
-
-			var nvar = t.id();
-			var ninner = t.inner();
-			var nbound = t.bound();
 
 			// to avoid having to switch again, we just use 't' constructor function
 			return new t.constructor( nvar, substitutionAux(ninner,_from,_to), nbound );

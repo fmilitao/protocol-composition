@@ -206,7 +206,7 @@ var TypeChecker = (function( assertF ){
 
 	newType('LocationVariable',
 		function LocationVariable( name, index ){
-			_Variable( this, name, index );
+			_Variable( this, name, index, null );
 		}
 	);
 	
@@ -258,6 +258,9 @@ var TypeChecker = (function( assertF ){
 	// toString( indexesOnly ) // undefined means false
 	// if indexesOnly == true then it will only print variable's indexes, not their names.
 	(function(){
+
+//FIXME switch to AST like style to enable detecting missing types.
+
 		// defines which types get wrapping parenthesis
 		var _wrap = function(t,v){
 			if( t.type === types.ReferenceType ||
@@ -271,7 +274,7 @@ var TypeChecker = (function( assertF ){
 			return t.toString(v);
 		};
 		var _add = function(t,fun){
-			error( !fct[t].hasOwnProperty('toString') || ("Duplicated " +k) );
+			error( !fct[t].hasOwnProperty('toString') || ("Duplicated " +t) );
 			fct[t].prototype.toString = fun;
 		};
 		
@@ -385,8 +388,10 @@ var TypeChecker = (function( assertF ){
 			if( this.type === types.TypeVariable ){
 				var b = this.bound();
 				// with a valid bound
-				if( b !== null )
-					str = '<:'+b.toString(v);
+				if( b !== null ) {
+					// for clarity we use '$' instead of '<:'
+					str = '$'+b.toString(v);
+				}
 			}
 
 			return this.index()+str;
