@@ -223,36 +223,37 @@ var TypeChecker = (function( exports ){
 	}
 
 
-	// shifts indexes of free variables in 't' by 1.
+	// shifts indexes of free variables in 't' by 'd'.
 	// t -> type
 	// c -> cutoff index
-	var shift1 = function( t, c ){
+	// d -> shift value
+	var shift = function( t, c, d ){
 
 		switch ( t.type ){
 
 			case types.FunctionType:
 				return new FunctionType(
-						shift1( t.argument(), c ),
-						shift1( t.body(), c ) );
+						shift( t.argument(), c, d ),
+						shift( t.body(), c, d ) );
 
 			case types.BangType:
-				return new BangType( shift1( t.inner(), c ) );
+				return new BangType( shift( t.inner(), c, d ) );
 
 			case types.RelyType: 
 				return new RelyType(
-							shift1( t.rely(), c ),
-							shift1( t.guarantee(), c ) );
+							shift( t.rely(), c, d ),
+							shift( t.guarantee(), c, d ) );
 
 			case types.GuaranteeType:
 				return new GuaranteeType(
-							shift1( t.guarantee(), c ),
-							shift1( t.rely(), c ) );
+							shift( t.guarantee(), c, d ),
+							shift( t.rely(), c, d ) );
 
 			case types.SumType:{
 				var sum = new SumType();
 				var tags = t.tags();
 				for( var i in tags )
-					sum.add( tags[i], shift1( t.inner(tags[i]), c ) );
+					sum.add( tags[i], shift( t.inner(tags[i]), c, d ) );
 				return sum;
 			}
 
@@ -263,7 +264,7 @@ var TypeChecker = (function( exports ){
 				var star = new t.constructor();
 				var inners = t.inner();
 				for( var i=0;i<inners.length;++i ){
-					star.add( shift1( rec(inners[i]), c ) );
+					star.add( shift( rec(inners[i]), c, d ) );
 				}	
 				return star;
 			}
@@ -271,22 +272,24 @@ var TypeChecker = (function( exports ){
 			case types.ExistsType:
 			case types.ForallType:
 				// calls appropriate constructor function
-				return new t.constructor( t.id(), shift1( t.inner(), c+1 ), t.bound() );
+				return new t.constructor( t.id(), 
+						shift( t.inner(), c+1, d ), 
+						shift( t.bound(), c, d ) );
 
 			case types.ReferenceType:
-				return new ReferenceType( shift1( t.location(), c ) );
+				return new ReferenceType( shift( t.location(), c, d ) );
 			
 			case types.StackedType:
-				return new StackedType( shift1( t.left(), c ), shift1( t.right(), c ) );
+				return new StackedType( shift( t.left(), c, d ), shift( t.right(), c, d ) );
 
 			case types.CapabilityType:
-				return new CapabilityType( shift1( t.location(), c ), shift1( t.value(), c ) );
+				return new CapabilityType( shift( t.location(), c, d ), shift( t.value(), c, d ) );
 			
 			case types.RecordType: {
 				var r = new RecordType();
 				var fs = t.getFields();
 				for( var i in fs )
-					r.add( i, shift1( fs[i], c ) );
+					r.add( i, shift( fs[i], c, d ) );
 				return r;
 			}
 
@@ -294,15 +297,15 @@ var TypeChecker = (function( exports ){
 				var fs = t.args();
 				var tmp = [];
 				for( var i in fs )
-					tmp = tmp.concat( shift1( fs[i], c ) );
-				return new DefinitionType(t.definition(),tmp,t.getTypeDef());
+					tmp = tmp.concat( shift( fs[i], c, d ) );
+				return new DefinitionType( t.definition(), tmp, t.getTypeDef() );
 			}
 
 			case types.LocationVariable:
 			case types.TypeVariable:
 				if( t.index() < c )
 					return t;
-				return t.copy( t.index()+1 );
+				return t.copy( t.index()+d );
 
 			case types.PrimitiveType:
 			case types.NoneType:
@@ -311,6 +314,10 @@ var TypeChecker = (function( exports ){
 			default:
 				error( "@shift1: Not expecting " +t.type );
 		}
+	}
+
+	var shift1 = function( t, c ){
+		return shift( t, c, 1 );
 	}
 
 	/**
@@ -876,6 +883,8 @@ var TypeChecker = (function( exports ){
 		return t;
 	}
 
+	exports.shift = shift;
+	exports.unify = unify;
 	exports.unfold = unfold;
 	exports.unfoldDefinition = unfoldDefinition;
 	exports.substitution = substitution;

@@ -56,6 +56,8 @@ typedef N[A, B <: int] = N[int,int]
 TODO:
 =====
 
+* undecidable exists X <: A || forall Y <: B, iff A <: B, we must restrict bound to be EMPTY |- A type, no variables.
+
 * Protocol Well-Formedness:
 	- isProtocol( type ) true if type contains a protocol, false if non-protocol type
 	- check that each RelyType and GuaranteeType refer the same set of locations (location set invariant)

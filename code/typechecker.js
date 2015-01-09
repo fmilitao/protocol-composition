@@ -43,6 +43,8 @@ var TypeChecker = (function( AST, exports ){
 	const Gamma = exports.Gamma;
 	const TypeDefinition = exports.TypeDefinition;
 
+	const shift = exports.shift;
+	const unify = exports.unify;
 	const unfold = exports.unfold;
 	const unfoldDefinition = exports.unfoldDefinition;
 	const substitution = exports.substitution;
@@ -216,114 +218,29 @@ var TypeChecker = (function( AST, exports ){
 		return true;
 	}
 
+	var unifyState = function( state, protocol ){
+//		debugger
+		if( protocol.type === types.ExistsType ){
+			var t = protocol.inner();
+			var i = protocol.id();
+			var b = protocol.bound();
 
-//TODO: Protocol-Protocol Split
+			t = unifyState( state, t );
 
-	/**
-	 * @param {AST} ast, tree to check
-	 * @param {Environment} env, typing environment at beginning
-	 * @return either the type checked for 'ast' or throws a type error with
-	 * 	what failed to type check.
-	 */
-	var setupAST = function( kind, check ) {
-		
-		switch( kind ) {
+			error( t.type === types.RelyType || '@unifyState: invalid unification for '+t );
 
-			case AST.SUBSTITUTION:
-			return function( ast, env ){
-				var type = check( ast.type, env );
-				var to = check( ast.to, env );
-				var from = check( ast.from, env );
+			var r = t.rely();
+			var x = unify( i, r, state );
+//FIXME check bound			
+			error( x !== null || '@unifyState: invalid unification for '+r+' and '+x );
 
-				assert( (from.type === types.LocationVariable || from.type === types.TypeVariable)
-					|| ("Can only substitute a Type/LocationVariable, got: "+from.type ), ast.from );
+			t = substitution( t, i, x );
+			// there should not be any '0' since we are opening the existential
+			t = shift( t, 0, -1 );
 
-				return substitution(type, from, to);
-			};
-
-			case AST.SUBTYPE:
-			return function( ast, env ){
-				var left = check( ast.a, env );
-				var right = check( ast.b, env );
-				var s = subtype(left,right);
-				assert( s==ast.value || ('Unexpected Result, got '+s+' expecting '+ast.value), ast );
-				return left;
-			};
-
-			error( '@locSet: invalid type, got: '+t.type );
+			return t;
 		}
-	}
-
-	var wfProtocol = function( t ){
-// FIXME this is a huge mess
-// FIXME termination not guaranteed?! needs to watchout for cycles.
-		if( !isProtocol(t) )
-			return false;
-
-		switch( t.type ){
-			case types.NoneType:
-				return true; // empty set
-
-			case types.RelyType: {
-				var r = locSet( t.rely() );
-				var g = locSet( t.guarantee() );
-
-				if( r.size !== g.size )
-					return false;
-
-				var tmp = true;
-				r.forEach(function(v){
-					if( !g.has(v) )
-						tmp = false;
-				});
-				// some missing element
-				if( !tmp )
-					return false;
-
-				return true; //TODO wfProtocol( t.rely() ) && wfProtocol( t.guarantee() );
-			}
-			
-			case types.GuaranteeType:
-				return wfProtocol( t.guarantee() ) && wfProtocol( t.rely() );
-
-			case types.AlternativeType: {
-//FIXME needs to check there is a different trigger
-				// all must be valid protocols
-//FIXME how does this work when there are existentials??
-				return true;
-			}
-
-			case types.IntersectionType: {
-				// all must be valid protocols
-				var ts = t.inner();
-
-				for( var i=0; i<ts.length; ++i ){
-					if( !wfProtocol( ts[i] ) )
-						return false;
-				}
-				
-				return true;
-			}
-
-			case types.StarType: {
-//FIXME OK for some to not be valid protocols?
-				return true;
-			}
-
-			case types.ExistsType:
-			case types.ForallType:{
-				// FIXME problem when defining P * exists q.(A), etc.
-				return true;
-			}
-
-			case types.DefinitionType:
-// FIXME termination not gauranteed?! needs to watchout for cycles.
-				return wfProtocol( unfold(t) );
-
-			default:
-				error( '@wfProtocol: invalid type, got: '+t.type );
-		}
-		return true;
+		return protocol;
 	}
 
 	//
@@ -421,7 +338,7 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 	var stepState = function( work, g, s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
-
+//debugger
 		var addW = function( g, s, p ){
 			if( isLeft )
 				addWork( work, g, s, p, q );
@@ -457,7 +374,8 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			// TODO: bound
 			// by (step:Open-Type)
 			// by (step:Open-Loc)
-			var u = unifyState( s, p.id(), p.inner() );
+			var u = unifyState( s, p );
+console.debug( p.toString()+' \n>> '+u.toString() );
 			// substitute, check bound
 			return u !== null && stepState( work, g, s, u, q, isLeft );
 		}
