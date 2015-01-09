@@ -235,8 +235,10 @@ var TypeChecker = (function( AST, exports ){
 //FIXME check bound			
 			error( x !== null || '@unifyState: invalid unification for '+r+' and '+x );
 
+			// shift because it is going inside the existential
+			x = shift( x, 0, 1 );
 			t = substitution( t, i, x );
-			// there should not be any '0' since we are opening the existential
+			// unshift because we are opening the existential
 			t = shift( t, 0, -1 );
 
 			return t;
@@ -287,7 +289,6 @@ var TypeChecker = (function( AST, exports ){
 	}
 
 	var checkSPConformance = function( work, visited ){
-//debugger
 var i=0;
 		while( work.length > 0 ){
 			var w = work.pop();
@@ -340,9 +341,10 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
 //debugger
-		var addW = function( g, s, p ){
-			if( isLeft )
+		var addW = function( g, s, p, doShift ){
+			if( isLeft ){
 				addWork( work, g, s, p, q );
+			}
 			else
 				addWork( work, g, s, q, p );
 		};
@@ -396,20 +398,24 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 			// by (step:Step-Type)
 			// by (step:Step-Loc)
 			if( b.type === types.ForallType ){
-				// FIXME: how does this affect existing De Bruijn indexes?
-				// FIXME: don't type definitions also imply a shift in the indexes? (new bind)
 				var i = b.inner();
 				var id = b.id();
 				var name = id.name();
 				var bound = b.bound();
+debugger
+				// indexes remain unchanged for this protocol, because we pushed the
+				// forall declaration declaration to gamma. However, the other protocol
+				// must be shifted to preserve its index.
+				q = shift( q, 0, 1 );
+				g = g.newScope( name, id, bound );
+				s = i.guarantee(); // state
+				p = i.rely(); //step
 
-				var gg = g.newScope();
+				if( isLeft )
+					addWork( work, g, s, p, q );
+				else
+					addWork( work, g, s, q, p );
 
-				gg.setType( name, id );
-				if( bound !== null )
-					gg.setBound( name, bound );
-
-				addW( gg, i.guarantee(), i.rely() );
 				return true;
 			}
 
@@ -522,7 +528,7 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 				var lookup_args = typedef.getType(label);
 				if( lookup_args !== undefined && lookup_args.length === 0 )
 					return new DefinitionType( label, [], typedef );
-				
+
 				assert( 'Unknown type '+label, ast);
 			};
 			
@@ -759,9 +765,12 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 					args = new Array(pars.length);
 					
 					for(var j=0;j<pars.length;++j){
+						// indexes MUST go [ n, n-1, ..., 1, 0 ] to match the
+						// desired depth of the DeBruijn indexes.
 						var n = pars[j];
 						args[j] = isTypeVariableName(n) ? 
-							new TypeVariable(n,0,null) : new LocationVariable(n,0);
+							new TypeVariable(n,(pars.length-j-1),null) :
+							new LocationVariable(n,(pars.length-j-1));
 					}
 				}
 				

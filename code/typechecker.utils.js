@@ -672,6 +672,7 @@ var TypeChecker = (function( exports ){
 		if( t2.type === types.ExistsType && t1.type !== types.ExistsType ){
 			// if found unification and it obeys bound, successed.
 			var u = unify( t2.id(), t2.inner(), t1 );
+//FIXME this is wrong: <q> not subtype rw q int <: exists w.rw w boolean
 			if( u === null )
 				return false;
 			var b = t2.bound();
@@ -877,9 +878,22 @@ var TypeChecker = (function( exports ){
 		var pars = d.getParams();
 		// type definitions will only replace Type or Location Variables, we
 		// can use the simpler kind of substitution.
-		for(var i=0;i<args.length;++i){
+		for(var i=(args.length-1);i>=0;--i){
+/*
+console.debug( '>'+ t );
+console.debug( 'from: '+ pars[i] );
+console.debug( 'to:   '+ args[i] );
+*/
 			t = substitution(t,pars[i],args[i]);
+/*
+console.debug( '+'+t );
+//			t = shift( t, 0, -1 );
+console.debug( ':'+t +'\n\n');
+*/
 		}
+/*
+		console.debug( '----');
+*/
 		return t;
 	}
 

@@ -4,60 +4,34 @@ Protocol Conformance Checker
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
-BUGS:
-=====
+TODO/PROBLEMS/BUGS:
+===================
 
-* FIXME: Check if case is really undecidable. Add check to forbid undecidable case, if that is the case. It may be possible that the example is ill-constructed and therefore fails to catch this error. Thus, you may need to build a better counter-example that exercises the problem.
+* Check if case is really undecidable. Add check to forbid undecidable case, if that is the case. It may be possible that the example is ill-constructed and therefore fails to catch this error. Thus, you may need to build a better counter-example that exercises the problem.
+	The case is undecidable at least on protocol conformance. If we have:
+	P[A] = rw p A => forall X <: A.( rw p X ; P[X] )
+	then the typing environment will grow without end, making the use of subsumption on conformance impossible and therefore
+we will never be able to close the proof.
 
-* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bouned quantification.
+	The simple solution if to enforce that:
+	EMPTY |- A type 	Gamma, X <: A |- B type
+	-------------------------------------------
+		Gamma |- forall X <: A.B
 
-* MISSING SUBTYPING RULE:
+	(and same for exists)
 
-  X <: A in Gamma
--------------------
- Gamma |- X <: A
- FIXME: subtyping needs typing environment because of this. (equals does not but uses syntactic equality)
+	Likewise, our examples need something of the kind:
 
- FIXME: detecting cycles on subtyping is also more complex due to different bounds on the environment.
- 	How to represent this?
+		( X <: A ) in Gamma
+	 Gamma |- A <: B
+	------------------- (i.e. transitivity on bounds?)
+	 Gamma |- X <: B
 
-// needs: getBound( ID, DEPTH ) // to account for De Bruijn indexes.
-
-// tests:
-< X<:int, Y<:int >
-	subtype X <: Y
-
-< X<:int, Y<:int >
-	not equals X == Y
-// ...
-
-* FIXME: missing bounds on type definitions.
-// test:
-typedef N[A, B <: int] = N[int,int]
-
-* grammar is messy, but defining operator precendence in jison is not working?!
-
-// needs: getBound( ID, DEPTH ) // to account for De Bruijn indexes.
-
-
-// tests:
-< X<:int, Y<:int >
-	subtype X <: Y
-
-< X<:int, Y<:int >
-	not equals X == Y
-// ...
-
-* FIXME: missing bounds on type definitions.
-// test:
-typedef N[A, B <: int] = N[int,int]
-
-* grammar is messy, but defining operator precendence in jison is not working?!
-
-TODO:
-=====
+	but this may be undecidable is we do not constrain the type in the bounded quantification type.
 
 * undecidable exists X <: A || forall Y <: B, iff A <: B, we must restrict bound to be EMPTY |- A type, no variables.
+
+* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bouned quantification.
 
 * Protocol Well-Formedness:
 	- isProtocol( type ) true if type contains a protocol, false if non-protocol type
@@ -67,49 +41,33 @@ TODO:
 		+ same level abstraction must only refer X <: P where isProtocol(P)
 		+ or X must also be at the guarantee type unabstracted?
 
-* Protocol Conformance:
+* consider "superficial equality" (i.e. no need to unfold):
+	case types.DefinitionType:
+		if( t1.definition() !== t2.definition() )
+			return false;
+		
+		var t1s = t1.args();
+		var t2s = t2.args();
+		if( t1s.length !== t2s.length )
+			return false;
+		for( var i=0;i<t1s.length;++i )
+			if( !equalsAux( t1s[i], t2s[i], trail ) )
+				return false;
+		return true;
+	}
+
+
+
 
 - define error constants/enum instead of having constants spread out through the code.
-
-STYLE:
-======
 
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
 
 
-FIXME --- GRAMMAR:
-==================
-
-* FIXME: is it possible to remove unnecessary keywords (such as 'subtype' and 'equals')?
-
- not A <: A // subtype test
- not A == A // equality test
- 	--> PROBLEM: ambiguity in the grammar!
- 
- share A as B, C, D, E;
- share D as D, D;
- 	--> PROBLEM: implicit associativity.
 
 Extra Credits:
 ==============
+
 - Types and Programming Languages, Chapter 6 (for De Bruijn stuff).
 - Subtyping Recursive Types, for recursion checks.
 
-
-
-
-			// FIXME old equality of definitions --- is this no longer needed??
-			/*
-			case types.DefinitionType:{
-				if( t1.definition() !== t2.definition() )
-					return false;
-				
-				var t1s = t1.args();
-				var t2s = t2.args();
-				if( t1s.length !== t2s.length )
-					return false;
-				for( var i=0;i<t1s.length;++i )
-					if( !equalsAux( t1s[i], t2s[i], trail ) )
-						return false;
-				return true;
-			} */
