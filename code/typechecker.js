@@ -851,10 +851,7 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 
 			var res = c( ast, env );
 			info.res = res;
-			/*
-			if( ast.kind === AST.SHARE ){
-				info.conformance = hack_info; //FIXME hack_info
-			}*/
+
 			return res;
 		};
 	var checker = buildChecker( inspector );
