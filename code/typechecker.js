@@ -43,6 +43,8 @@ var TypeChecker = (function( AST, exports ){
 	const Environment = exports.Environment;
 	const TypeDefinition = exports.TypeDefinition;
 
+	const shift = exports.shift;
+	const unify = exports.unify;
 	const unfold = exports.unfold;
 	const unfoldDefinition = exports.unfoldDefinition;
 	const substitution = exports.substitution;
@@ -217,6 +219,31 @@ var TypeChecker = (function( AST, exports ){
 		return true;
 	}
 
+	var unifyState = function( state, protocol ){
+//		debugger
+		if( protocol.type === types.ExistsType ){
+			var t = protocol.inner();
+			var i = protocol.id();
+			var b = protocol.bound();
+
+			t = unifyState( state, t );
+
+			error( t.type === types.RelyType || '@unifyState: invalid unification for '+t );
+
+			var r = t.rely();
+			var x = unify( i, r, state );
+//FIXME check bound			
+			error( x !== null || '@unifyState: invalid unification for '+r+' and '+x );
+
+			t = substitution( t, i, x );
+			// there should not be any '0' since we are opening the existential
+			t = shift( t, 0, -1 );
+
+			return t;
+		}
+		return protocol;
+	}
+
 	//
 	// State-Protocol Split
 	//
@@ -312,7 +339,7 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 	var stepState = function( work, g, s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
-
+//debugger
 		var addW = function( g, s, p ){
 			if( isLeft )
 				addWork( work, g, s, p, q );
@@ -348,7 +375,8 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			// TODO: bound
 			// by (step:Open-Type)
 			// by (step:Open-Loc)
-			var u = unifyState( s, p.id(), p.inner() );
+			var u = unifyState( s, p );
+console.debug( p.toString()+' \n>> '+u.toString() );
 			// substitute, check bound
 			return u !== null && stepState( work, g, s, u, q, isLeft );
 		}

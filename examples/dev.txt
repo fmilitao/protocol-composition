@@ -1,7 +1,3 @@
-
-// new protocols:
-
-
 // === Pipe Example ===
 
 typedef  Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
@@ -13,19 +9,14 @@ typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 				( Close[p] => Close[p] ; Close[p] ) (+)
 				( Empty[p] => Empty[p] ; H[p] ) // retries
 
-
-<q> share Empty[q] as T[q] || H[q]
-
-/*
-
 // === Existential-Universal Split ===
 
 // v1
-typedef Nothing<p> = exists X.( rw p X => rw p X ; Nothing[p] )
-typedef  Full<p,B> = rw p B => forall Y.( rw p Y ; Full[p,Y] )
+typedef Nothing[p] = exists X.( rw p X => rw p X ; Nothing[p] )
+typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 // v2
-typedef Any<p> = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
+typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
 
 // v3
 typedef W = int -o int
@@ -34,15 +25,16 @@ typedef Q = int -o boolean
 typedef AO = ![add: W]
 typedef AR = ![add: W, remove: Q]
 
-typedef AddOnly<p>     = exists X <: AO.( rw p X => rw p X ; AddOnly[p] )
-typedef AddRemove<p,B> = rw p B => forall Y <: AR.( rw p Y ; AddRemove[p,Y] )
+// FIXME: problem on unifying X <: AO and Y <: AR
+typedef AddOnly[p]     = exists X <: AO.( rw p X => rw p X ; AddOnly[p] )
+typedef AddRemove[p,B] = rw p B => forall Y <: AR.( rw p Y ; AddRemove[p,Y] )
 
+// === sharing === //
 
+<q> share (rw q int) as Nothing[q] || Full[q,int]
 
-
-
-
-
+// pipe
+//<q> share Empty[q] as T[q] || H[q]
 
 /*
 
