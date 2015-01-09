@@ -94,6 +94,7 @@ var TypeChecker = (function( AST, exports ){
 		switch( t.type ){
 			case types.NoneType:
 				return new Set(); // empty set
+
 			case types.RelyType:
 				return locSet( t.rely() );
 			
@@ -287,7 +288,7 @@ var TypeChecker = (function( AST, exports ){
 
 	var checkSPConformance = function( work, visited ){
 //debugger
-//var i=0;
+var i=0;
 		while( work.length > 0 ){
 			var w = work.pop();
 
