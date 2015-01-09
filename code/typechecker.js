@@ -508,20 +508,21 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 				// definitions and type/location variables should not interfere
 				var label = ast.text;
 				var typedef = env.getTypeDef();
-				var tmp = env.getType( label );
+				var tmp = env.getTypeByName( label );
 				// if label matches type in environment, but we only allow
 				// access to type variables and location variables using this
 				// AST.kind --- all other uses are assumed to be recursives.
 				if( tmp !== undefined &&
 					( tmp.type === types.TypeVariable ||
 					  tmp.type === types.LocationVariable ) ){
-						return tmp.copy( env.getTypeDepth(label) );
+						return tmp.copy( env.getNameIndex(label) );
 				}
 				
 				// look for type definitions with 0 arguments
 				var lookup_args = typedef.getType(label);
 				if( lookup_args !== undefined && lookup_args.length === 0 )
 					return new DefinitionType( label, [], typedef );
+				
 				assert( 'Unknown type '+label, ast);
 			};
 			
@@ -693,12 +694,12 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 			case AST.CAP_TYPE: 
 			return function( ast, env ){
 				var id = ast.id;
-				var loc = env.getType( id );
+				var loc = env.getTypeByName( id );
 				
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast);
 
-				return new CapabilityType( loc.copy( env.getTypeDepth( id ) ), check( ast.type, env ) );
+				return new CapabilityType( loc.copy( env.getNameIndex( id ) ), check( ast.type, env ) );
 			};
 			
 			case AST.STACKED_TYPE: 
@@ -735,13 +736,13 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 		}
 
 	}
-	
+
 	var checkProgram = function( ast, check ){
 		// pre: ast is program's root
 		error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
 				
 		var typedef = new TypeDefinition();
-		var env = new Environment( null, typedef );
+		var env = new Gamma( typedef, null );
 		
 		// handle type definitions
 		if( ast.typedefs !== null ){
@@ -760,7 +761,7 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 					for(var j=0;j<pars.length;++j){
 						var n = pars[j];
 						args[j] = isTypeVariableName(n) ? 
-							new TypeVariable(n,0) : new LocationVariable(n,0);
+							new TypeVariable(n,0,null) : new LocationVariable(n,0);
 					}
 				}
 				
@@ -772,19 +773,18 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 			for(var i=0;i<ast.typedefs.length;++i){
 				var type = ast.typedefs[i];						
 				var tmp_env = env;
-				var args = typedef.getType(type.id);
+				var args = typedef.getType( type.id );
 				
 				// sets the variables, if there are any to setup
 				if( args !== null ){
 					for(var j=0;j<args.length;++j){
 						// should be for both LocationVariables and TypeVariables
-						// we must create a new scope to increase the De Bruijn index
-						tmp_env = tmp_env.newScope();
-						tmp_env.setType( args[j].name(), args[j] );
+						tmp_env = tmp_env.newScope( args[j].name(), args[j], null );
 					}
 				}
 				
 				// map of type names to typechecker types
+// FIXME needs to ensure that definition is not a locationvariable?
 				assert( typedef.addDefinition(type.id, check(type.type, tmp_env)) 
 					|| ('Duplicated typedef: '+type.id), type );
 			}
@@ -847,7 +847,7 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 	// all these variable could be local variables of 'exports.check'
 	var type_info = [];
 	var inspector = function( ast, env, c ){
-			var info = { ast : ast, env : env.clone() };
+			var info = { ast : ast, env : env };
 			type_info.push( info );
 
 			var res = c( ast, env );
