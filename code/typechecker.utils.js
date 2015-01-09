@@ -312,7 +312,7 @@ var TypeChecker = (function( exports ){
 			case types.TopType:
 				return t;
 			default:
-				error( "@shift1: Not expecting " +t.type );
+				error( "@shift: Not expecting " +t.type );
 		}
 	}
 
