@@ -29,6 +29,13 @@ not subtype int <: boolean
 	subtype [] <: exists X.[]
 	subtype [int,boolean] <: exists X.[X,boolean]
 
+<q> subtype rw q int <: exists w.rw w int
+<q> subtype rw q string <: exists w.rw q string
+
+<q> subtype forall w.rw w int <: rw q int
+<q> subtype forall w.rw w string <: rw q string
+<q> subtype forall w.rw q string <: rw q string
+
 	 not subtype [int,boolean] <: exists X.[X,X]
 <q> not subtype rw q int <: exists w.rw w boolean
 

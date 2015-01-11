@@ -282,7 +282,7 @@ var TypeChecker = (function( exports ){
 				var star = new t.constructor();
 				var inners = t.inner();
 				for( var i=0;i<inners.length;++i ){
-					star.add( shift( rec(inners[i]), c, d ) );
+					star.add( shift( inners[i], c, d ) );
 				}	
 				return star;
 			}
@@ -696,8 +696,11 @@ var TypeChecker = (function( exports ){
 		}
 
 		if( t2.type === types.ExistsType && t1.type !== types.ExistsType ){
+			// must shift 't1' to match 't2' depth
+			var t1_s = shift1( t1, 0 );
+
 			// if found unification and it obeys bound, successed.
-			var u = unify( t2.id(), t2.inner(), t1 );
+			var u = unify( t2.id(), t2.inner(), t1_s );
 
 			// must use '===' to avoid implicit conversions
 			if( u === false )
@@ -711,7 +714,10 @@ var TypeChecker = (function( exports ){
 		}
 		
 		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
-			var u = unify( t1.id(), t1.inner(), t2 );
+			// must shift 't2' to match 't1' depth
+			var t2_s = shift1( t2, 0 );
+
+			var u = unify( t1.id(), t1.inner(), t2_s );
 			
 			// must use '===' to avoid implicit conversions
 			if( u === false )
