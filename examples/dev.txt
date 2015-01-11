@@ -9,6 +9,8 @@ typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 				( Close[p] => Close[p] ; Close[p] ) (+)
 				( Empty[p] => Empty[p] ; H[p] ) // retries
 
+// TODO: case where the Empty state hides its representation.
+
 // === Existential-Universal Split ===
 
 
@@ -16,7 +18,6 @@ typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 typedef Nothing[p] = exists X.( rw p X => rw p X ; Nothing[p] )
 typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
-/*
 // v2
 typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
 
@@ -30,7 +31,6 @@ typedef AR = ![add: W, remove: Q]
 // FIXME: problem on unifying X <: AO and Y <: AR
 typedef AddOnly[p]     = exists X <: AO.( rw p X => rw p X ; AddOnly[p] )
 typedef AddRemove[p,B] = rw p B => forall Y <: AR.( rw p Y ; AddRemove[p,Y] )
-*/
 
 // === sharing === //
 

@@ -12,6 +12,7 @@ TODO/PROBLEMS/BUGS:
 	P[A] = rw p A => forall X <: A.( rw p X ; P[X] )
 	then the typing environment will grow without end, making the use of subsumption on conformance impossible and therefore
 we will never be able to close the proof.
+	**CAREFUL** how does this mix with the examples with refinements?
 
 	The simple solution if to enforce that:
 	EMPTY |- A type 	Gamma, X <: A |- B type
@@ -24,7 +25,7 @@ we will never be able to close the proof.
 
 		( X <: A ) in Gamma
 	 Gamma |- A <: B
-	------------------- (i.e. transitivity on bounds?)
+	------------------- (i.e. transitivity on bounds???)
 	 Gamma |- X <: B
 
 	but this may be undecidable is we do not constrain the type in the bounded quantification type.

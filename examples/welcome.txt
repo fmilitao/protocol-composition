@@ -1,5 +1,4 @@
-// Welcome file
-// The other files should contain the main tests and examples.
+// Welcome file, TODO: welcome message.
 
 typedef A = int
 typedef X = exists A.forall B.( a#A + b#B )
@@ -8,14 +7,17 @@ typedef C[A,B] = int :: A :: B
 
 typedef Y[x] = boolean{int/x}
 
-typedef Buggy[q,l] = tag#(ref q) + teg#(ref l)
+typedef Sum[q,l] = tag#(ref q) + teg#(ref l)
 
-typedef H[p] =	( (rw p !Empty#[]) => (rw p !Empty#[]) ; H[p] ) (+)
-				( (rw p !Closed#[]) => none ) (+) 
-				( (rw p Node#[int,exists q.(!ref q :: H[q])]) => none )
+typedef  Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * Head[q] )
+typedef Close[p] = rw p Close#![]
+typedef Empty[p] = rw p Empty#![]
 
-typedef T[p] =	(rw p !Empty#[]) =>
-				( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: H[q])]) )
+typedef Tail[p] = Empty[p] => ( Close[p] (+) Node[p] )
+typedef Head[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
+				( Close[p] => Close[p] ; Close[p] ) (+)
+				( Empty[p] => Empty[p] ; Head[p] ) // retries
+
 
 // subtyping
     subtype [a:int,b:int] <: [a:int]
@@ -39,5 +41,5 @@ not equals forall X<:int.forall X<:boolean.forall X<:string.X == forall X<:strin
 <X> equals X{A/X} == A
 
 // sharing
-//	 share A as A => none ; none || none
-<l> share (rw l !Empty#![]) as H[l] || T[l]
+	 share none as none || none
+<l> share Empty[l] as Head[l] || Tail[l]
