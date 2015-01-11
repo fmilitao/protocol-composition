@@ -25,6 +25,13 @@ typedef Head[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
     subtype int <: !int
 not subtype int <: boolean
 
+ 	subtype int <: exists q.int
+	subtype [] <: exists X.[]
+	subtype [int,boolean] <: exists X.[X,boolean]
+
+	 not subtype [int,boolean] <: exists X.[X,X]
+<q> not subtype rw q int <: exists w.rw w boolean
+
 // equality
     equals int == int
     equals forall X.(X{int/X}) == forall Y.int

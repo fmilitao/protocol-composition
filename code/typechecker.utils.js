@@ -47,7 +47,10 @@ var TypeChecker = (function( exports ){
 		return unifyAux( x,t,a, new Set() );
 	}
 
-	// returns null when no SINGLE/UNIQUE match found, else type
+	// Search to find a UNIQUE match:
+	// returns 'false' is types are incompatible,
+	// returns 'type' if match is found,
+	// returns 'true' if match not found but types are equal.
 	var unifyAux = function( x, t, a, trail ){
 		
 		// base case: variable 'x' is found in 't'
@@ -64,9 +67,9 @@ var TypeChecker = (function( exports ){
 		if( deft || defa ){
 			var key = t.toString(true) + a.toString(true);
 
-			// assume no match on cycles
+			// assume no match on cycles, but types OK.
 			if( trail.has(key) )
-				return null;
+				return true;
 
 			trail.add(key);
 			t = deft ? unfold(t) : t;
@@ -78,24 +81,40 @@ var TypeChecker = (function( exports ){
 		// no match a this level, attempt further down.
 
 		if( t.type !== a.type )
-			return null; // failed to match
+			return false; // failed to match
 
-		var tmp = null;
+		var tmp = true;
+		
 		// returns whether it should abort, leaves result in 'tmp'
-		var aux = function(v){
-			if( tmp === null ){
-				tmp = v;
+		var aux = function( value ){
+			
+			// must use '=== false' to avoid conversions
+			// already failed, keeps with false.
+			if( tmp === false || value === false ){
+				tmp = false;
+				return false;
+			}
+			
+			if( tmp === true ){
+				tmp = value;
 				return true;
 			}
-			// else must be equals
-			return v === null || equals( tmp, v );
+			
+			// 'value' is not a type, no need for equality check
+			if( value === true )
+				return true;
+
+			// 'tmp' is not 'false' nor 'true', should be valid type!
+			// 'value' is not 'false' nor 'true', shoud be valid type too!
+			// they must be equal, or unification fails.
+			return equals( tmp, value );
 		}
 
 		switch( t.type ){
 			case types.FunctionType: {
 				if( !aux( unifyAux( x, t.argument(), a.argument(), trail ) )||
 					!aux( unifyAux( x, t.body(), a.body(), trail ) ) )
-					return null;
+					return false;
 				return tmp;
 			}
 
@@ -106,7 +125,7 @@ var TypeChecker = (function( exports ){
 			case types.GuaranteeType: {
 				if( !aux( unifyAux( x, t.rely(), a.rely(), trail ) ) ||
 					!aux( unifyAux( x, t.guarantee(), a.guarantee(), trail ) ) )
-					return null;
+					return false;
 				return tmp;
 			}
 
@@ -115,12 +134,12 @@ var TypeChecker = (function( exports ){
 				var as = a.tags();
 
 				if( ts.size !== as.size )
-					return null;
+					return false;
 
 				for( var k of ts.keys() ){
 					if( !as.has(k) ||
 						!aux( unifyAux( x, ts.get(k), as.get(k), trail ) ) )
-						return null;
+						return false;
 				}
 
 				return tmp;
@@ -136,11 +155,11 @@ var TypeChecker = (function( exports ){
 				var as = a.inner();
 
 				if( ts.length !== as.length )
-					return null;
+					return false;
 
 				for( var i=0; i<ts.length; ++i ){
 					if( !aux( unifyAux( x, ts[i], as[i], trail ) ) )
-						return null;
+						return false;
 				}
 
 				return tmp;
@@ -155,7 +174,7 @@ var TypeChecker = (function( exports ){
 				if( ( tb === null ^ ab === null ) || 
 				// or not null, but have invalid matching
 					( tb ===null && ab === null && !aux( unifyAux( x, tb, ab, trail ) ) ) )
-					return null;
+					return false;
 				
 				// going inside an existential, we must shift 'x' index
 				var xi = shift1(x,0);
@@ -165,7 +184,7 @@ var TypeChecker = (function( exports ){
 				var ai = a.inner();
 
 				if( !aux( unifyAux( xi, ti, ai, trail ) ) )
-					return null;
+					return false;
 
 				return tmp;
 			}
@@ -177,14 +196,14 @@ var TypeChecker = (function( exports ){
 			case types.StackedType: {
 				if( !aux( unifyAux( x, t.left(), a.left(), trail ) ) ||
 					!aux( unifyAux( x, t.right(), a.right(), trail ) ) )
-					return null;
+					return false;
 				return tmp;
 			}
 
 			case types.CapabilityType: {
 				if( !aux( unifyAux( x, t.location(), a.location(), trail ) ) ||
 					!aux( unifyAux( x, t.value(), a.value(), trail ) ) )
-					return null;
+					return false;
 				return tmp;
 			}
 
@@ -193,12 +212,12 @@ var TypeChecker = (function( exports ){
 				var as = a.fields();
 
 				if( ts.size !== as.size )
-					return null;
+					return false;
 
 				for( var k of ts.keys() ){
 					if( !as.has(k) ||
 						!aux( unifyAux( x, ts.get(k), as.get(k), trail ) ) )
-						return null;
+						return false;
 				}
 
 				return tmp;
@@ -206,10 +225,14 @@ var TypeChecker = (function( exports ){
 
 			case types.LocationVariable:
 			case types.TypeVariable:
+				return t.index() === a.index();
+
 			case types.PrimitiveType:
+				return t.name() === a.name();
+
 			case types.NoneType:
 			case types.TopType:
-				return null;
+				return true;
 
 			default:
 				error( "@unifyAux: Not expecting " +t.type );
@@ -675,17 +698,28 @@ var TypeChecker = (function( exports ){
 		if( t2.type === types.ExistsType && t1.type !== types.ExistsType ){
 			// if found unification and it obeys bound, successed.
 			var u = unify( t2.id(), t2.inner(), t1 );
-//FIXME this is wrong: <q> not subtype rw q int <: exists w.rw w boolean
-			if( u === null )
+
+			// must use '===' to avoid implicit conversions
+			if( u === false )
 				return false;
+			if( u === true )
+				// no need to check bounds because match was empty (but valid)
+				return true;
+			// else 'u' must be a type
 			var b = t2.bound();
 			return b === null || subtypeAux( u, b, trail );
 		}
 		
 		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
 			var u = unify( t1.id(), t1.inner(), t2 );
-			if( u === null )
+			
+			// must use '===' to avoid implicit conversions
+			if( u === false )
 				return false;
+			if( u === true )
+				// no need to check bounds because match was empty (but valid)
+				return true;
+			// else 'u' must be a type
 			var b = t1.bound();
 			return b === null || subtypeAux( u, b, trail );
 		}

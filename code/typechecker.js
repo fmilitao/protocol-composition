@@ -233,13 +233,16 @@ var TypeChecker = (function( AST, exports ){
 			var r = t.rely();
 			var x = unify( i, r, state );
 //FIXME check bound			
-			error( x !== null || '@unifyState: invalid unification for '+r+' and '+x );
+			error( x !== false || '@unifyState: invalid unification for '+r+' and '+state );
 
-			// shift because it is going inside the existential
-			x = shift( x, 0, 1 );
-			t = substitution( t, i, x );
-			// unshift because we are opening the existential
-			t = shift( t, 0, -1 );
+			// if contains valid type.
+			if( x !== true ){
+				// shift because it is going inside the existential
+				x = shift( x, 0, 1 );
+				t = substitution( t, i, x );
+				// unshift because we are opening the existential
+				t = shift( t, 0, -1 );
+			}
 
 			return t;
 		}
