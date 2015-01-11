@@ -114,15 +114,13 @@ var TypeChecker = (function( exports ){
 				var ts = t.tags();
 				var as = a.tags();
 
-				if( ts.length !== as.length )
+				if( ts.size !== as.size )
 					return null;
 
-				for( var i in ts ){
-					var tt = t.inner( ts[i] );
-					var at = a.inner( as[i] );
-
+				for( var k of ts.keys() ){
 					// missing tag in 'a'
-					if( at === undefined || !aux( unifyAux( x, tt, at, trail ) ) )
+					if( !as.has(k) ||
+						!aux( unifyAux( x, ts.get(k), as.get(k), trail ) ) )
 						return null;
 				}
 
@@ -192,15 +190,16 @@ var TypeChecker = (function( exports ){
 			}
 
 			case types.RecordType: {
-				var ts = t.getFields();
-				var as = a.getFields();
+				var ts = t.fields();
+				var as = a.fields();
 
-				if( ts.length !== as.length )
+				if( ts.size !== as.size )
 					return null;
 
-				for( var i in ts ){
-					var ti = ts[i];
-					var ai = as[i];
+				for( var v of ts ){
+					var i = v[0];
+					var ti = v[1];
+					var ai = as.get(i);
 
 					// missing tag in 'a'
 					if( ai === undefined || !aux( unifyAux( x, ti, ai, trail ) ) )
@@ -252,8 +251,9 @@ var TypeChecker = (function( exports ){
 			case types.SumType:{
 				var sum = new SumType();
 				var tags = t.tags();
-				for( var i in tags )
-					sum.add( tags[i], shift( t.inner(tags[i]), c, d ) );
+				tags.forEach( function(value,key){
+					sum.add( key, shift( value, c, d ) );
+				} );
 				return sum;
 			}
 
@@ -287,9 +287,10 @@ var TypeChecker = (function( exports ){
 			
 			case types.RecordType: {
 				var r = new RecordType();
-				var fs = t.getFields();
-				for( var i in fs )
-					r.add( i, shift( fs[i], c, d ) );
+				var fs = t.fields();
+				fs.forEach( function(value,key){
+					r.add( key, shift( value, c, d ) );
+				});
 				return r;
 			}
 
@@ -390,11 +391,11 @@ var TypeChecker = (function( exports ){
 				var t1s = t1.tags();
 				var t2s = t2.tags();
 				// note that it is an array of tags (strings)
-				if( t1s.length !== t2s.length )
+				if( t1s.size !== t2s.size )
 					return false;
-				for( var i=0; i<t1s.length; ++i ){
-					if( t2s.indexOf(t1s[i])===-1 ||
-						!equalsAux( t1.inner(t1s[i]), t2.inner(t1s[i]), trail ) )
+				for( var k of t1s.keys() ){
+					if( !t2s.has(k) ||
+						!equalsAux( t1s.get(k), t2s.get(k), trail ) )
 						return false;
 				}
 				return true;
@@ -408,14 +409,20 @@ var TypeChecker = (function( exports ){
 				return equalsAux( t1.location(), t2.location(), trail ) &&
 					equalsAux( t1.value(), t2.value(), trail );
 			case types.RecordType: {
-				var t1s = t1.getFields();
-				var t2s = t2.getFields();
-				if( Object.keys(t1s).length !== Object.keys(t2s).length )
+				var t1s = t1.fields();
+				var t2s = t2.fields();
+				if( t1s.size !== t2s.size )
 					return false;
-				for( var i in t2s )
-					if( !t1s.hasOwnProperty(i) || 
-						!equalsAux( t1s[i], t2s[i], trail ) )
+
+				for (var v of t2s) {
+					var i = v[0];
+					var t2s_i = v[1];
+					if( !t1s.has(i) || 
+						!equalsAux( t1s.get(i), t2s_i, trail ) )
 						return false;
+				}
+				
+
 				return true;
 			} 
 			case types.TupleType: {
@@ -501,8 +508,9 @@ var TypeChecker = (function( exports ){
 		case types.SumType:{
 			var sum = new SumType();
 			var tags = t.tags();
-			for( var i in tags )
-				sum.add( tags[i], rec(t.inner(tags[i])) );
+			tags.forEach(function(value,key){
+				sum.add( key, rec(value) );
+			});
 			return sum;
 		}
 		
@@ -543,9 +551,10 @@ var TypeChecker = (function( exports ){
 			return new CapabilityType( rec(t.location()), rec(t.value()) );
 		case types.RecordType: {
 			var r = new RecordType();
-			var fs = t.getFields();
-			for( var i in fs )
-				r.add( i, rec(fs[i]) );
+			var fs = t.fields();
+			fs.forEach( function(value,index){
+				r.add( index, rec(value) );
+			});
 			return r;
 		}
 		case types.DefinitionType: {
@@ -721,11 +730,13 @@ var TypeChecker = (function( exports ){
 					return false;
 
 				// all fields of t2 must be in t1
-				var t1fields = t1.getFields();
-				var t2fields = t2.getFields();				
-				for( var i in t2fields ){
-					if( !t1fields.hasOwnProperty(i) ||
-						!subtypeAux( t1fields[i], t2fields[i], trail ) ){
+				var t1fields = t1.fields();
+				var t2fields = t2.fields();				
+				for( var v of t2fields ){
+					var i = v[0];
+					var v2 = v[1];
+					if( !t1fields.has(i) ||
+						!subtypeAux( t1fields.get(i), v2, trail ) ){
 						return false;
 					}
 				}
@@ -827,10 +838,9 @@ var TypeChecker = (function( exports ){
 			case types.SumType:{
 				var i1s = t1.tags();
 				var i2s = t2.tags();
-				for( var i in i1s ){
-					var j = t2.inner(i1s[i]);
-					if( j === undefined || // if tag is missing, or
-						!subtypeAux( t1.inner(i1s[i]), j, trail ) )
+				for( var k of i1s.keys() ){
+					if( !i2s.has(k) || // if tag is missing, or
+						!subtypeAux( i1s.get(k), i2s.get(k), trail ) )
 						return false;
 				}
 				return true;

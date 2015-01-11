@@ -78,15 +78,20 @@ var TypeChecker = (function( assertF ){
 	
 	newType('SumType',
 		function SumType() {
-			var tags = {}; // FIXME switch do using Map instead
+			var tags = new Map();
 			this.add = function( tag, inner ){
-				if ( tags.hasOwnProperty(tag) )
+				if ( tags.has(tag) )
 					return undefined; // already exists!
-				tags[tag] = inner;
+				tags.set( tag, inner );
 				return true;
 			}
-			this.tags = function(){ return Object.keys(tags); }
-			this.inner = function(tag){ return tags[tag]; }
+			// assumes no one will modify this map
+			this.tags = function(){
+				return tags;
+			}
+			this.inner = function(tag){
+				return tags.get(tag);
+			}
 		}
 	);
 
@@ -141,25 +146,22 @@ var TypeChecker = (function( assertF ){
 	
 	newType('RecordType',
 		function RecordType(){
-			var fields = {}; //FIXME which to map instead
+			var fields = new Map();
 			this.add = function(id, type) {
-				if ( fields.hasOwnProperty(id) ){
+				if ( fields.has(id) ){
 					return undefined;
 				}
-				fields[id] = type;
+				fields.set( id, type );
 				return true;
 			}
 			this.select = function(id) {
-				if (fields.hasOwnProperty(id)) {
-					return fields[id];
-				} else {
-					return undefined;
-				}
+				return fields.get(id);
 			}
 			this.isEmpty = function(){
-				return Object.keys(fields).length===0;
+				return fields.size===0;
 			}
-			this.getFields = function(){
+			// note: assumes no one will attempt to change the map
+			this.fields = function(){
 				return fields;
 			}
 		}
@@ -297,11 +299,11 @@ var TypeChecker = (function( assertF ){
 		
 				case types.SumType:
 				return function( v ){
-					var tags = this.tags();
 					var res = [];
-					for( var i in tags ){
-						res.push( tags[i]+'#'+wrap( this.inner(tags[i]), v ) ); 
-					}	
+					var tags = this.tags();
+					tags.forEach( function(value,key){
+						res.push( key+'#'+wrap( value, v ) ); 
+					});
 					return res.join('+');
 				};
 
@@ -364,9 +366,10 @@ var TypeChecker = (function( assertF ){
 				case types.RecordType:
 				return function( v ){
 					var res = [];
-					var fields = this.getFields();
-					for( var i in fields )
-						res.push(i+": "+wrap( fields[i], v ) );
+					var fields = this.fields();
+					fields.forEach(function(value,key){
+						res.push( key +": "+wrap( value, v ) );
+					});
 					return "["+res.join()+"]";
 				};
 				

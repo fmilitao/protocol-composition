@@ -340,14 +340,14 @@ var toHTML = function (t){
 			return wq( wQ("!") + wq(_toHTML(t.inner())) );
 		}
 		case types.SumType:{
-			var tags = t.tags();
 			var res = [];
-			for( var i in tags ){
+			var tags = t.tags();
+			tags.forEach( function(value,key){
 				res.push(
-					wQ( '<span class="type_tag">'+tags[i]+'</span>#' )+
-					wq( _toHTML(t.inner(tags[i])) )
-				); 
-			}	
+					wQ( '<span class="type_tag">'+key+'</span>#' )+
+					wq( _toHTML(value) )
+				);
+			});
 			return wq( res.join('+') );
 		}
 		case types.StarType:{
@@ -399,9 +399,10 @@ var toHTML = function (t){
 			return wq( wq(toHTML(t.left())) + wQ(' :: ')+ wq(toHTML(t.right())) );
 		case types.RecordType: {
 			var res = [];
-			var fields = t.getFields();
-			for( var i in fields )
-				res.push('<span class="type_field">'+i+'</span>: '+toHTML(fields[i]));
+			var fields = t.fields();
+			fields.forEach(function(value,index){
+				res.push('<span class="type_field">'+index+'</span>: '+toHTML(value));
+			});
 			return "["+res.join(', ')+"]";
 		}
 		case types.TupleType: {

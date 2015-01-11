@@ -1,18 +1,16 @@
 // === Pipe Example ===
 
-typedef  Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
-typedef Close[p] = rw p Close#![]
-typedef Empty[p] = rw p Empty#![]
+typedef   Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
+typedef  Close[p] = rw p Close#![]
+typedef  Empty[p] = rw p Empty#![]
+typedef Hide[p,A] = rw p Empty#A
 
-typedef T[p] = Empty[p] => ( Close[p] (+) Node[p] ) //; none
+typedef T[p] = Empty[p] => ( Close[p] (+) Node[p] )
 typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 				( Close[p] => Close[p] ; Close[p] ) (+)
-				( Empty[p] => Empty[p] ; H[p] ) // retries
-
-// TODO: case where the Empty state hides its representation.
+				( exists X.( Hide[p,X] => Hide[p,X] ; H[p] ) ) // retries
 
 // === Existential-Universal Split ===
-
 
 // v1
 typedef Nothing[p] = exists X.( rw p X => rw p X ; Nothing[p] )
@@ -34,10 +32,13 @@ typedef AddRemove[p,B] = rw p B => forall Y <: AR.( rw p Y ; AddRemove[p,Y] )
 
 // === sharing === //
 
+share none as none || none
+
 // FIXME: termination
 // <q> share (rw q int) as Nothing[q] || Full[q,int]
 
 // pipe
+// FIXME: termination
 <q> share Empty[q] as T[q] || H[q]
 
 /*
