@@ -341,13 +341,13 @@ var toHTML = function (t){
 		}
 		case types.SumType:{
 			var res = [];
-			var tags = t.tags();
-			tags.forEach( function(value,key){
-				res.push(
-					wQ( '<span class="type_tag">'+key+'</span>#' )+
-					wq( _toHTML(value) )
-				);
-			});
+			t.tags().forEach(
+				function(value,key){
+					res.push(
+						wQ( '<span class="type_tag">'+key+'</span>#' )+
+						wq( _toHTML(value) )
+					);
+				} );
 			return wq( res.join('+') );
 		}
 		case types.StarType:{
@@ -399,8 +399,7 @@ var toHTML = function (t){
 			return wq( wq(toHTML(t.left())) + wQ(' :: ')+ wq(toHTML(t.right())) );
 		case types.RecordType: {
 			var res = [];
-			var fields = t.fields();
-			fields.forEach(function(value,index){
+			t.fields().forEach(function(value,index){
 				res.push('<span class="type_field">'+index+'</span>: '+toHTML(value));
 			});
 			return "["+res.join(', ')+"]";

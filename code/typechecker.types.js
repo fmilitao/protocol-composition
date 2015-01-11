@@ -300,8 +300,7 @@ var TypeChecker = (function( assertF ){
 				case types.SumType:
 				return function( v ){
 					var res = [];
-					var tags = this.tags();
-					tags.forEach( function(value,key){
+					this.tags().forEach( function(value,key){
 						res.push( key+'#'+wrap( value, v ) ); 
 					});
 					return res.join('+');
@@ -366,8 +365,7 @@ var TypeChecker = (function( assertF ){
 				case types.RecordType:
 				return function( v ){
 					var res = [];
-					var fields = this.fields();
-					fields.forEach(function(value,key){
+					this.fields().forEach(function(value,key){
 						res.push( key +": "+wrap( value, v ) );
 					});
 					return "["+res.join()+"]";
