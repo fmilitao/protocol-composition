@@ -231,6 +231,8 @@ var TypeChecker = (function( AST, exports ){
 			error( t.type === types.RelyType || '@unifyState: invalid unification for '+t );
 
 			var r = t.rely();
+//FIXME: --- this looks ugly needs good justification.
+			state = shift( state, 0, 1 );
 			var x = unify( i, r, state );
 //FIXME check bound			
 			error( x !== false || '@unifyState: invalid unification for '+r+' and '+state );
