@@ -148,8 +148,7 @@ var TypeChecker = (function( exports ){
 			case types.AlternativeType:
 			case types.IntersectionType:
 			case types.StarType: 
-//FIXME: the order only matters on TupleTypes, not on the above.
-//FIXME: A * B * C could be matched as X * C, etc.
+//FIXME: the order only matters on TupleTypes, not on the above (A * B * C could be matched as X * C, etc.)
 			case types.TupleType: {
 				var ts = t.inner();
 				var as = a.inner();
@@ -388,7 +387,7 @@ var TypeChecker = (function( exports ){
 				return equalsAux( t1.bound(), t2.bound(), trail ) &&
 					equalsAux( t1.inner(), t2.inner(), trail );
 			}
-			case types.TypeVariable: //FIXME needs to also check bounds are equal.
+			case types.TypeVariable:
 			case types.LocationVariable: {
 				return  t1.index() === t2.index();
 			}

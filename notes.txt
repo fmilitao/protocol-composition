@@ -7,17 +7,6 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO/PROBLEMS/BUGS:
 ===================
 
-FIXME:
- unify, returns:
- 	- type, if match
- 	- null, if OK but no match here
- 	- undefined, if no match and not equals:
-	 	type && null = type
-	 	null && type = type
-	 	type && type = type, iff equals
-	 	type && type = undefined, iff not equals
-	 	undefined && * = undefined
-
 * Check if case is really undecidable. Add check to forbid undecidable case, if that is the case. It may be possible that the example is ill-constructed and therefore fails to catch this error. Thus, you may need to build a better counter-example that exercises the problem.
 	The case is undecidable at least on protocol conformance. If we have:
 	P[A] = rw p A => forall X <: A.( rw p X ; P[X] )
@@ -40,6 +29,8 @@ we will never be able to close the proof.
 	 Gamma |- X <: B
 
 	but this may be undecidable is we do not constrain the type in the bounded quantification type.
+
+* Note: configuration should not be undecidable since we are just narrowing it down. If it worked for a larget set of types then it should also work for a narrower set, right?
 
 * undecidable exists X <: A || forall Y <: B, iff A <: B, we must restrict bound to be EMPTY |- A type, no variables.
 
@@ -69,7 +60,7 @@ we will never be able to close the proof.
 	}
 
 
-
+===================
 
 - define error constants/enum instead of having constants spread out through the code.
 
