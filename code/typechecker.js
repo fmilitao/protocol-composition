@@ -50,6 +50,7 @@ var TypeChecker = (function( AST, exports ){
 	const substitution = exports.substitution;
 	const subtype = exports.subtype;
 	const equals = exports.equals;
+	const isFree = exports.isFree;
 
 	// TypeVariables must be upper cased.
 	var isTypeVariableName = function(n){
@@ -251,6 +252,35 @@ var TypeChecker = (function( AST, exports ){
 		return protocol;
 	}
 
+	// i.e. weakening rule, but going upwards ("strengthen").
+	// removes unnecessary levels on names
+	var unWeaken = function( g, t ){
+		var i = 0;
+		var x = null;
+console.debug( '\t\tunWeaken: '+t );
+		while( g !== null ){
+			// fetches the type of the variable
+			x = g.getType( 0 );
+			if( x === undefined )
+				break;
+
+
+			// variable should be at index 0, thus
+			// we shift the variable to current depth
+			x = shift( x, 0, i );
+			// if variable does not occur in t, then
+			// unshift all values before that one
+			if( isFree( x, t ) ){
+				t = shift( t, i, -1 );
+			}
+console.debug( '\t\t'+i+'--: '+t );
+			g = g.endScope();
+			++i;
+		}
+console.debug( '\t\tdone: '+t );
+		return t;
+	}
+
 	//
 	// State-Protocol Split
 	//
@@ -303,6 +333,8 @@ var i=0;
 				var a = w.s;
 				var p = w.p;
 				var q = w.q;
+
+unWeaken( g, q );
 
 console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			
@@ -407,7 +439,7 @@ console.debug( p.toString()+' \n>> '+u.toString() );
 				var id = b.id();
 				var name = id.name();
 				var bound = b.bound();
-debugger
+//debugger
 				// indexes remain unchanged for this protocol, because we pushed the
 				// forall declaration declaration to gamma. However, the other protocol
 				// must be shifted to preserve its index.

@@ -896,10 +896,105 @@ var TypeChecker = (function( exports ){
 				return t1.index() === t2.index();
 
 			default:
-				error( "@subtype: Not expecting " +t1.type );
+				error( "@subtypeAux: Not expecting " +t1.type );
 		}
 
 	};
+
+	
+	var isFree = function( x, t ){
+		if( x.type !== types.LocationVariable && 
+			x.type !== types.TypeVariable ){
+			error( "@isFree: can only check a Type/LocationVariable, got: "+x.type );
+		}
+		return isFreeAux( x, t, new Set() );
+	}
+
+	var isFreeAux = function( x, t, trail ){
+
+		if( t.type === types.DefinitionType ){
+			var key = t.toString(true);
+
+			// if there is a cycle, assume 'x' is free
+			if( trail.has(key) )
+				return true;
+
+			trail.add(key);
+
+			return isFreeAux( x, unfold(t), trail );
+		}
+
+		switch ( t.type ){
+			case types.NoneType:
+			case types.PrimitiveType:
+				return true;
+
+			case types.BangType:
+				return isFreeAux( x, t.inner(), trail );
+				
+			case types.ReferenceType:
+				return isFreeAux( x, t.location(), trail );
+
+			case types.RelyType: {
+				return isFreeAux( x, t.rely(), trail ) &&
+					isFreeAux( x, t.guarantee(), trail );
+			}
+			case types.GuaranteeType: {
+				return isFreeAux( x, t.guarantee(), trail ) &&
+					isFreeAux( x, t.rely(), trail );
+			}
+			case types.FunctionType:
+				return isFreeAux( x, t.argument(), trail )
+					&& isFreeAux( x, t.body(), trail );
+			case types.RecordType:{
+				var fields = t.fields();
+				for( var k of fields.keys() ){
+					if( !isFreeAux( x, fields.get(k), trail ) )
+						return false;
+				}
+				return true;
+			}
+			case types.StackedType:
+				return isFreeAux( x, t.left(), trail ) &&
+					isFreeAux( x, t.right(), trail );
+			case types.CapabilityType:
+				return isFreeAux( x, t.location(), trail ) &&
+					isFreeAux( x, t.value(), trail );
+
+			case types.AlternativeType:
+			case types.IntersectionType:
+			case types.StarType:
+			case types.TupleType: {
+				var ts = t.inner();
+				for( var i=0;i<ts.length;++i )
+					if( !isFreeAux( x, ts[i], trail ) )
+						return false;
+				return true;
+			}
+
+			case types.SumType:{
+				var ts = t.tags();
+				for( var k of ts.keys() ){
+					if( !isFreeAux( x, ts.get(k), trail ) )
+						return false;
+				}
+				return true;
+			}
+			case types.ForallType:		
+			case types.ExistsType:{
+				return ( t.bound() === null || isFreeAux( x, t.bound(), trail ) ) &&
+					// shifts 'x' by 1 when moving inside a forall/exists
+					isFreeAux( shift(x,0,1), t.inner(), trail );
+			}
+
+			case types.TypeVariable:
+			case types.LocationVariable:
+				return x.type !== t.type || x.index() !== t.index();
+
+			default:
+				error( "@isFreeAux: Not expecting " +t1.type );
+		}
+	}
 	
 	// unfolds DefinitionType until it reaches some useful type
 	// NOTE: we previously checked for infinitely recursive definitions
@@ -920,21 +1015,9 @@ var TypeChecker = (function( exports ){
 		// type definitions will only replace Type or Location Variables, we
 		// can use the simpler kind of substitution.
 		for(var i=(args.length-1);i>=0;--i){
-/*
-console.debug( '>'+ t );
-console.debug( 'from: '+ pars[i] );
-console.debug( 'to:   '+ args[i] );
-*/
 			t = substitution(t,pars[i],args[i]);
-/*
-console.debug( '+'+t );
-//			t = shift( t, 0, -1 );
-console.debug( ':'+t +'\n\n');
-*/
 		}
-/*
-		console.debug( '----');
-*/
+
 		return t;
 	}
 
@@ -945,6 +1028,7 @@ console.debug( ':'+t +'\n\n');
 	exports.substitution = substitution;
 	exports.subtype = subtype;
 	exports.equals = equals;
+	exports.isFree = isFree;
 
 	return exports;
 
