@@ -7,6 +7,63 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO/PROBLEMS/BUGS:
 ===================
 
+
+* Old (Re-Splitting) Examples:
+
+
+\begin{enumerate}
+\item 1
+$$\kb{rec}~X.(~ E => E ; X ~~\&~~ E => N \oplus C ; ( N => N ; N ) \oplus ( C => C ; C ) ~)$$
+is split into:
+$$ E => N \oplus C ; \none $$
+$$ \kb{rec}~X.( E => E ; X \oplus ( N => N ; N ) \oplus ( C => C ; C ) )$$
+
+\item 2
+
+$$NE \oplus E => NE ; \kb{rec}~X.( NE => NE ; X )$$
+
+\item 3
+$$\kb{rec}~X.(~ N => P ; \kb{rec}~Y.(~ P => N ; X ~\&~ N => P ; Y ~)~)$$
+splits:
+$$\kb{rec}~X.( N => P ; P => N ; X )$$
+$$\kb{rec}~X.( N => P ;X )$$
+
+\item 4
+$$\kb{rec}~X.(~ F => F; X ~\&~ F => R ; R => R ; R ~)$$
+splits:
+$$ F => R $$
+$$\kb{rec}~X.( F => F ; X \oplus R => R ; R )$$
+resplit
+$$\kb{rec}~X.( F => F ; X \oplus R => D )$$
+$$\kb{rec}~X.( F => F ; X \oplus \kb{rec}~Y.( R => R; Y \oplus D => D; D )$$
+
+\item 5
+$$H => F; F => F; F$$
+splits
+$$H => F; \none \oplus F => F; F $$
+$$H => F; \none \oplus F => F; F $$
+
+\end{enumerate}
+
+
+
+
+
+
+
+
+
+
+* subtyping on rely/guarantee types is wrong, should be equal.
+
+normalizeIndexes
+max = (...)
+i = max
+while( i > 0 )
+if( !contains(i) )
+	shift down
+
+
 * Check if case is really undecidable. Add check to forbid undecidable case, if that is the case. It may be possible that the example is ill-constructed and therefore fails to catch this error. Thus, you may need to build a better counter-example that exercises the problem.
 	The case is undecidable at least on protocol conformance. If we have:
 	P[A] = rw p A => forall X <: A.( rw p X ; P[X] )
@@ -66,7 +123,9 @@ we will never be able to close the proof.
 
 - use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
 
+- JS tips: http://bonsaiden.github.io/JavaScript-Garden/
 
+- cool transitions: https://github.com/IanLunn/Hover
 
 Extra Credits:
 ==============

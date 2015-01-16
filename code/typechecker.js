@@ -334,8 +334,6 @@ var i=0;
 				var p = w.p;
 				var q = w.q;
 
-unWeaken( g, q );
-
 console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 			
 				if( !stepState( work, g, a, p, q, true ) || 
@@ -351,7 +349,7 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 	var contains = function( visited, w ){
 		for( var i in visited ){
 			var v = visited[i];
-			
+
 			// by equality
 			// for now ignore 'g'
 			if( equals( v.s, w.s ) &&
@@ -411,13 +409,14 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 		
 		// attempts to find matching type/location to open existential
 		if( p.type === types.ExistsType ){
-			// TODO: bound
+			// TODO: check bound?
 			// by (step:Open-Type)
 			// by (step:Open-Loc)
 			var u = unifyState( s, p );
-console.debug( p.toString()+' \n>> '+u.toString() );
+console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 			// substitute, check bound
-			return u !== null && stepState( work, g, s, u, q, isLeft );
+//debugger
+			return stepState( work, g, s, u, q, isLeft );
 		}
 
 		// TODO: by (step:Frame) --- equality is too strong, we need to find the type that is CONTAINED in 's' such that '... * A' (due to framing)

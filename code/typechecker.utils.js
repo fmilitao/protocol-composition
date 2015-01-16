@@ -747,14 +747,13 @@ var TypeChecker = (function( exports ){
 				return subtypeAux( t1.inner(), t2.inner(), trail );
 			case types.ReferenceType:
 				return subtypeAux( t1.location(), t2.location(), trail );
-			case types.RelyType: {
-				return subtypeAux( t1.rely(), t2.rely(), trail ) &&
-					subtypeAux( t1.guarantee(), t2.guarantee(), trail );
-			}
-			case types.GuaranteeType: {
-				return subtypeAux( t1.guarantee(), t2.guarantee(), trail ) &&
-					subtypeAux( t1.rely(), t2.rely(), trail );
-			}
+
+			// we do not subtype inside a rely or guarantee type. thus, if this type
+			// appears here (after checking for equality) it must be 'false'
+			case types.RelyType: 
+			case types.GuaranteeType:
+				return false
+
 			case types.FunctionType:
 				return subtypeAux( t2.argument(), t1.argument(), trail )
 					&& subtypeAux( t1.body(), t2.body(), trail );

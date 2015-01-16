@@ -12,6 +12,40 @@ typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 
 // === Existential-Universal Split ===
 
+// FIXME termination problem due to index shift.
+<q> equals H[q] == H[q]
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+/*
 // v1
 typedef Nothing[p] = exists X.( rw p X => rw p X ; Nothing[p] )
 typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
@@ -36,10 +70,11 @@ share none as none || none
 
 // FIXME: termination
 // <q> share (rw q int) as Nothing[q] || Full[q,int]
+*/
 
 // pipe
 // FIXME: termination
-<q> share Empty[q] as T[q] || H[q]
+//<q> share Empty[q] as T[q] || H[q]
 
 /*
 
