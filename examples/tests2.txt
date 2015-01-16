@@ -1,30 +1,16 @@
-
-// FIXME missing failure tests on conformance
-
 /* === CONFORMANCE TESTS === */
 
-//
 // Pipe
-//
-typedef Head[p] =
-			( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
-			( rw p !(Closed#[]) => none ) (+) 
-			( rw p (Node#[int,exists q.(!ref q :: (Head[q]) )]) => none )
+typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
+					( rw p !(Closed#[]) => none ) (+) 
+					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
 
-typedef Tail[p] =  rw p !(Empty#[]) =>
-	( (rw p !(Closed#[])) (+) (rw p (Node#[int,exists q.(!ref q :: (Head[q]))])) )
+typedef Tail[p] =  (rw p !Empty#[]) => ( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: Head[q])]) )
 
-
-//
 // Iteratively Sharing
-//
-
-// Note: the second split generates an additional line on the conformance table
-// due to a subtyping algorithm limitation (on expanding definitions.)
-
-typedef F[f,c] = rw f (Free#[]) * rw c []
-typedef R[f,c] = rw f  (Raw#[]) * rw c int
-typedef D[f,c] = rw f (Done#[]) * rw c boolean
+typedef F[f,c] = (rw f Free#[]) * (rw c [])
+typedef R[f,c] = (rw f Raw#[]) * (rw c int)
+typedef D[f,c] = (rw f Done#[]) * (rw c boolean)
 
 typedef Receiver   [f,c] = F[f,c] => R[f,c]
 typedef Compressor [f,c] = ( F[f,c] => F[f,c] ; Compressor[f,c] ) (+) 
@@ -40,52 +26,35 @@ typedef TMP_ [f,c] = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f
 // Tests
 //
 
-// NOTE: extensions can only occur through subtyping and must not be
-// embedded in the resulting protocols.
-
-// useful states
 typedef Held[t] = rw t Held#[]
 typedef Free[t] = rw t Free#int
 
-// sharing protocols
 typedef A[p] = ( Held[p] => Held[p] ; A[p] ) & ( Held[p] => Held[p] ; A[p] )
-typedef B[p] = ( Held[p] => Held[p] ; B[p] ) & ( Held[p] => Free[p] ; Free[p] => none )
+typedef B[p] = ( Held[p] => Held[p] ; B[p] ) & ( Held[p] => Free[p] ; Free[p] )
 
-typedef P[l] = ( Held[l] => Held[l] ; P[l] ) & ( Held[l] => Free[l] ; Free[l] => none )
-typedef P0[l] = ( Held[l] => Held[l] ; P0[l] ) (+) ( Free[l] => none )
+typedef P[l] = ( Held[l] => Held[l] ; P[l] ) & ( Held[l] => Free[l] ; Free[l] )
+typedef P0[l] = ( Held[l] => Held[l] ; P0[l] ) (+) ( Free[l] => Free[l] ; Free[l] )
 typedef P1[l] = ( Held[l] => Free[l] )
 
-typedef P3[l] = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] => none )
+// typedef P3[l] = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] => none )
+// typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] => none )
 
-typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] => none )
+// end of typedefs.
 
-// ---- ///
+// <l> share (rw l !Empty#[]) as Head[l] || Tail[l]
 
-//FIXME this does not work because protocol conformance is broken.
-//<p> not share (rw p int) as (rw p int) => none || (rw p int) => none
+// <f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
+// <f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
 
 
-// ---- ///
-
-<f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
-<f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
-
-// ---- //
-
-<l> share (rw l !Empty#![]) as Head[l] || Tail[l]
-
-// ---- //
-
-<C> share C as C => none ; none || none
-
+/*
 share none as none || none
-
-// ---- //
-
-<t> share Held[t] as A[t] || A[t]
 
 <t> share Held[t] as B[t] || none
 
+<t> share Held[t] as A[t] || A[t]
+*/
+
 <t> share P[t] as P0[t] || P1[t]
 
-<t> share P4[t] as P3[t] || P1[t]
+// <t> share P4[t] as P3[t] || P1[t]

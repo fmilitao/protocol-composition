@@ -1018,7 +1018,41 @@ var TypeChecker = (function( exports ){
 		}
 
 		return t;
-	}
+	};
+
+	var isProtocol = function( t, trail ){
+		switch( t.type ){
+			case types.NoneType:
+				return true;
+			case types.RelyType:
+				return true;
+			case types.ExistsType:
+				return isProtocol( t.inner(), trail );
+			case types.AlternativeType:
+			case types.IntersectionType:
+			case types.StarType: {
+				var ts = t.inner();
+				for( var i=0; i<ts.length; ++i ){
+					if( !isProtocol( ts[i], trail ) )
+						return false;
+				}
+				return true;
+			}
+			case types.DefinitionType:{
+				// lazy use of 'trail' since it should not be needed.
+				if( trail === undefined ){
+					trail = new Set();
+				}
+				var key = t.toString(true);
+				if( trail.has(key) )
+					return true; // assume isProtocol elsewhere
+				trail.add(key);
+				return isProtocol( unfold(t), trail );
+			}
+			default:
+				return false;
+		}
+	};
 
 	exports.shift = shift;
 	exports.unify = unify;
@@ -1028,6 +1062,7 @@ var TypeChecker = (function( exports ){
 	exports.subtype = subtype;
 	exports.equals = equals;
 	exports.isFree = isFree;
+	exports.isProtocol = isProtocol;
 
 	return exports;
 

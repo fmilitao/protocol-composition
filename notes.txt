@@ -7,6 +7,9 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO/PROBLEMS/BUGS:
 ===================
 
+* missing failure tests on conformance on 'test2.txt'
+
+ S >> A (+) (B & C)
 
 * Old (Re-Splitting) Examples:
 

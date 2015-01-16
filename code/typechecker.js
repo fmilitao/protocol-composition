@@ -51,40 +51,16 @@ var TypeChecker = (function( AST, exports ){
 	const subtype = exports.subtype;
 	const equals = exports.equals;
 	const isFree = exports.isFree;
+	const isProtocol = exports.isProtocol;
 
-	// TypeVariables must be upper cased.
-	var isTypeVariableName = function(n){
-		return n[0] === n[0].toUpperCase();
-	}
 
 	//
 	// Auxiliary Definitions
 	//
 
-	var isProtocol = function( t ){
-		switch( t.type ){
-			case types.NoneType:
-				return true;
-			case types.RelyType:
-				return true;
-			case types.ExistsType:
-				return isProtocol( t.inner() );
-			case types.AlternativeType:
-			case types.IntersectionType:
-			case types.StarType: {
-				var ts = t.inner();
-				for( var i=0; i<ts.length; ++i ){
-					if( !isProtocol( ts[i] ) )
-						return false;
-				}
-				return true;
-			}
-			case types.DefinitionType:
-//FIXME: termination not guaranteed
-				return isProtocol( unfold(t) );
-			default:
-				return false;
-		}
+	// TypeVariables must start upper cased.
+	var isTypeVariableName = function(n){
+		return n[0] === n[0].toUpperCase();
 	}
 	
 	var locSet = function( t ){
@@ -281,6 +257,32 @@ console.debug( '\t\tdone: '+t );
 		return t;
 	}
 
+	var contains = function( visited, w ){
+		for( var i in visited ){
+			var v = visited[i];
+
+			// by equality
+			// for now ignore 'g'
+			if( equals( v.s, w.s ) &&
+				equals( v.p, w.p ) &&
+				equals( v.q, w.q ) )
+				return true;
+
+/*
+			// TODO by subsumption
+			if( subtype( w.s, v.s ) &&
+				subtype( v.p, w.p ) &&
+				subtype( v.q, w.q ) )
+				return true;
+
+			// TODO by weakening, careful since bounds must match too?
+			// MESSY on how to type check this case.
+*/
+		}
+
+		return false;
+	}
+
 	//
 	// State-Protocol Split
 	//
@@ -324,20 +326,24 @@ console.debug( '\t\tdone: '+t );
 	}
 
 	var checkSPConformance = function( work, visited ){
+
 var i=0;
+
 		while( work.length > 0 ){
 			var w = work.pop();
 
 			if( !contains( visited, w ) ){
 				var g = w.g;
-				var a = w.s;
+				var s = w.s;
 				var p = w.p;
 				var q = w.q;
+//debugger
+				var step = isProtocol(s) ? stepProtocol : stepState;
 
-console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
+console.debug( (i++)+ (isProtocol(s)?'[P]':'[S]') + ' : '+s+' >> '+p+' || '+q );
 			
-				if( !stepState( work, g, a, p, q, true ) || 
-					!stepState( work, g, a, q, p, false ) )
+				if( !step( work, g, s, p, q, true ) || 
+					!step( work, g, s, q, p, false ) )
 					return false;
 
 				visited.push( w );
@@ -346,37 +352,11 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 		return true;
 	}
 
-	var contains = function( visited, w ){
-		for( var i in visited ){
-			var v = visited[i];
-
-			// by equality
-			// for now ignore 'g'
-			if( equals( v.s, w.s ) &&
-				equals( v.p, w.p ) &&
-				equals( v.q, w.q ) )
-				return true;
-
-/*
-			// TODO by subsumption
-			if( subtype( w.s, v.s ) &&
-				subtype( v.p, w.p ) &&
-				subtype( v.q, w.q ) )
-				return true;
-
-			// TODO by weakening, careful since bounds must match too?
-			// MESSY on how to type check this case.
-*/
-		}
-
-		return false;
-	}
-
 	var stepState = function( work, g, s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
-//debugger
-		var addW = function( g, s, p, doShift ){
+
+		var addW = function( g, s, p ){
 			if( isLeft ){
 				addWork( work, g, s, p, q );
 			}
@@ -398,7 +378,8 @@ console.debug( (i++)+' : '+a+' >> '+p+' || '+q );
 		}
 
 		// by (step:Alternative)
-		if( p.type === types.AlternativeType ){
+//FIXME intersection type in here??
+		if( p.type === types.AlternativeType || p.type === types.IntersectionType ){
 			var ps = p.inner();
 			for( var i=0; i<ps.length; ++i ){
 				if( stepState( work, g, s, ps[i], q, isLeft ) )
@@ -419,8 +400,7 @@ console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 			return stepState( work, g, s, u, q, isLeft );
 		}
 
-		// TODO: by (step:Frame) --- equality is too strong, we need to find the type that is CONTAINED in 's' such that '... * A' (due to framing)
-
+// FIXME wasn't this suppose to be subtypign instead of 'equals'?
 		if( p.type === types.RelyType && equals( p.rely(), s ) ){
 			// case analysis on the guarantee type, 'b'
 			var b = p.guarantee();
@@ -438,7 +418,7 @@ console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 				var id = b.id();
 				var name = id.name();
 				var bound = b.bound();
-//debugger
+
 				// indexes remain unchanged for this protocol, because we pushed the
 				// forall declaration declaration to gamma. However, the other protocol
 				// must be shifted to preserve its index.
@@ -464,7 +444,66 @@ console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 		return false;
 	}
 
-//TODO: Protocol-Protocol Split
+	// Protocol-Protocol simulation
+	var stepProtocol = function( work, g, s, p, q, isLeft ){
+		s = unfold(s); // I don't like this
+		p = unfold(p); // I don't like this
+
+		var addW = function( g, s, p ){
+			if( isLeft ){
+				addWork( work, g, s, p, q );
+			}
+			else
+				addWork( work, g, s, q, p );
+		};
+
+		// by (step:None)
+		if( p.type === types.NoneType ){
+			// no need to add work, we already know this configuration steps
+			//addWork( work, g, s, p );
+			return true;
+		}
+
+		// by (step:SimProtocol)
+		if( s.type === types.RelyType && p.type === types.RelyType &&
+			equals( s.rely(), p.rely()) ){
+			// check 's' and 'o' guarantee: ( G ; R )
+			var gs = s.guarantee();
+			var gp = p.guarantee();
+			if( equals( gs.guarantee(), gp.guarantee() ) ){
+				addW( g, gs.rely(), gp.rely() );
+				return true;
+			}
+
+		}
+
+		return false;
+		/*
+	
+	// forall
+	if $p = A_0 => \forall X <: A_1. ( A_2 ; P ) $ and $q = A_0 => \forall X <: A_1 .( A_2 ; Q )$ then
+		work.add( ($\Gamma, X : \kb{type}, X <: A_1$), $P$, $Q$ ); // by (step:SimForallType)
+		return true
+	
+	if $p = A_0 => \forall t. ( A_1 ; P ) $ and $q = A_0 => \forall t.( A_1 ; Q )$ then
+		work.add( ($\Gamma, t : \kb{loc}$), $P$, $Q$ ); // by (step:SimForallLoc)
+		return true
+
+	// exists
+	if $p = \exists t.P $ and $q = \exists t.Q$ then
+		return stepSim( ($\Gamma, t : \kb{loc}$), $P$, $Q$ ) // by (step:SimExistsLoc)
+
+	if $p = \exists X <: A.P $ and $q = \exists X <: A.Q$ then
+		return stepSim( ($\Gamma, X : \kb{type}, X <: A$), $P$, $Q$ ) // by (step:SimExistsType)
+
+	// application
+	if $p = A => \forall X <: D.P $ and $q = A => Q$ and unify($Q$, $P$, $X$) = $D'$ and $\Gamma |- D' <: D$ then
+		return stepSim( $\Gamma$, $P\{D'/X\}$, $Q$ ) // by (step:SimTypeApp)
+		
+	if $p = A => \forall t.P $ and $q = A => Q$ and unify($Q$, $P$, $t$) = $t'$ then
+		return stepSim( $\Gamma$, $A => P\{t'/t\}$, $A => Q$ ) // by (step:SimLocApp)
+	*/
+	}
 
 	/**
 	 * @param {AST} ast, tree to check
