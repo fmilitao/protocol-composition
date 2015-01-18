@@ -230,6 +230,7 @@ var TypeChecker = (function( AST, exports ){
 
 	// i.e. weakening rule, but going upwards ("strengthen").
 	// removes unnecessary levels on names
+	/*
 	var unWeaken = function( g, t ){
 		var i = 0;
 		var x = null;
@@ -256,6 +257,7 @@ console.debug( '\t\t'+i+'--: '+t );
 console.debug( '\t\tdone: '+t );
 		return t;
 	}
+	*/
 
 	var contains = function( visited, w ){
 		for( var i in visited ){
@@ -352,6 +354,8 @@ console.debug( (i++)+ (isProtocol(s)?'[P]':'[S]') + ' : '+s+' >> '+p+' || '+q );
 		return true;
 	}
 
+
+// concat [] or null
 	var stepState = function( work, g, s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
