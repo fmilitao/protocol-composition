@@ -36,25 +36,22 @@ typedef P[l] = ( Held[l] => Held[l] ; P[l] ) & ( Held[l] => Free[l] ; Free[l] )
 typedef P0[l] = ( Held[l] => Held[l] ; P0[l] ) (+) ( Free[l] => Free[l] ; Free[l] )
 typedef P1[l] = ( Held[l] => Free[l] )
 
-// typedef P3[l] = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] => none )
-// typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] => none )
+typedef P3[l] = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] )
+typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] )
 
 // end of typedefs.
 
-// <l> share (rw l !Empty#[]) as Head[l] || Tail[l]
+<l> share (rw l !Empty#[]) as Head[l] || Tail[l]
 
-// <f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
-// <f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
+<f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
+<f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
 
-
-/*
 share none as none || none
 
 <t> share Held[t] as B[t] || none
 
 <t> share Held[t] as A[t] || A[t]
-*/
 
 <t> share P[t] as P0[t] || P1[t]
 
-// <t> share P4[t] as P3[t] || P1[t]
+<t> share P4[t] as P3[t] || P1[t]

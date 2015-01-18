@@ -286,48 +286,20 @@ console.debug( '\t\tdone: '+t );
 	}
 
 	//
-	// State-Protocol Split
+	// Protocol Conformance
 	//
 
-	var conformanceStateProtocol = function( g, s, p, q ){
-		var work = [];
+	var Work = function( g, s, p, q ){
+		return { g: g, s: s, p: p, q: q };
+	}
+
+	var checkConformance = function( g, s, p, q ){
+		var work = [ Work(g, s, p, q) ];
 		var visited = [];
-		addWork( work, g, s, p, q );
-		return checkSPConformance( work, visited );
+		return checkConformanceAux( work, visited );
 	}
 
-	// Auxiliary function that adds work by breaking down the
-	// protocols and state into smaller, when possible.
-	var addWork = function( work, g, s, p, q ){
-		// by (cf:Alternative)
-		if( s.type === types.AlternativeType ){
-			var si = s.inner();
-			for( var i=0; i<si.length; ++i )
-				addWork( work, g, si[i], p , q );
-			return;
-		}
-
-		// by (cf:IntersectionL)
-		if( p.type === types.IntersectionType ){
-			var pi = p.inner();
-			for( var i=0; i<pi.length; ++i )
-				addWork( work, g, s, pi[i] , q );
-			return;
-		}
-
-		// by (cf:IntersectionR)
-		if( q.type === types.IntersectionType ){
-			var qi = q.inner();
-			for( var i=0; i<qi.length; ++i )
-				addWork( work, g, s, p, qi[i] );
-			return;
-		}
-
-		// base case
-		work.push( { g: g, s: s, p: p, q: q } );
-	}
-
-	var checkSPConformance = function( work, visited ){
+	var checkConformanceAux = function( work, visited ){
 
 var i=0;
 
@@ -339,14 +311,15 @@ var i=0;
 				var s = w.s;
 				var p = w.p;
 				var q = w.q;
-//debugger
-				var step = isProtocol(s) ? stepProtocol : stepState;
 
-console.debug( (i++)+ (isProtocol(s)?'[P]':'[S]') + ' : '+s+' >> '+p+' || '+q );
+console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			
-				if( !step( work, g, s, p, q, true ) || 
-					!step( work, g, s, q, p, false ) )
+				var left = step( g, s, p, q, true );
+				var right = step( g, s, q, p, false );
+				if( left === null || right === null )
 					return false;
+
+				work = work.concat(left).concat(right);
 
 				visited.push( w );
 			}
@@ -354,65 +327,138 @@ console.debug( (i++)+ (isProtocol(s)?'[P]':'[S]') + ' : '+s+' >> '+p+' || '+q );
 		return true;
 	}
 
-
-// concat [] or null
-	var stepState = function( work, g, s, p, q, isLeft ){
+	// returns: potentially empty array of work or null
+	var step = function( g, s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
 
-		var addW = function( g, s, p ){
-			if( isLeft ){
-				addWork( work, g, s, p, q );
-			}
+		var W = function( g, s, p ){
+			if( isLeft )
+				return Work( g, s, p, q );
 			else
-				addWork( work, g, s, q, p );
+				return Work( g, s, q, p );
 		};
+
+		//
+		// break down of STATE
+		//
+
+		if( s.type === types.AlternativeType ){
+			var ss = s.inner();
+			var res = [];
+			// protocol must consider *all* cases
+			for( var i=0; i<ss.length; ++i ){
+				var tmp = step( g, ss[i], p, q, isLeft );
+				// one failed!
+				if( tmp === null )
+					return null;
+				res = res.concat(tmp);
+			}
+			return res;
+		}
+		if( s.type === types.IntersectionType ){
+			var ss = s.inner();
+			// protocol only needs to consider *one* case
+			for( var i=0; i<ss.length; ++i ){
+				var tmp = step( g, ss[i], p, q, isLeft );
+				// one step, we are done
+				if( tmp !== null )
+					return tmp;
+			}
+			// did not find a good step, fail.
+			return null;
+		}
+
+		//
+		// break down of PROTOCOL
+		//
 
 		// by (step:None)
 		if( p.type === types.NoneType ){
-			// no need to add work, we already know this configuration steps
-			//addWork( work, g, s, p );
-			return true;
+			// no need to add new work, we already know this configuration steps
+			return [];
 		}
 
 		// by (step:Recovery)
 		if( equals(s,p) ){
-			addW( g, NoneType, NoneType );
-			return true;
+			return [ W( g, NoneType, NoneType ) ];
 		}
 
 		// by (step:Alternative)
-//FIXME intersection type in here??
-		if( p.type === types.AlternativeType || p.type === types.IntersectionType ){
-			var ps = p.inner();
-			for( var i=0; i<ps.length; ++i ){
-				if( stepState( work, g, s, ps[i], q, isLeft ) )
-					return true;
+		if( p.type === types.AlternativeType ){
+			var pp = p.inner();
+			// protocol only needs to consider *one* case
+			for( var i=0; i<pp.length; ++i ){
+				var tmp = step( g, s, pp[i], q, isLeft );
+				// one step, we are done
+				if( tmp !== null )
+					return tmp;
 			}
-			return false;
+			// did not find a good step, fail.
+			return null;
 		}
+		if( p.type === types.IntersectionType ){
+			var pp = p.inner();
+			var res = [];
+			// protocol must consider *all* cases
+			for( var i=0; i<pp.length; ++i ){
+				var tmp = step( g, s, pp[i], q, isLeft );
+				// one failed!
+				if( tmp === null )
+					return null;
+				res = res.concat(tmp);
+			}
+			return res;
+		}
+
+		//
+		// Protocol Stepping
+		//
+
+		// by (step:SimProtocol)
+		if( s.type === types.RelyType && p.type === types.RelyType &&
+			equals( s.rely(), p.rely()) ){
+
+			// check 's' and 'o' guarantee: ( G ; R )
+			var gs = s.guarantee();
+			var gp = p.guarantee();
+			// must account for omitted guarantee (i.e.: G == G ; none)
+			if( gs.type !== types.GuaranteeType ){
+				gs = new GuaranteeType( gs, NoneType );
+			}
+			if( gp.type !== types.GuaranteeType ){
+				gp = new GuaranteeType( gp, NoneType );
+			}
+
+			if( equals( gs.guarantee(), gp.guarantee() ) ){
+				return [ W( g, gs.rely(), gp.rely() ) ];
+			}
+		}
+
+		//
+		// State Stepping
+		//
 		
 		// attempts to find matching type/location to open existential
 		if( p.type === types.ExistsType ){
-			// TODO: check bound?
+// TODO: check bound?
 			// by (step:Open-Type)
 			// by (step:Open-Loc)
 			var u = unifyState( s, p );
 console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 			// substitute, check bound
 //debugger
-			return stepState( work, g, s, u, q, isLeft );
+			return step( g, s, u, q, isLeft );
 		}
 
-// FIXME wasn't this suppose to be subtypign instead of 'equals'?
+//TODO wasn't this suppose to be subtypign instead of 'equals'?
 		if( p.type === types.RelyType && equals( p.rely(), s ) ){
 			// case analysis on the guarantee type, 'b'
 			var b = p.guarantee();
 
 			// by (step:Step)
 			if( b.type === types.GuaranteeType ){
-				addW( g, b.guarantee(), b.rely() );
-				return true;
+				return [ W( g, b.guarantee(), b.rely() ) ];
 			}
 		
 			// by (step:Step-Type)
@@ -432,58 +478,21 @@ console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 				p = i.rely(); //step
 
 				if( isLeft )
-					addWork( work, g, s, p, q );
+					return [ Work( g, s, p, q ) ];
 				else
-					addWork( work, g, s, q, p );
-
-				return true;
+					return [ Work( g, s, q, p ) ];
 			}
 
 			// assume case is that of omitted '; none' a 'b' is the new state.
 			// assume that type was previously checked to be well-formed.
-			addW( g, b, NoneType );
-			return true;
+			return [ W( g, b, NoneType ) ];
 		}
 
-		return false;
+		return null;
 	}
 
-	// Protocol-Protocol simulation
-	var stepProtocol = function( work, g, s, p, q, isLeft ){
-		s = unfold(s); // I don't like this
-		p = unfold(p); // I don't like this
-
-		var addW = function( g, s, p ){
-			if( isLeft ){
-				addWork( work, g, s, p, q );
-			}
-			else
-				addWork( work, g, s, q, p );
-		};
-
-		// by (step:None)
-		if( p.type === types.NoneType ){
-			// no need to add work, we already know this configuration steps
-			//addWork( work, g, s, p );
-			return true;
-		}
-
-		// by (step:SimProtocol)
-		if( s.type === types.RelyType && p.type === types.RelyType &&
-			equals( s.rely(), p.rely()) ){
-			// check 's' and 'o' guarantee: ( G ; R )
-			var gs = s.guarantee();
-			var gp = p.guarantee();
-			if( equals( gs.guarantee(), gp.guarantee() ) ){
-				addW( g, gs.rely(), gp.rely() );
-				return true;
-			}
-
-		}
-
-		return false;
 		/*
-	
+TODO: missing cases.	
 	// forall
 	if $p = A_0 => \forall X <: A_1. ( A_2 ; P ) $ and $q = A_0 => \forall X <: A_1 .( A_2 ; Q )$ then
 		work.add( ($\Gamma, X : \kb{type}, X <: A_1$), $P$, $Q$ ); // by (step:SimForallType)
@@ -507,7 +516,6 @@ console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 	if $p = A => \forall t.P $ and $q = A => Q$ and unify($Q$, $P$, $t$) = $t'$ then
 		return stepSim( $\Gamma$, $A => P\{t'/t\}$, $A => Q$ ) // by (step:SimLocApp)
 	*/
-	}
 
 	/**
 	 * @param {AST} ast, tree to check
@@ -685,14 +693,14 @@ console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
 
-				assert( wfProtocol( left ) || ('Invalid protocol: '+left ) , ast.a );
-				assert( wfProtocol( right ) || ('Invalid protocol: '+right ) , ast.b );
+				//assert( wfProtocol( left ) || ('Invalid protocol: '+left ) , ast.a );
+				//assert( wfProtocol( right ) || ('Invalid protocol: '+right ) , ast.b );
 
 				// Protocol conformance, goes through all possible "alias
 				// interleaving" and ensure all those possibilities are considered
 				// in both protocols.
 
-				var res = conformanceStateProtocol( env, cap, left, right );
+				var res = checkConformance( env, cap, left, right );
 
 				// checkProtocolConformance(cap, left, right, ast);
 				
