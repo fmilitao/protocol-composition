@@ -140,24 +140,31 @@ if( !isWorker ){
 //
 
 var printAST = function(ast,r){
+	var res = '';
+	if( r!==undefined && r!==null ){
+		if( r instanceof Array ){
+			res = '\n\nConformance: '+printConformance(r);
+		} else {
+			res = '\n\nType: '+toHTML(r)+'\n Str: '+r.toString(true);
+		}
+	}
+
 	return "@"+(ast.line+1)+":"+ast.col+'-'
 		+(ast.last_line+1)+':'+ast.last_col+' '+ast.kind
-		+( r!==undefined ? '\n\nType: '+toHTML(r)+'\n Str: '+r.toString(true) : '')
-		+'\n';
+		+res+'\n';
 }
 
 var printConformance = function(cf){
-	var has3 = (cf[0][3] !== undefined);
-	var tmp = '<table class="typing_conformance"><tr><th>State</th>'+
-		'<th>P0</th><th>P1</th>'+
-		( has3 ? '<th>P2</th>': '')+
+	var tmp = '<table class="typing_conformance"><tr>'+
+		'<th>#</th>'+
+		'<th>State</th>'+
+		'<th>P</th><th>Q</th>'+
 		'</tr>';
 	for(var i=0;i<cf.length;++i){
-		tmp+= '<tr>'+
-			'<td>'+ toHTML(cf[i][0]) +'</td>'+ 
-			'<td>'+ toHTML(cf[i][1]) +'</td>'+
-			'<td>'+ toHTML(cf[i][2]) +'</td>'+
-			( has3 ? ('<td>'+ toHTML(cf[i][3]) +'</td>') : '')+ 
+		tmp += '<tr>' + '<td>' + i  +'</td>'+ 
+			'<td>'+ toHTML(cf[i].s) +'</td>'+ 
+			'<td>'+ toHTML(cf[i].p) +'</td>'+
+			'<td>'+ toHTML(cf[i].q) +'</td>'+
 			'</tr>';
 	}
 	return tmp+'</table>';

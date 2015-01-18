@@ -27,8 +27,6 @@ var TypeChecker = (function( AST, exports ){
 	const ForallType = fct.ForallType;
 	const ExistsType = fct.ExistsType;
 	const RecordType = fct.RecordType;
-	const NoneType = new fct.NoneType();
-	const TopType = new fct.TopType();
 	const TupleType = fct.TupleType;
 	const ReferenceType = fct.ReferenceType;
 	const StackedType = fct.StackedType;
@@ -39,6 +37,10 @@ var TypeChecker = (function( AST, exports ){
 	const RelyType = fct.RelyType;	
 	const DefinitionType = fct.DefinitionType;
 	const GuaranteeType = fct.GuaranteeType;
+
+	const UnitType = new BangType(new RecordType());
+	const NoneType = new fct.NoneType();
+	const TopType = new fct.TopType();
 
 	const Gamma = exports.Gamma;
 	const TypeDefinition = exports.TypeDefinition;
@@ -317,14 +319,14 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				var left = step( g, s, p, q, true );
 				var right = step( g, s, q, p, false );
 				if( left === null || right === null )
-					return false;
+					return null; // fails
 
 				work = work.concat(left).concat(right);
 
 				visited.push( w );
 			}
 		}
-		return true;
+		return visited;
 	}
 
 	// returns: potentially empty array of work or null
@@ -700,14 +702,15 @@ TODO: missing cases.
 				// interleaving" and ensure all those possibilities are considered
 				// in both protocols.
 
-				var res = checkConformance( env, cap, left, right );
-
+				var table = checkConformance( env, cap, left, right );
+				var res = table !== null ; // is valid if table not null
 				// checkProtocolConformance(cap, left, right, ast);
 				
 				assert( ast.value === res || ('Unexpected Result, got '+res+' expecting '+ast.value) , ast);
 				
-				// returns unit
-				return new BangType(new RecordType());
+//FIXME return type should depend on the kind of node: types -> type , construct -> some info.
+				// returns an array or null
+				return table;
 			};
 			
 			// TYPES
@@ -948,6 +951,13 @@ TODO: missing cases.
 
 			var res = c( ast, env );
 			info.res = res;
+
+			// this is a very hackish way to extract conformance table without
+			// breaking the inner return type signature!
+			if( ast.kind === AST.SHARE ){
+				// unit
+				return UnitType;
+			}
 
 			return res;
 		};

@@ -7,6 +7,8 @@ Instead of recursion, we have 'typedef' for clarity.
 TODO/PROBLEMS/BUGS:
 ===================
 
+x instanceof Array
+
 * missing failure tests on conformance on 'test2.txt'
 
 

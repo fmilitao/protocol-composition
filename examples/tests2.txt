@@ -1,6 +1,8 @@
 /* === CONFORMANCE TESTS === */
 
 // Pipe
+//FIXME this does not correctly recover ownership when considering the lock model!!
+//FIXME well-formed check is not being done!
 typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
 					( rw p !(Closed#[]) => none ) (+) 
 					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
