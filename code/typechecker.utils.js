@@ -157,7 +157,8 @@ var TypeChecker = (function( exports ){
 				if( ts.length > as.length )
 					return false;
 
-				var ts = ts.slice(0);
+				var tt = null;
+				var tcount = 0;
 				var as = as.slice(0); // copies array
 
 				// compute difference between sets, there must be only one in 't'
@@ -170,9 +171,12 @@ var TypeChecker = (function( exports ){
 							break;
 						}
 					}
-					if( found ){
-						ts.splice(i,1);
-						--i;
+					if( !found ){
+						if( tt !== null && !equals( tt, ts[i] ) ){
+							return false;
+						}
+						tt = ts[i];
+						tcount += 1;
 					}
 				}
 
@@ -180,34 +184,48 @@ var TypeChecker = (function( exports ){
 					// unification type is empty, which is OK.
 					return true;
 				}
-				else{ // i.e. as.length > 0
-					if( ts.length === 0 ){
-						// we have some types that did not match, but we do not have
-						// a single matching type in 't'. Fail.
-						return false;
-					}
+				//else: i.e. as.length > 0
 
-					if( ts.length === 1 ){
-						var tmp = new t.constructor();
-						for( var i=0; i<as.length; ++i ){
-							tmp.add( as[i] );
-						}
-
-						// careful! but this should not recur on this case because
-						// we broke down 't' into 'diff_t' which should just be a single
-						// type that did not match anything in 't'.
-						return unifyAux( x, ts[0], tmp, trail );
-					}
-
-//FIXME more complex unification, needs to consider diff set then generate all possibilities.
-// 'as' and 'ts' of different sizes!
-// subtype int * boolean * int <: exists X.( X * X * boolean )
-// subtype int * boolean * boolean * int <: exists X.( X * X )
-// not subtype int * boolean * string <: exists X.( int * X * X )
-// TODO must split 'ts' on each set with 'as'
-					console.debug( 'THIS CASE IS NOT DONE' );
+				if( tt === null || tcount === 0 ){
+					// we have some types that did not match, but we do not have
+					// a single matching type in 't'. Fail.
 					return false;
 				}
+
+				if( tcount > 1 ){
+
+					// we cannot divide the remaining elements over equivalent sets of tt
+					if( as.length % tcount !== 0 )
+						return false;
+
+					var cs = new Array( as.length );
+					for( var i=0; i<as.length; ++i ){
+						cs[i] = 1; // count i position as 1 occurance
+						for( var j=i+1; j<as.length; ++j ){
+							if( equals( as[i], as[j] ) ){
+								cs[i] += 1; 
+								as.splice(j,1);
+								--j;
+							}
+						}
+					}
+
+					for( var i=0; i<as.length; ++i ){
+						// not divisible by tcounts.
+						if( cs[i] % tcount !== 0 )
+							return false;
+					}
+				}
+
+				var tmp = new t.constructor();
+				for( var i=0; i<as.length; ++i ){
+					tmp.add( as[i] );
+				}
+
+				// careful! but this should not recur on this case because
+				// we broke down 't' into 'tt' which should just be a single
+				// type that did not match anything in 't'.
+				return unifyAux( x, tt, tmp, trail );
 			}
 
 			// order matters for tuples
@@ -1078,9 +1096,13 @@ var TypeChecker = (function( exports ){
 		for(var i=(args.length-1);i>=0;--i){
 			t = substitution(t,pars[i],args[i]);
 		}
-
+//FIXME supposedly it need to shift by 1 the argument and then by -1 the result... how is this correct??
+//TODO example:
+// typedef H[X,Y] = X
+// <X> equals H[X,X] === X
 		return t;
 	};
+//FIXME substitution should be only over lambdas, exists, forall, typedefs.
 
 	//returns set with index levels from 0.
 	var indexSet = function( t ){

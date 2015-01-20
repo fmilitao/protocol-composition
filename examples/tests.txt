@@ -16,6 +16,13 @@ subtype int * boolean * int <: exists X.( int * X )
 subtype int * boolean * int <: exists X.( boolean * X )
 
 not subtype int * int <: exists X.( boolean * X )
+
+subtype int * boolean * int <: exists X.( X * X * boolean )
+subtype int * boolean * boolean * int <: exists X.( X * X )
+
+not subtype boolean * boolean * int <: exists X.( X * X )
+not subtype int * boolean * string <: exists X.( int * X * X )
+not subtype int * boolean * boolean * int <: exists X.( X * X * X )
 // -----
 
 < X<:int >

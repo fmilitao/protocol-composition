@@ -13,37 +13,35 @@ TODO/PROBLEMS/BUGS:
 * Old (Re-Splitting) Examples:
 
 
-\begin{enumerate}
-\item 1
-$$\kb{rec}~X.(~ E => E ; X ~~\&~~ E => N \oplus C ; ( N => N ; N ) \oplus ( C => C ; C ) ~)$$
-is split into:
-$$ E => N \oplus C ; \none $$
-$$ \kb{rec}~X.( E => E ; X \oplus ( N => N ; N ) \oplus ( C => C ; C ) )$$
+#1
+	rec X.( E => E ; X & E => N (+) C ; ( N => N ; N ) (+) ( C => C ; C ) )
+>>
+	E => N (+) C ; none
+||	rec X.( E => E ; X (+) ( N => N ; N ) (+) ( C => C ; C ) )
 
-\item 2
+#2
+	NE (+) E => NE ; rec X.( NE => NE ; X )
 
-$$NE \oplus E => NE ; \kb{rec}~X.( NE => NE ; X )$$
+#3
+	rec X.( N => P ; rec Y.( P => N ; X & N => P ; Y ) )
+>>
+	rec X.( N => P ; P => N ; X )
+||	rec X.( N => P ; X )
 
-\item 3
-$$\kb{rec}~X.(~ N => P ; \kb{rec}~Y.(~ P => N ; X ~\&~ N => P ; Y ~)~)$$
-splits:
-$$\kb{rec}~X.( N => P ; P => N ; X )$$
-$$\kb{rec}~X.( N => P ;X )$$
+#4
+	rec X.( F => F ; X & F => R ; R => R ; R )
+>>
+	F => R
+||	rec X.( F => F ; X (+) R => R ; R )
+>>
+	rec X.( F => F ; X (+) R => D )
+	rec X.( F => F ; X (+) rec Y.( R => R ; Y (+) D => D; D ) )
 
-\item 4
-$$\kb{rec}~X.(~ F => F; X ~\&~ F => R ; R => R ; R ~)$$
-splits:
-$$ F => R $$
-$$\kb{rec}~X.( F => F ; X \oplus R => R ; R )$$
-resplit
-$$\kb{rec}~X.( F => F ; X \oplus R => D )$$
-$$\kb{rec}~X.( F => F ; X \oplus \kb{rec}~Y.( R => R; Y \oplus D => D; D )$$
-
-\item 5
-$$H => F; F => F; F$$
-splits
-$$H => F; \none \oplus F => F; F $$
-$$H => F; \none \oplus F => F; F $$
+#5
+	H => F ; F => F ; F
+>>
+	H => F ; none (+) F => F ; F
+||	H => F ; none (+) F => F ; F
 
 \end{enumerate}
 
