@@ -9,6 +9,10 @@ typedef T = forall X. forall Y <: X. [ X , Y ]
 typedef D[A] = A
 typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
+typedef Def[X,Y] = X
+
+<X> equals Def[X,X] == X
+
 // -----
 subtype int * boolean * int <: exists X.( int * X * int )
 subtype int * boolean * int <: exists X.( int * int * X )

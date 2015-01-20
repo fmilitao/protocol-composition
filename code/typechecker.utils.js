@@ -45,7 +45,7 @@ var TypeChecker = (function( exports ){
 		}
 
 		return unifyAux( x,t,a, new Set() );
-	}
+	};
 
 	// Search to find a UNIQUE match:
 	// returns 'false' is types are incompatible,
@@ -316,7 +316,7 @@ var TypeChecker = (function( exports ){
 			default:
 				error( "@unifyAux: Not expecting " +t.type );
 		}
-	}
+	};
 
 
 	// shifts indexes of free variables in 't' by 'd'.
@@ -412,11 +412,11 @@ var TypeChecker = (function( exports ){
 			default:
 				error( "@shift: Not expecting " +t.type );
 		}
-	}
+	};
 
 	var shift1 = function( t, c ){
 		return shift( t, c, 1 );
-	}
+	};
 
 	/**
 	 * Tests if types 'a' and 'b' are the same.
@@ -429,7 +429,7 @@ var TypeChecker = (function( exports ){
 	 */
 	var equals = function( t1, t2 ){
 		return equalsAux( t1, t2, new Set() );
-	}
+	};
 
 	var equalsAux = function( t1, t2, trail ){
 
@@ -701,7 +701,7 @@ var TypeChecker = (function( exports ){
 	 */
 	 var subtype = function( t1, t2 ){
 	 	return subtypeAux( t1, t2, new Set() );
-	 }
+	 };
 
 	var subtypeAux = function( t1 , t2, trail ){
 
@@ -987,7 +987,7 @@ var TypeChecker = (function( exports ){
 			error( "@isFree: can only check a Type/LocationVariable, got: "+x.type );
 		}
 		return isFreeAux( x, t, new Set() );
-	}
+	};
 
 	var isFreeAux = function( x, t, trail ){
 
@@ -1073,7 +1073,7 @@ var TypeChecker = (function( exports ){
 			default:
 				error( "@isFreeAux: Not expecting " +t1.type );
 		}
-	}
+	};
 	
 	// unfolds DefinitionType until it reaches some useful type
 	// NOTE: we previously checked for infinitely recursive definitions
@@ -1083,7 +1083,7 @@ var TypeChecker = (function( exports ){
 			t = unfoldDefinition(t);
 		}
 		return t;
-	}	
+	};
 	
 	var unfoldDefinition = function(d){
 		if( d.type !== types.DefinitionType )
@@ -1097,19 +1097,16 @@ var TypeChecker = (function( exports ){
 			t = substitution(t,pars[i],args[i]);
 		}
 //FIXME supposedly it need to shift by 1 the argument and then by -1 the result... how is this correct??
-//TODO example:
-// typedef H[X,Y] = X
-// <X> equals H[X,X] === X
+//FIXME test actually passes. something is fishy...
 		return t;
 	};
-//FIXME substitution should be only over lambdas, exists, forall, typedefs.
 
 	//returns set with index levels from 0.
 	var indexSet = function( t ){
 		var set = new Set();
 		indexSet( t, 0, set );
 		return set;
-	}
+	};
 
 //FIXME test! use console.debug
 
@@ -1195,7 +1192,7 @@ var TypeChecker = (function( exports ){
 			default:
 				return;
 		}
-	}
+	};
 
 
 	var isProtocol = function( t, trail ){
