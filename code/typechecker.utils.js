@@ -200,9 +200,11 @@ var TypeChecker = (function( exports ){
 					}
 
 //FIXME more complex unification, needs to consider diff set then generate all possibilities.
-//subtype int * boolean * int <: exists X.( X * X * boolean )
-//not subtype int * boolean * string <: exists X.( int * X * X )
-
+// 'as' and 'ts' of different sizes!
+// subtype int * boolean * int <: exists X.( X * X * boolean )
+// subtype int * boolean * boolean * int <: exists X.( X * X )
+// not subtype int * boolean * string <: exists X.( int * X * X )
+// TODO must split 'ts' on each set with 'as'
 					console.debug( 'THIS CASE IS NOT DONE' );
 					return false;
 				}
