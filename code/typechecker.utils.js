@@ -157,12 +157,8 @@ var TypeChecker = (function( exports ){
 				if( ts.length > as.length )
 					return false;
 
-				var diff_t = null;
+				var ts = ts.slice(0);
 				var as = as.slice(0); // copies array
-
-//FIXME more complex unification
-//subtype int * boolean * int <: exists X.( X * X * boolean )
-//not subtype int * boolean * string <: exists X.( int * X * X )
 
 				// compute difference between sets, there must be only one in 't'
 				for( var i=0; i<ts.length; ++i ){
@@ -174,35 +170,41 @@ var TypeChecker = (function( exports ){
 							break;
 						}
 					}
-					if( !found ){
-						if( diff_t !== null /* && !equals( ts[i], diff_t ) */ )
-							return false;
-
-						diff_t = ts[i];
+					if( found ){
+						ts.splice(i,1);
+						--i;
 					}
 				}
 
 				if( as.length === 0 ){
-					// note that diff_t can be non-null but this just means the
 					// unification type is empty, which is OK.
 					return true;
 				}
 				else{ // i.e. as.length > 0
-					if( diff_t === null ){
+					if( ts.length === 0 ){
 						// we have some types that did not match, but we do not have
 						// a single matching type in 't'. Fail.
 						return false;
 					}
 
-					var tmp = new t.constructor();
-					for( var i=0; i<as.length; ++i ){
-						tmp.add( as[i] );
+					if( ts.length === 1 ){
+						var tmp = new t.constructor();
+						for( var i=0; i<as.length; ++i ){
+							tmp.add( as[i] );
+						}
+
+						// careful! but this should not recur on this case because
+						// we broke down 't' into 'diff_t' which should just be a single
+						// type that did not match anything in 't'.
+						return unifyAux( x, ts[0], tmp, trail );
 					}
 
-					// careful! but this should not recur on this case because
-					// we broke down 't' into 'diff_t' which should just be a single
-					// type that did not match anything in 't'.
-					return unifyAux( x, diff_t, tmp, trail );
+//FIXME more complex unification, needs to consider diff set then generate all possibilities.
+//subtype int * boolean * int <: exists X.( X * X * boolean )
+//not subtype int * boolean * string <: exists X.( int * X * X )
+
+					console.debug( 'THIS CASE IS NOT DONE' );
+					return false;
 				}
 			}
 
