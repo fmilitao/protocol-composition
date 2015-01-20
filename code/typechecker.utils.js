@@ -147,8 +147,66 @@ var TypeChecker = (function( exports ){
 
 			case types.AlternativeType:
 			case types.IntersectionType:
-			case types.StarType: 
-//FIXME: the order only matters on TupleTypes, not on the above (A * B * C could be matched as X * C, etc.)
+			case types.StarType: {
+				var ts = t.inner();
+				var as = a.inner();
+
+				// ts has more elements then it is impossible to match
+				// however, it can have LESS since it could match more than one type
+				// such as A*B, A(+)B, etc.
+				if( ts.length > as.length )
+					return false;
+
+				var diff_t = null;
+				var as = as.slice(0); // copies array
+
+//FIXME more complex unification
+//subtype int * boolean * int <: exists X.( X * X * boolean )
+//not subtype int * boolean * string <: exists X.( int * X * X )
+
+				// compute difference between sets, there must be only one in 't'
+				for( var i=0; i<ts.length; ++i ){
+					var found = false;
+					for( var j=0; j<as.length; ++j ){
+						if( equals( ts[i], as[j] ) ){
+							as.splice(j,1); // removes element
+							found = true;
+							break;
+						}
+					}
+					if( !found ){
+						if( diff_t !== null /* && !equals( ts[i], diff_t ) */ )
+							return false;
+
+						diff_t = ts[i];
+					}
+				}
+
+				if( as.length === 0 ){
+					// note that diff_t can be non-null but this just means the
+					// unification type is empty, which is OK.
+					return true;
+				}
+				else{ // i.e. as.length > 0
+					if( diff_t === null ){
+						// we have some types that did not match, but we do not have
+						// a single matching type in 't'. Fail.
+						return false;
+					}
+
+					var tmp = new t.constructor();
+					for( var i=0; i<as.length; ++i ){
+						tmp.add( as[i] );
+					}
+
+					// careful! but this should not recur on this case because
+					// we broke down 't' into 'diff_t' which should just be a single
+					// type that did not match anything in 't'.
+					return unifyAux( x, diff_t, tmp, trail );
+				}
+			}
+
+			// order matters for tuples
 			case types.TupleType: {
 				var ts = t.inner();
 				var as = a.inner();
@@ -1020,6 +1078,100 @@ var TypeChecker = (function( exports ){
 		return t;
 	};
 
+	//returns set with index levels from 0.
+	var indexSet = function( t ){
+		var set = new Set();
+		indexSet( t, 0, set );
+		return set;
+	}
+
+//FIXME test! use console.debug
+
+	var indexSetAux = function( t, c, set ){
+
+		switch ( t.type ){
+			case types.BangType:{
+				indexSetAux( t.inner(), c, set );
+				return;
+			}
+			case types.ReferenceType:{
+				indexSetAux( t.location(), c, set );
+				return;
+			}
+			case types.RelyType:
+			case types.GuaranteeType: {
+				indexSetAux( t.rely(), c, set );
+				indexSetAux( t.guarantee(), c, set );
+				return;
+			}
+			case types.FunctionType:{
+				indexSetAux( t.argument(), c, set );
+				indexSetAux( t.body(), c, set );
+				return;
+			}
+			case types.RecordType:{
+				var fields = t.fields();
+				for( var k of fields.keys() ){
+					indexSetAux( fields.get(k), c, set );
+				}
+				return;
+			}
+			case types.StackedType:{
+				indexSetAux( t.left(), c, set );
+				indexSetAux( t.right(), c, set );
+				return;
+			}
+			case types.CapabilityType:{
+				indexSetAux( t.location(), c, set );
+				indexSetAux( t.value(), c, set );
+				return;
+			}
+			case types.AlternativeType:
+			case types.IntersectionType:
+			case types.StarType:
+			case types.TupleType: {
+				var ts = t.inner();
+				for( var i=0 ; i<ts.length ; ++i ){
+					indexSetAux( ts[i], c, set );
+				}
+				return;
+			}
+			case types.SumType:{
+				var ts = t.tags();
+				for( var k of ts.keys() ){
+					indexSetAux( ts.get(k), c, set );
+				}
+				return;
+			}
+			case types.ForallType:		
+			case types.ExistsType:{
+				if( t.bound() === null ){
+					indexSetAux( t.bound(), c, set );
+				}
+				indexSetAux( t.inner(), c+1, set );
+			}
+			case types.TypeVariable:
+			case types.LocationVariable:{
+				if( t.index() >= c ){
+					set.add( t.index() - c );
+				}
+				return;
+			}
+			case types.DefinitionType: {				
+				var ts = t.args();
+				for( var i=0 ; i<ts.length ; ++i ){
+					indexSetAux( ts[i], c+i+1, set );
+				}
+				return;
+			}
+//			case types.NoneType:
+//			case types.PrimitiveType:
+			default:
+				return;
+		}
+	}
+
+
 	var isProtocol = function( t, trail ){
 		switch( t.type ){
 			case types.NoneType:
@@ -1063,6 +1215,7 @@ var TypeChecker = (function( exports ){
 	exports.equals = equals;
 	exports.isFree = isFree;
 	exports.isProtocol = isProtocol;
+	exports.indexSet = indexSet;
 
 	return exports;
 
