@@ -9,16 +9,6 @@ typedef Y[x] = boolean{int/x}
 
 typedef Sum[q,l] = tag#(ref q) + teg#(ref l)
 
-typedef  Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * Head[q] )
-typedef Close[p] = rw p Close#![]
-typedef Empty[p] = rw p Empty#![]
-
-typedef Tail[p] = Empty[p] => ( Close[p] (+) Node[p] )
-typedef Head[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
-				( Close[p] => Close[p] ; Close[p] ) (+)
-				( Empty[p] => Empty[p] ; Head[p] ) // retries
-
-
 // subtyping
     subtype [a:int,b:int] <: [a:int]
 <B> subtype [a:int,b:B] <: [a:int]
@@ -54,6 +44,15 @@ not equals forall X<:int.forall X<:boolean.forall X<:string.X == forall X<:strin
 // substitution
 <X> equals X{A/X} == A
 
-// sharing
+// Sharing - Pipe Example.
+typedef  Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * Head[q] )
+typedef Close[p] = rw p Close#![]
+typedef Empty[p] = rw p Empty#![]
+
+typedef Tail[p] = Empty[p] => ( Close[p] (+) Node[p] )
+typedef Head[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
+				( Close[p] => Close[p] ; Close[p] ) (+)
+				( Empty[p] => Empty[p] ; Head[p] ) // retries
+
 	 share none as none || none
 <l> share Empty[l] as Head[l] || Tail[l]

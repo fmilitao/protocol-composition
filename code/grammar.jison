@@ -72,7 +72,7 @@
 
 file
 	: EOF
-		{ return AST.makeProgram(null,null,[],@$); }
+		{ return AST.makeProgram(null,[],@$); }
 	| program EOF
 		{ return $1; }
 	;
@@ -183,9 +183,16 @@ field_types
 
 program
 	: sequence
-	  	{ $$ = AST.makeProgram(null,null,$1,@$); }
-	| typedefs sequence
-		{ $$ = AST.makeProgram(null,$1,$2,@$); }
+	  	{ $$ = AST.makeProgram(null,$1,@$); }
+	| blocks
+		{ $$ = $1; }
+	;
+
+blocks :
+	  typedefs sequence
+		{ $$ = AST.makeProgram($1,$2,@$); }
+	| typedefs sequence blocks 
+		{ $$ = AST.makeProgram($1.concat($3.typedefs),$2.concat($3.exp),@$); }
 	;
 
 typedefs

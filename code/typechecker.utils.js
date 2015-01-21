@@ -1096,8 +1096,8 @@ var TypeChecker = (function( exports ){
 		for(var i=(args.length-1);i>=0;--i){
 			t = substitution(t,pars[i],args[i]);
 		}
-//FIXME supposedly it need to shift by 1 the argument and then by -1 the result... how is this correct??
-//FIXME test actually passes. something is fishy...
+		// since a typedef does not have enclosing environment, we do not need to
+		// shift by -1 for type 't' as it does not have free variables here.
 		return t;
 	};
 

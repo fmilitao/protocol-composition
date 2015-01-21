@@ -103,8 +103,8 @@ var AST = new function(){
 	this.makeImport = function(id,info){
 		return aux( this.kinds.IMPORT, {id:id}, info);
 	}
-	this.makeProgram = function(imports,typedefs,exp,info){
-		return aux( this.kinds.PROGRAM, {imports:imports,typedefs:typedefs,exp:exp}, info);
+	this.makeProgram = function(typedefs,exp,info){
+		return aux( this.kinds.PROGRAM, {typedefs:typedefs,exp:exp}, info);
 	}
 
 	this.makeSubstitution = function(type,to,from,info){
