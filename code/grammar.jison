@@ -184,6 +184,8 @@ field_types
 program
 	: sequence
 	  	{ $$ = AST.makeProgram(null,$1,@$); }
+	| sequence blocks
+		{ $$ = AST.makeProgram($2.typedefs,$1.concat($2.exp),@$); }
 	| blocks
 		{ $$ = $1; }
 	;

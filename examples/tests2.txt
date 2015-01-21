@@ -1,13 +1,17 @@
 /* === CONFORMANCE TESTS === */
 
+share none as none || none
+
 // Pipe
-//FIXME this does not correctly recover ownership when considering the lock model!!
-//FIXME well-formed check is not being done!
+	//FIXME: this does not correctly recover ownership when considering the lock model!!
+	//FIXME: well-formed check will flag this case as wrong!
 typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
 					( rw p !(Closed#[]) => none ) (+) 
 					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
 
 typedef Tail[p] =  (rw p !Empty#[]) => ( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: Head[q])]) )
+
+<l> share (rw l !Empty#[]) as Head[l] || Tail[l]
 
 // Iteratively Sharing
 typedef F[f,c] = (rw f Free#[]) * (rw c [])
@@ -24,16 +28,20 @@ typedef Storer_ [f,c] = ( R[f,c] => R[f,c] ; Storer_[f,c] ) (+) ( D[f,c] => none
 typedef TMP  [f,c] = ( F[f,c] => F[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
 typedef TMP_ [f,c] = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f,c] => none )
 
-//
-// Tests
-//
+<f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
+<f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
 
+// Hold/Free
 typedef Held[t] = rw t Held#[]
 typedef Free[t] = rw t Free#int
 
 typedef A[p] = ( Held[p] => Held[p] ; A[p] ) & ( Held[p] => Held[p] ; A[p] )
 typedef B[p] = ( Held[p] => Held[p] ; B[p] ) & ( Held[p] => Free[p] ; Free[p] )
 
+<t> share Held[t] as B[t] || none
+<t> share Held[t] as A[t] || A[t]
+
+// other tests
 typedef P[l] = ( Held[l] => Held[l] ; P[l] ) & ( Held[l] => Free[l] ; Free[l] )
 typedef P0[l] = ( Held[l] => Held[l] ; P0[l] ) (+) ( Free[l] => Free[l] ; Free[l] )
 typedef P1[l] = ( Held[l] => Free[l] )
@@ -41,19 +49,5 @@ typedef P1[l] = ( Held[l] => Free[l] )
 typedef P3[l] = ( Held[l] => Held[l] ; P3[l] ) (+) ( Free[l] => Held[l] ; Held[l] )
 typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] => Held[l] ; Held[l] )
 
-// end of typedefs.
-
-<l> share (rw l !Empty#[]) as Head[l] || Tail[l]
-
-<f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
-<f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
-
-share none as none || none
-
-<t> share Held[t] as B[t] || none
-
-<t> share Held[t] as A[t] || A[t]
-
 <t> share P[t] as P0[t] || P1[t]
-
 <t> share P4[t] as P3[t] || P1[t]

@@ -1,68 +1,33 @@
 
-typedef H[X] = forall Y <: X.H[Y] // FIXME: does this cause infinite unfolds?
-
 typedef T = forall X. forall Y <: X. [ X , Y ]
 
 // the following would generate a 'trail' collision
 // if DeBruijn indexes did not include the bound on type variables
 
 typedef D[A] = A
-typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
-
-typedef Def[X,Y] = X
-
-<X> equals Def[X,X] == X
-
-// -----
-subtype int * boolean * int <: exists X.( int * X * int )
-subtype int * boolean * int <: exists X.( int * int * X )
-subtype int * boolean * int <: exists X.( int * X )
-subtype int * boolean * int <: exists X.( boolean * X )
-
-not subtype int * int <: exists X.( boolean * X )
-
-subtype int * boolean * int <: exists X.( X * X * boolean )
-subtype int * boolean * boolean * int <: exists X.( X * X )
-
-not subtype boolean * boolean * int <: exists X.( X * X )
-not subtype int * boolean * string <: exists X.( int * X * X )
-not subtype int * boolean * boolean * int <: exists X.( X * X * X )
-// -----
-
-< X<:int >
-< Y<:int >
-    not subtype X <: Y
-
-< X<:int >
-< Y<:int >
-    not equals X == Y
-
-<q>     subtype rw q int <: exists w.rw w int
-// <q> not subtype rw q int <: exists w.rw w boolean //FIXME!
+typedef Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 <q> not equals Full[q,boolean] == Full[q,int]
 <q><p> not equals Full[q,int] == Full[p,int]
-
 
 < X <: int >
  not subtype a#D[X] + b#exists X<:boolean.D[X]
           <: a#int  + b#exists Y<:boolean.int
 
-<X> equals (forall Y <: X.H[Y]){int/X} == forall Y <: int.H[Y]
+// FIXME: do these terminate? SHOULD THEY?
+// FIXME: shouldn't this cause infinite unfolds?
+typedef H[X] = forall Y <: X.H[Y]
 
-//FIXME: do these terminate? SHOULD THEY?
     equals H[int] == H[int]
 not equals H[int] == H[boolean]
 
-< X> not equals (forall Y <: X.H[Y]){boolean/X} == H[int]
+<X> not equals (forall Y <: X.H[Y]){boolean/X} == H[int]
 
-// --------------
+<X> equals (forall Y <: X.H[Y]){int/X} == forall Y <: int.H[Y]
 
-    subtype forall X<:int.X <: int
-    subtype forall X<:int.X <: forall X<:int.int
-not subtype forall X.int <: forall X<:int.X
+// ==================== //
 
-/* === SUBTYPING TESTS === */
+// simple cases
 
     subtype int <: int
     subtype boolean <: boolean
@@ -91,7 +56,6 @@ subtype !boolean <: ![]
    <p>     subtype ref p <: ref p
 <p><q> not subtype ref p <: ref q 
 <p><q> not subtype ref q <: ref p
-
 
 not subtype int -o boolean <: boolean -o int
 not subtype boolean -o int <: int -o boolean
@@ -122,7 +86,6 @@ not subtype l#int + k#boolean <: l#int
 <q><p> not subtype rw p int <: rw q int
 <q><p> not subtype rw q int <: rw p int
 
-
     subtype int::boolean <: int::boolean
     subtype boolean::int <: boolean::int
 not subtype boolean::int <: int::boolean
@@ -140,7 +103,6 @@ not subtype int => boolean <: boolean => int
 <X>        subtype X <: X
 <X><Y> not subtype X <: Y
 <X><Y> not subtype Y <: X 
-
 
     subtype forall X.X <: forall Y.Y
     subtype forall Z.!Z <: forall X.X
@@ -160,7 +122,13 @@ not subtype exists X.X <: exists Z.!Z
 <X><Y><Z> not subtype X <: X & Z
 <Z><X>    not subtype X <: X & Z
 
-/* ====== */
+    subtype label#int + tag#int <: exists X.( label#X + tag#X )
+not subtype label#boolean + tag#int <: exists X.( label#X + tag#X )
+
+// bounds tests
+
+< X<:int >< Y<:int > not subtype X <: Y
+< X<:int >< Y<:int > not equals X == Y
 
 <t> subtype rw t int <: exists q.rw q int
     subtype int -o !int <: exists X.( X -o !X )
@@ -170,11 +138,6 @@ not subtype exists X.X <: exists Z.!Z
 
 <A> subtype A <: exists X.X // X == A
 <A> subtype forall X.X <: A // X == A
-
-    subtype label#int + tag#int <: exists X.( label#X + tag#X )
-not subtype label#boolean + tag#int <: exists X.( label#X + tag#X )
-
-/* ====== */
 
 equals forall X.(forall X.forall X.X){int/X} == forall X.forall X.forall X.X
 equals forall X.forall X.forall X.X == forall X.forall X.forall X.X
@@ -199,3 +162,34 @@ not subtype exists X<:int.X <: exists W<:!int.W
      equals exists X<:int.X == exists Y<:int.Y
  not equals exists X<:int.X == exists Y<:boolean.Y
 
+// typedefs cannot refer other variables in scope
+// their substitution is straightforward and OK!
+typedef Def[X,Y] = X
+
+<X> equals Def[X,X] == X
+
+
+// unification tests with * --- same case/code as &, (+).
+
+subtype int * boolean * int <: exists X.( int * X * int )
+subtype int * boolean * int <: exists X.( int * int * X )
+subtype int * boolean * int <: exists X.( int * X )
+subtype int * boolean * int <: exists X.( boolean * X )
+
+not subtype int * int <: exists X.( boolean * X )
+
+subtype int * boolean * int <: exists X.( X * X * boolean )
+subtype int * boolean * boolean * int <: exists X.( X * X )
+
+not subtype boolean * boolean * int <: exists X.( X * X )
+not subtype int * boolean * string <: exists X.( int * X * X )
+not subtype int * boolean * boolean * int <: exists X.( X * X * X )
+
+<q>     subtype rw q int <: exists w.rw w int
+<q> not subtype rw q int <: exists w.rw w boolean
+
+// unification through forall type:
+
+    subtype forall X<:int.X <: int
+    subtype forall X<:int.X <: forall X<:int.int
+not subtype forall X.int <: forall X<:int.X
