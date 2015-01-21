@@ -9,39 +9,6 @@ TODO/PROBLEMS/BUGS:
 
 * missing failure tests on conformance on 'test2.txt'
 
-* Old (Re-Splitting) Examples:
-
-#1
-	rec X.( E => E ; X & E => N (+) C ; ( N => N ; N ) (+) ( C => C ; C ) )
->>
-	E => N (+) C ; none
-||	rec X.( E => E ; X (+) ( N => N ; N ) (+) ( C => C ; C ) )
-
-#2
-	NE (+) E => NE ; rec X.( NE => NE ; X )
-
-#3
-	rec X.( N => P ; rec Y.( P => N ; X & N => P ; Y ) )
->>
-	rec X.( N => P ; P => N ; X )
-||	rec X.( N => P ; X )
-
-#4
-	rec X.( F => F ; X & F => R ; R => R ; R )
->>
-	F => R
-||	rec X.( F => F ; X (+) R => R ; R )
->>
-	rec X.( F => F ; X (+) R => D )
-	rec X.( F => F ; X (+) rec Y.( R => R ; Y (+) D => D; D ) )
-
-#5
-	H => F ; F => F ; F
->>
-	H => F ; none (+) F => F ; F
-||	H => F ; none (+) F => F ; F
-
-
 
 * Check if case is really undecidable. Add check to forbid undecidable case, if that is the case. It may be possible that the example is ill-constructed and therefore fails to catch this error. Thus, you may need to build a better counter-example that exercises the problem.
 	The case is undecidable at least on protocol conformance. If we have:

@@ -199,7 +199,7 @@ var TypeChecker = (function( AST, exports ){
 	}
 
 	var unifyState = function( state, protocol ){
-//		debugger
+
 		if( protocol.type === types.ExistsType ){
 			var t = protocol.inner();
 			var i = protocol.id();
@@ -304,7 +304,7 @@ console.debug( '\t\tdone: '+t );
 	var checkConformanceAux = function( work, visited ){
 
 var i=0;
-
+console.debug( '' );
 		while( work.length > 0 ){
 			var w = work.pop();
 
@@ -381,11 +381,6 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			return [];
 		}
 
-		// by (step:Recovery)
-		if( equals(s,p) ){
-			return [ W( g, NoneType, NoneType ) ];
-		}
-
 		// by (step:Alternative)
 		if( p.type === types.AlternativeType ){
 			var pp = p.inner();
@@ -413,13 +408,18 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			return res;
 		}
 
+		// by (step:Recovery) of non-protocol states.
+		if( s.type !== types.RelyType && equals(s,p) ){
+			return [ W( g, NoneType, NoneType ) ];
+		}
+
 		//
 		// Protocol Stepping
 		//
 
-		// by (step:SimProtocol)
+		// by (step:SimProtocol) --- FIXME: changes must be reflected on draft!
 		if( s.type === types.RelyType && p.type === types.RelyType &&
-			equals( s.rely(), p.rely()) ){
+			subtype( s.rely(), p.rely()) ){
 
 			// check 's' and 'o' guarantee: ( G ; R )
 			var gs = s.guarantee();
@@ -449,12 +449,12 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			var u = unifyState( s, p );
 console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
 			// substitute, check bound
-//debugger
+
 			return step( g, s, u, q, isLeft );
 		}
 
 //TODO wasn't this suppose to be subtypign instead of 'equals'?
-		if( p.type === types.RelyType && equals( p.rely(), s ) ){
+		if( p.type === types.RelyType && subtype( s, p.rely() ) ){
 			// case analysis on the guarantee type, 'b'
 			var b = p.guarantee();
 
