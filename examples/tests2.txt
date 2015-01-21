@@ -1,10 +1,11 @@
+//FIXME: well-formed check will flag some cases as wrong!
+//FIXME: this does not correctly recover ownership when considering the lock model!!
+
 /* === CONFORMANCE TESTS === */
 
 share none as none || none
 
 // Pipe
-	//FIXME: this does not correctly recover ownership when considering the lock model!!
-	//FIXME: well-formed check will flag this case as wrong!
 typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
 					( rw p !(Closed#[]) => none ) (+) 
 					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
@@ -14,21 +15,21 @@ typedef Tail[p] =  (rw p !Empty#[]) => ( (rw p !Closed#[]) (+) (rw p Node#[int,e
 <l> share (rw l !Empty#[]) as Head[l] || Tail[l]
 
 // Iteratively Sharing
-typedef F[f,c] = (rw f Free#[]) * (rw c [])
-typedef R[f,c] = (rw f Raw#[]) * (rw c int)
-typedef D[f,c] = (rw f Done#[]) * (rw c boolean)
+typedef G[f,c] = (rw f Free#[]) * (rw c [])
+typedef W[f,c] = (rw f Raw#[]) * (rw c int)
+typedef K[f,c] = (rw f Done#[]) * (rw c boolean)
 
-typedef Receiver   [f,c] = F[f,c] => R[f,c]
-typedef Compressor [f,c] = ( F[f,c] => F[f,c] ; Compressor[f,c] ) (+) 
-									( R[f,c] => D[f,c] )
+typedef Receiver   [f,c] = G[f,c] => W[f,c]
+typedef Compressor [f,c] = ( G[f,c] => G[f,c] ; Compressor[f,c] ) (+) 
+									( W[f,c] => K[f,c] )
 
-typedef Storer  [f,c] = ( F[f,c] => F[f,c] ; Storer[f,c] ) (+) Storer_[f,c] 
-typedef Storer_ [f,c] = ( R[f,c] => R[f,c] ; Storer_[f,c] ) (+) ( D[f,c] => none )
+typedef Storer  [f,c] = ( G[f,c] => G[f,c] ; Storer[f,c] ) (+) Storer_[f,c] 
+typedef Storer_ [f,c] = ( W[f,c] => W[f,c] ; Storer_[f,c] ) (+) ( K[f,c] => none )
 
-typedef TMP  [f,c] = ( F[f,c] => F[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
-typedef TMP_ [f,c] = ( R[f,c] => R[f,c] ; TMP_[f,c] ) & ( R[f,c] => D[f,c] ; D[f,c] => none )
+typedef TMP  [f,c] = ( G[f,c] => G[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
+typedef TMP_ [f,c] = ( W[f,c] => W[f,c] ; TMP_[f,c] ) & ( W[f,c] => K[f,c] ; K[f,c] => none )
 
-<f><c> share F[f,c] as Receiver[f,c] || TMP[f,c]
+<f><c> share G[f,c] as Receiver[f,c] || TMP[f,c]
 <f><c> share TMP[f,c] as Storer[f,c] || Compressor[f,c]
 
 // Hold/Free
@@ -51,3 +52,72 @@ typedef P4[l] = ( Held[l] => Held[l] ; P4[l] ) & ( Held[l] => Free[l] ; Free[l] 
 
 <t> share P[t] as P0[t] || P1[t]
 <t> share P4[t] as P3[t] || P1[t]
+
+// Old Re-Splitting Examples:
+
+//	rec X.( F => F ; X & F => R ; R => R ; R )
+//	>> F => R
+//	|| ( rec X.( F => F ; X (+) R => R ; R )
+//		>> rec X.( F => F ; X (+) R => D )
+//		|| rec X.( F => F ; X (+) rec Y.( R => R ; Y (+) D => D; D ) ) )
+typedef R[p] = rw p R#[]
+typedef F[p] = rw p F#int
+typedef D[p] = rw p D#boolean
+
+typedef P_0[p] = ( F[p] => F[p] ; P_0[p] ) & ( F[p] => R[p] ; R[p] => R[p] ; R[p] )
+typedef P_1[p] = F[p] => R[p]
+typedef P_2[p] = ( F[p] => F[p] ; P_2[p] ) (+) ( R[p] => R[p] ; R[p] )
+
+<t> share P_0[t] as P_1[t] || P_2[t]
+
+typedef Q_0[p] = ( F[p] => F[p] ; Q_0[p] ) (+) ( R[p] => R[p] ; R[p] => D[p] )
+typedef Q_1[p] = ( F[p] => F[p] ; Q_1[p] ) (+) Q_2[p]
+typedef Q_2[p] = ( R[p] => R[p] ; Q_2[p] ) (+) ( D[p] => D[p] ; D[p] )
+
+<t> share P_2[t] as Q_0[t] || Q_1[t]
+
+// Only one recovers ownership
+	//	H => F ; F => F ; F
+	// >> H => F ; none (+) F => F ; F
+	// || H => F ; none (+) F => F ; F
+typedef FF[p] = rw p F#[]
+typedef HH[p] = rw p H#int
+
+<t> share (HH[t] => FF[t] ; FF[t] => FF[t] ; FF[t] ) as
+	  ( HH[t] => FF[t] ; none ) (+) ( FF[t] => FF[t] ; FF[t] )
+	||( HH[t] => FF[t] ; none ) (+) ( FF[t] => FF[t] ; FF[t] )
+
+// Simple Monotonic 2-State Counter
+	//	rec X.( N => P ; rec Y.( P => N ; X & N => P ; Y ) )
+	//	>>
+	//	rec X.( N => P ; P => N ; X )
+	//	||	rec X.( N => P ; X )
+typedef NN[p] = rw p Z#[]+NZ#int
+typedef PP[p] = rw p NZ#int
+
+typedef IncOnly[p] =  NN[p] => PP[p] ; IncOnly[p]
+typedef Any[p] = NN[p] => PP[p]; PP[p] => NN[p] ; Any[p]
+
+typedef M0[p] = NN[p] => PP[p] ; M1[p]
+typedef M1[p] = ( PP[p] => NN[p] ; M0[p] ) & ( NN[p] => PP[p] ; M1[p] )
+
+<t> share NN[t] as IncOnly[t] || Any[t]
+<t> share M0[t] as IncOnly[t] || Any[t]
+
+<t> share IncOnly[t] as IncOnly[t] || IncOnly[t]
+<t> not share Any[t] as Any[t] || Any[t]
+
+// Pipe
+	//	    rec X.( E => E ; X & E => N (+) C ; ( N => N ; N ) (+) ( C => C ; C ) )
+	//	>>	E => N (+) C ; none
+	//	||	rec X.( E => E ; X (+) ( N => N ; N ) (+) ( C => C ; C ) )
+typedef N[p] = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
+typedef C[p] = rw p Close#![]
+typedef E[p] = rw p Empty#![]
+
+typedef T[p] = E[p] => ( N[p] (+) C[p] ) ; none
+typedef H[p] = ( E[p] => E[p] ; H[p] ) (+) ( N[p] => N[p] ; N[p] ) (+) ( C[p] => C[p] ; C[p] )
+
+typedef O[p] = ( E[p] => E[p] ; O[p] ) & ( E[p] => N[p] (+) C[p] ; ( N[p] => N[p] ; N[p] ) (+) ( C[p] => C[p] ; C[p] ) )
+
+<t> share O[t] as T[t] || H[t]
