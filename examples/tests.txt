@@ -16,7 +16,7 @@ typedef Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 // FIXME: do these terminate? SHOULD THEY?
 // FIXME: shouldn't this cause infinite unfolds?
-typedef H[X] = forall Y <: X.H[Y]
+typedef H[X] = forall Y <: X.H[Y] // does not terminate with H[X]!
 
     equals H[int] == H[int]
 not equals H[int] == H[boolean]

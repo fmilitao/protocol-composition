@@ -9,7 +9,6 @@ TODO/PROBLEMS/BUGS:
 
 * missing failure tests on conformance on 'test2.txt'
 
-
 * Check if case is really undecidable. Add check to forbid undecidable case, if that is the case. It may be possible that the example is ill-constructed and therefore fails to catch this error. Thus, you may need to build a better counter-example that exercises the problem.
 	The case is undecidable at least on protocol conformance. If we have:
 	P[A] = rw p A => forall X <: A.( rw p X ; P[X] )
