@@ -64,139 +64,6 @@ var TypeChecker = (function( AST, exports ){
 	var isTypeVariableName = function(n){
 		return n[0] === n[0].toUpperCase();
 	}
-	
-	var locSet = function( t ){
-		
-		if( isProtocol(t) )
-			return new Set(); // empty set
-
-		switch( t.type ){
-			case types.NoneType:
-				return new Set(); // empty set
-
-			case types.RelyType:
-				return locSet( t.rely() );
-			
-			case types.GuaranteeType:
-				return locSet( t.guarantee() );
-
-			case types.AlternativeType:
-			case types.IntersectionType:
-			case types.StarType: {
-				var ts = t.inner();
-				var tmp = new Set();
-
-				for( var i=0; i<ts.length; ++i ){
-					locSet( ts[i] ).forEach(
-						function(x){
-							tmp.add(x);
-						});
-				}
-				
-				return tmp;
-			}
-
-			case types.ExistsType:
-			case types.ForallType:{
-				var tmp = locSet( t.inner() )
-				var id = t.id().name();
-
-				if( !isTypeVariableName( id ) ){
-					// then is location variable
-					// and we must remove it, if present, from the set
-//FIXME wait... this makes no sense to allow?!
-					tmp.delete( id );
-				}
-
-				return tmp;
-			}
-
-			case types.CapabilityType:
-				return locSet( t.location() );
-
-			case types.LocationVariable:
-				return new Set( [t.name()]) ;
-
-			case types.DefinitionType:
-// FIXME termination not gauranteed?! needs to watchout for cycles.
-				return locSet( unfold(t) );
-
-			default:
-				error( '@locSet: invalid type, got: '+t.type+' '+t );
-		}
-	}
-
-	var wfProtocol = function( t ){
-// FIXME this is a huge mess
-// FIXME termination not guaranteed?! needs to watchout for cycles.
-		if( !isProtocol(t) )
-			return false;
-
-		switch( t.type ){
-			case types.NoneType:
-				return true; // empty set
-
-			case types.RelyType: {
-				var r = locSet( t.rely() );
-				var g = locSet( t.guarantee() );
-
-				if( r.size !== g.size )
-					return false;
-
-				var tmp = true;
-				r.forEach(function(v){
-					if( !g.has(v) )
-						tmp = false;
-				});
-				// some missing element
-				if( !tmp )
-					return false;
-
-				return true; //TODO wfProtocol( t.rely() ) && wfProtocol( t.guarantee() );
-			}
-			
-			case types.GuaranteeType:
-				return wfProtocol( t.guarantee() ) && wfProtocol( t.rely() );
-
-			case types.AlternativeType: {
-//FIXME needs to check there is a different trigger
-				// all must be valid protocols
-//FIXME how does this work when there are existentials??
-				return true;
-			}
-
-			case types.IntersectionType: {
-				// all must be valid protocols
-				var ts = t.inner();
-
-				for( var i=0; i<ts.length; ++i ){
-					if( !wfProtocol( ts[i] ) )
-						return false;
-				}
-				
-				return true;
-			}
-
-			case types.StarType: {
-//FIXME OK for some to not be valid protocols?
-				return true;
-			}
-
-			case types.ExistsType:
-			case types.ForallType:{
-				// FIXME problem when defining P * exists q.(A), etc.
-				return true;
-			}
-
-			case types.DefinitionType:
-// FIXME termination not gauranteed?! needs to watchout for cycles.
-				return wfProtocol( unfold(t) );
-
-			default:
-				error( '@wfProtocol: invalid type, got: '+t.type );
-		}
-		return true;
-	}
 
 	var unifyState = function( state, protocol ){
 
@@ -262,26 +129,22 @@ console.debug( '\t\tdone: '+t );
 	*/
 
 	var contains = function( visited, w ){
-		for( var i in visited ){
-			var v = visited[i];
-
-			// by equality
-			// for now ignore 'g'
-			if( equals( v.s, w.s ) &&
-				equals( v.p, w.p ) &&
-				equals( v.q, w.q ) )
-				return true;
-
-/*
-			// TODO by subsumption
+		for( var v of visited ){
+			// must assume that all types were normalized to have their
+			// indexes compacted. Therefore, we do not need to check gamma.
+			// TODO Note that this normalization must occur over all 3 types AT
+			// THE SAME TIME, or there could be indexing mismatch.
 			if( subtype( w.s, v.s ) &&
 				subtype( v.p, w.p ) &&
 				subtype( v.q, w.q ) )
 				return true;
 
-			// TODO by weakening, careful since bounds must match too?
-			// MESSY on how to type check this case.
-*/
+			/*
+			if( equals( v.s, w.s ) &&
+				equals( v.p, w.p ) &&
+				equals( v.q, w.q ) )
+				return true;
+			*/
 		}
 
 		return false;
@@ -695,12 +558,9 @@ TODO: missing cases.
 				var left = check( ast.a, env );
 				var right = check( ast.b, env );
 
-				//assert( wfProtocol( left ) || ('Invalid protocol: '+left ) , ast.a );
-				//assert( wfProtocol( right ) || ('Invalid protocol: '+right ) , ast.b );
-
-				// Protocol conformance, goes through all possible "alias
-				// interleaving" and ensure all those possibilities are considered
-				// in both protocols.
+				// Protocol conformance, goes through all possible "protocol
+				// interleaving" and ensures that all those possibilities are
+				// considered in both protocols.
 
 				var table = checkConformance( env, cap, left, right );
 				var res = table !== null ; // is valid if table not null
@@ -747,6 +607,7 @@ TODO: missing cases.
 				var id = ast.id;				
 				var variable;
 				var bound;
+//FIXME check with null environment? i.e. apply the new wf condition.
 				if( isTypeVariableName(id) ){
 					bound = !ast.bound ? TopType : check( ast.bound, env );
 					variable = new TypeVariable( id, 0, bound );
@@ -986,3 +847,136 @@ TODO: missing cases.
 	
 })( AST.kinds, TypeChecker ); // required globals
 
+
+
+	// well-formed checks are currently work-in-progress.
+
+	/*
+	var locSet = function( t ){
+		
+		if( isProtocol(t) )
+			return new Set(); // empty set
+
+		switch( t.type ){
+			case types.NoneType:
+				return new Set(); // empty set
+
+			case types.RelyType:
+				return locSet( t.rely() );
+			
+			case types.GuaranteeType:
+				return locSet( t.guarantee() );
+
+			case types.AlternativeType:
+			case types.IntersectionType:
+			case types.StarType: {
+				var ts = t.inner();
+				var tmp = new Set();
+
+				for( var i=0; i<ts.length; ++i ){
+					locSet( ts[i] ).forEach(
+						function(x){
+							tmp.add(x);
+						});
+				}
+				
+				return tmp;
+			}
+
+			case types.ExistsType:
+			case types.ForallType:{
+				var tmp = locSet( t.inner() )
+				var id = t.id().name();
+
+				if( !isTypeVariableName( id ) ){
+					// then is location variable
+					// and we must remove it, if present, from the set
+
+					tmp.delete( id );
+				}
+
+				return tmp;
+			}
+
+			case types.CapabilityType:
+				return locSet( t.location() );
+
+			case types.LocationVariable:
+				return new Set( [t.name()]) ;
+
+			case types.DefinitionType:
+				return locSet( unfold(t) );
+
+			default:
+				error( '@locSet: invalid type, got: '+t.type+' '+t );
+		}
+	}
+	*/
+
+	/*
+	var wfProtocol = function( t ){
+		if( !isProtocol(t) )
+			return false;
+
+		switch( t.type ){
+			case types.NoneType:
+				return true; // empty set
+
+			case types.RelyType: {
+				var r = locSet( t.rely() );
+				var g = locSet( t.guarantee() );
+
+				if( r.size !== g.size )
+					return false;
+
+				var tmp = true;
+				r.forEach(function(v){
+					if( !g.has(v) )
+						tmp = false;
+				});
+				// some missing element
+				if( !tmp )
+					return false;
+
+				return true;
+			}
+			
+			case types.GuaranteeType:
+				return wfProtocol( t.guarantee() ) && wfProtocol( t.rely() );
+
+			case types.AlternativeType: {
+				// needs to check there is a different rely
+				// all must be valid protocols
+				// how to express this with existentials?
+				// this check should be in the step, not here.
+				return true;
+			}
+
+			case types.IntersectionType: {
+				// all must be valid protocols
+				var ts = t.inner();
+
+				for( var i=0; i<ts.length; ++i ){
+					if( !wfProtocol( ts[i] ) )
+						return false;
+				}
+				
+				return true;
+			}
+
+			case types.StarType:
+			case types.ExistsType:
+			case types.ForallType:{
+				// needs to consider: P * exists q.(A), etc.
+				return true;
+			}
+
+			case types.DefinitionType:
+				return wfProtocol( unfold(t) );
+
+			default:
+				error( '@wfProtocol: invalid type, got: '+t.type );
+		}
+		return true;
+	}
+	*/
