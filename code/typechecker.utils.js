@@ -429,20 +429,24 @@ var xxx = 0;
 		
 		function rebase( a ){
 			var s = indexSet(a);
-			var m = null;
-			s.forEach( function(v){
-				if( m === null )
-					m = v;
-				else{
-					m = m < v ? m : v;
+			if( s.size > 0 ){
+				var v = [];
+				s.forEach( function(val){ v.push(val); });
+				v.sort();
+
+				for( var i=0; i<v.length; ++i ){
+					if( v[i] !== i ){
+						a = shift( a, i, i-v[i] );
+					}
 				}
-			});
-			a = shift( a, 0, -m );
+			}
 			return a;
 		};
 
+//console.log('>>'+ a.toString(true) + b.toString(true) );
 		a = rebase(a);
 		b = rebase(b);
+//console.log('<<'+ a.toString(true) + b.toString(true) );
 
 		return a.toString(true) + b.toString(true);
 
