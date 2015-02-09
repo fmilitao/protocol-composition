@@ -421,13 +421,9 @@ var TypeChecker = (function( exports ){
 	};
 
 
-// ----
-
-var xxx = 0;
-
 	var keyF = function( a, b ){
 		
-		function rebase( a ){
+		var rebase = function( a ){
 			var s = indexSet(a);
 			if( s.size > 0 ){
 				var v = [];
@@ -451,8 +447,6 @@ var xxx = 0;
 		return a.toString(true) + b.toString(true);
 
 	};
-
-// ----
 
 
 	/**
