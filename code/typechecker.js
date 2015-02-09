@@ -607,9 +607,12 @@ TODO: missing cases.
 				var id = ast.id;				
 				var variable;
 				var bound;
-//FIXME check with null environment? i.e. apply the new wf condition.
+
 				if( isTypeVariableName(id) ){
-					bound = !ast.bound ? TopType : check( ast.bound, env );
+					bound = !ast.bound ?
+						TopType : // no bound, default is 'top'
+						// else check with empty environment (due to decidability issues)
+						check( ast.bound, new Gamma( env.getTypeDef(), null ) );
 					variable = new TypeVariable( id, 0, bound );
 				}
 				else{

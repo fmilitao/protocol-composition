@@ -1,5 +1,4 @@
 
-typedef T = forall X. forall Y <: X. [ X , Y ]
 
 // the following would generate a 'trail' collision
 // if DeBruijn indexes did not include the bound on type variables
@@ -13,17 +12,6 @@ typedef Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 < X <: int >
  not subtype a#D[X] + b#exists X<:boolean.D[X]
           <: a#int  + b#exists Y<:boolean.int
-
-// FIXME: do these terminate? SHOULD THEY?
-// FIXME: shouldn't this cause infinite unfolds?
-typedef H[X] = forall Y <: X.H[Y] // does not terminate with H[X]!
-
-    equals H[int] == H[int]
-not equals H[int] == H[boolean]
-
-<X> not equals (forall Y <: X.H[Y]){boolean/X} == H[int]
-
-<X> equals (forall Y <: X.H[Y]){int/X} == forall Y <: int.H[Y]
 
 // ==================== //
 
@@ -146,10 +134,6 @@ equals forall X.X == forall Z<:top.Z
 
 not equals exists X.X == exists Y<:int.Y
 
-<Z> equals exists X<:Z.X == exists Y<:Z.Y
-
-<Z><W> not equals exists X<:W.X == exists Y<:Z.Y
-
 subtype exists X.X <: exists Y.Y
 subtype exists X<:top.X <: exists Z.Z // implicit top
 
@@ -193,3 +177,16 @@ not subtype int * boolean * boolean * int <: exists X.( X * X * X )
     subtype forall X<:int.X <: int
     subtype forall X<:int.X <: forall X<:int.int
 not subtype forall X.int <: forall X<:int.X
+
+
+// ======= //
+// the general case for checking the following may not terminate.
+// Thus, they are disallowed.
+//typedef H[X] = forall Y <: X.H[Y]
+//typedef T = forall X. forall Y <: X. [ X , Y ]
+//    equals H[int] == H[int]
+//not equals H[int] == H[boolean]
+// <X> not equals (forall Y <: X.H[Y]){boolean/X} == H[int]
+// <X> equals (forall Y <: X.H[Y]){int/X} == forall Y <: int.H[Y]
+// <Z> equals exists X<:Z.X == exists Y<:Z.Y
+// <Z><W> not equals exists X<:W.X == exists Y<:Z.Y
