@@ -367,11 +367,13 @@ var TypeChecker = (function( exports ){
 			}
 
 			case types.ExistsType:
-			case types.ForallType:
+			case types.ForallType:{
 				// calls appropriate constructor function
 				return new t.constructor( t.id(), 
-						shift( t.inner(), c+1, d ), 
-						shift( t.bound(), c, d ) );
+						shift( t.inner(), c+1, d ),
+						( t.bound() !== null ? shift( t.bound(), c, d ) : null )
+						);
+			}
 
 			case types.ReferenceType:
 				return new ReferenceType( shift( t.location(), c, d ) );
@@ -393,9 +395,9 @@ var TypeChecker = (function( exports ){
 
 			case types.DefinitionType: {
 				var fs = t.args();
-				var tmp = [];
-				for( var i in fs )
-					tmp = tmp.concat( shift( fs[i], c, d ) );
+				var tmp = new Array( fs.length );
+				for( var i=0; i<fs.length; ++i )
+					tmp[i] = shift( fs[i], c, d );
 				return new DefinitionType( t.definition(), tmp, t.getTypeDef() );
 			}
 
@@ -417,6 +419,37 @@ var TypeChecker = (function( exports ){
 	var shift1 = function( t, c ){
 		return shift( t, c, 1 );
 	};
+
+
+// ----
+
+var xxx = 0;
+
+	var keyF = function( a, b ){
+		
+		function rebase( a ){
+			var s = indexSet(a);
+			var m = null;
+			s.forEach( function(v){
+				if( m === null )
+					m = v;
+				else{
+					m = m < v ? m : v;
+				}
+			});
+			a = shift( a, 0, -m );
+			return a;
+		};
+
+		a = rebase(a);
+		b = rebase(b);
+
+		return a.toString(true) + b.toString(true);
+
+	};
+
+// ----
+
 
 	/**
 	 * Tests if types 'a' and 'b' are the same.
@@ -441,7 +474,8 @@ var TypeChecker = (function( exports ){
 		var def2 = t2.type === types.DefinitionType;
 
 		if( def1 || def2 ){
-			var key = t1.toString(true) + t2.toString(true);
+
+			var key = keyF(t1,t2);
 
 			// algorithm based on "Subtyping Recursive Types".
 			if( trail.has(key) )
@@ -655,9 +689,9 @@ var TypeChecker = (function( exports ){
 		}
 		case types.DefinitionType: {
 			var fs = t.args();
-			var tmp = [];
-			for( var i in fs )
-				tmp = tmp.concat( rec(fs[i]) );
+			var tmp = new Array( fs.length );
+			for( var i=0; i<fs.length; ++i )
+				tmp[i] = rec(fs[i]);
 			return new DefinitionType(t.definition(),tmp,t.getTypeDef());
 		}
 
@@ -713,7 +747,8 @@ var TypeChecker = (function( exports ){
 		var def2 = t2.type === types.DefinitionType;
 
 		if( def1 || def2 ){
-			var key = t1.toString(true) + t2.toString(true);
+
+			var key = keyF(t1,t2);
 
 			// algorithm based on "Subtyping Recursive Types".
 			if( trail.has(key) )
@@ -1104,11 +1139,9 @@ var TypeChecker = (function( exports ){
 	//returns set with index levels from 0.
 	var indexSet = function( t ){
 		var set = new Set();
-		indexSet( t, 0, set );
+		indexSetAux( t, 0, set );
 		return set;
 	};
-
-//FIXME test! use console.debug
 
 	var indexSetAux = function( t, c, set ){
 
@@ -1168,10 +1201,11 @@ var TypeChecker = (function( exports ){
 			}
 			case types.ForallType:		
 			case types.ExistsType:{
-				if( t.bound() === null ){
+				if( t.bound() !== null ){
 					indexSetAux( t.bound(), c, set );
 				}
 				indexSetAux( t.inner(), c+1, set );
+				return;
 			}
 			case types.TypeVariable:
 			case types.LocationVariable:{
@@ -1183,7 +1217,7 @@ var TypeChecker = (function( exports ){
 			case types.DefinitionType: {				
 				var ts = t.args();
 				for( var i=0 ; i<ts.length ; ++i ){
-					indexSetAux( ts[i], c+i+1, set );
+					indexSetAux( ts[i], c, set );
 				}
 				return;
 			}
