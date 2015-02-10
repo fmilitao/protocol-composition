@@ -65,23 +65,56 @@ var TypeChecker = (function( AST, exports ){
 		return n[0] === n[0].toUpperCase();
 	}
 
-	var unifyState = function( state, protocol ){
+	// "forall x.s" >> "p ; ..."
+//FIXME test me...
+	var unifyForall = function( g, state ){
+		if( g.type === types.Forall ){
+			var t = g.inner();
+			var i = g.id();
+
+			// in case of nested foralls
+			t = unifyForall( t, state );
+
+			//...
+			error( t.type === types.GuaranteeType || ('@unifyForall: invalid unification for '+t) );
+
+			// move state inside the forall depth
+			state = shift( state, 0, 1 );
+			var x = unify( i, t.guarantee(), state );
+
+			error( x !== false || ('@unifyForall: invalid unification for '+t.guarantee()+' and '+state) );
+
+			// if 'x' contains some non-empty valid type that was unified
+			if( x !== true ){
+				// assuming type was already shifted
+				t = substitution( t, i, x );
+				// unshift because we are opening the forall
+				t = shift( t, 0, -1 );
+			}
+
+			return t;
+		}
+
+		return g;
+	}
+
+	var unifyExists = function( state, protocol ){
 
 		if( protocol.type === types.ExistsType ){
 			var t = protocol.inner();
 			var i = protocol.id();
-			var b = protocol.bound();
+			//var b = protocol.bound(); //FIXME check bound?
 
-			t = unifyState( state, t );
+			// now unify the inner step, if needed in case of nested exists
+			t = unifyExists( state, t );
 
-			error( t.type === types.RelyType || '@unifyState: invalid unification for '+t );
+			error( t.type === types.RelyType || ('@unifyExists: invalid unification for '+t) );
 
-			var r = t.rely();
 			// moves 'state' inside the existential bound
 			state = shift( state, 0, 1 );
-			var x = unify( i, r, state );
-//FIXME check bound			
-			error( x !== false || '@unifyState: invalid unification for '+r+' and '+state );
+			var x = unify( i, t.rely(), state );
+
+			error( x !== false || ('@unifyExists: invalid unification for '+t.rely()+' and '+state) );
 
 			// if 'x' contains some non-empty valid type that was unified
 			if( x !== true ){
@@ -93,26 +126,20 @@ var TypeChecker = (function( AST, exports ){
 
 			return t;
 		}
+
 		return protocol;
 	}
 
 	var contains = function( visited, w ){
 		for( var v of visited ){
 			// must assume that all types were normalized to have their
-			// indexes compacted. Therefore, we do not need to check gamma.
-			// TODO Note that this normalization must occur over all 3 types AT
-			// THE SAME TIME, or there could be indexing mismatch.
+			// indexes compacted in order to ensure termination.
+			// Therefore, we do not need to check gamma.
+			// by (rs:Weakening) and by (rs:Subsumption)
 			if( subtype( w.s, v.s ) &&
 				subtype( v.p, w.p ) &&
 				subtype( v.q, w.q ) )
 				return true;
-
-			/*
-			if( equals( v.s, w.s ) &&
-				equals( v.p, w.p ) &&
-				equals( v.q, w.q ) )
-				return true;
-			*/
 		}
 
 		return false;
@@ -128,7 +155,7 @@ var TypeChecker = (function( AST, exports ){
 
 	var checkConformance = function( g, s, p, q ){
 		// we can ignore 'g' because of using indexes
-		var work = [ Work(s, p, q) ];
+		var work = [ Work( s, p, q ) ];
 		var visited = [];
 		return checkConformanceAux( work, visited );
 	}
@@ -154,10 +181,10 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 
 				work = work.concat(left).concat(right);
 
-				visited.push( w ); //FIXME consider rebasing the indexes here
+				visited.push( w );
 			}
 
-			if( i > 100 )
+			if( i > 100 ) //FIXME this is temporary.
 				error('loop bug...');
 		}
 		return visited;
@@ -168,17 +195,15 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
 
-		var W = function( s, p ){ // should be R
-			if( isLeft )
-				return Work( s, p, q );
-			else
-				return Work( s, q, p );
+		var R = function( s, p ){
+			return isLeft ? Work( s, p, q ) : Work( s, q, p );
 		};
 
 		//
 		// break down of STATE
 		//
 
+		// by (rs:StateAlternative)
 		if( s.type === types.AlternativeType ){
 			var ss = s.inner();
 			var res = [];
@@ -192,6 +217,8 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			}
 			return res;
 		}
+
+		// by (rs:StateIntersection)
 		if( s.type === types.IntersectionType ){
 			var ss = s.inner();
 			// protocol only needs to consider *one* case
@@ -209,13 +236,13 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 		// break down of PROTOCOL
 		//
 
-		// by (step:None)
+		// by (rs:None)
 		if( p.type === types.NoneType ){
 			// no need to add new work, we already know this configuration steps
 			return [];
 		}
 
-		// by (step:Alternative)
+		// by (rs:ProtocolAlternative)
 		if( p.type === types.AlternativeType ){
 			var pp = p.inner();
 			// protocol only needs to consider *one* case
@@ -228,6 +255,8 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			// did not find a good step, fail.
 			return null;
 		}
+
+		// by (rs:ProtocolIntersection)
 		if( p.type === types.IntersectionType ){
 			var pp = p.inner();
 			var res = [];
@@ -242,17 +271,10 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			return res;
 		}
 
-		// by (step:Recovery) of non-protocol states.
-		if( !isProtocol(s) && equals(s,p) ){
-			return [ W( NoneType, NoneType ) ];
-		}
-
-		//
-		// Protocol Stepping
-		//
 // FIXME: changes of using 'subtyping' must be reflected on draft!
 
 		if( isProtocol(s) ){
+			// PROTOCOL STEPPING
 
 			// by (ps:ExistsType) and by (ps:ExistsLoc)
 			if( s.type === types.ExistsType && p.type === types.ExistsType ){
@@ -264,51 +286,46 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				return step ( s.inner() , p.inner(), q, isLeft );
 			}
 
-			if( s.type === types.RelyType && p.type === types.RelyType && subtype( s.rely(), p.rely()) ){
+			// by (ps:ForallType) and by (ps:ForallLoc)
+			if( s.type === types.RelyType && s.guarantee().type === types.ForallType &&
+				p.type === types.RelyType && p.guarantee().type === types.ForallType ){
 
 				// check 's' and 'p' guarantee: ( G ; R )
 				var gs = s.guarantee();
 				var gp = p.guarantee();
 
-				// by (ps:ForallType) and by (ps:ForallLoc)
-				if( gs.type === types.ForallType && gp.type === types.ForallType ){
-					if( gs.id().type !== gp.id().type )
-						return null;
-					//TODO: also check bound
+				if( gs.id().type !== gp.id().type )
+					return null;
+				//TODO: also check bound
 
-					// move inside the forall
-					gs = gs.inner();
-					gp = gp.inner();
-					q = shift( q, 0, 1 ); // must match same depth
+				s = new RelyType( shift( s.rely(), 0, 1 ), gs.inner() );
+				p = new RelyType( shift( p.rely(), 0, 1 ), gs.inner() );
+				q = shift( q, 0, 1 ); // must match same depth as others
 
-					if( equals( gs.guarantee(), gp.guarantee() ) ){
-						var tmp = rebase( gs.rely(), gp.rely(), q );
-						gs = tmp[0];
-						gp = tmp[1];
-						q = tmp[2];
+				var tmp = rebase( s, p, q );
+				s = tmp[0];
+				p = tmp[1];
+				q = tmp[2];
 
-						if( isLeft )
-							return [ Work( gs, gp, q ) ];
-						else
-							return [ Work( gs, q, gp ) ];
-					}
+				return step( s, p, q, isLeft );
+			}
 
-				}
-			
-				// by (ps:TypeApp) and by (ps:LocApp)
-				if( gs.type === types.ForallType && gp.type !== types.ForallType ){
-					// attempt to unify the guarantee
-					
-					var u = unifyState( gs, gp );
-// FIXME ... getting dizzy.
-					// unshift 'gs'
-					// check that guarantees match
-					return [ Work( gs, q, gp ) ];
-				}
+			// by (ps:TypeApp) and by (ps:LocApp)
+			if( s.type === types.RelyType && s.guarantee().type === types.ForallType &&
+				p.type === types.RelyType && p.guarantee().type !== types.ForallType ){
+				// unifies the guarantee of 's' with that of 'p'
+				// bounds are checked inside 'unifyForall'
+				s = new RelyType( s.rely(), unifyForall( s.guarantee(), p.guarantee().guarantee() ) );
+				return step( s, p, q, isLeft );
+			}
 
+			// by (ps:Step)
+			if( s.type === types.RelyType && p.type === types.RelyType && subtype( s.rely(), p.rely()) ){
+				// check 's' and 'p' guarantee: ( G ; R )
+				var gs = s.guarantee();
+				var gp = p.guarantee();
 
-				// by (ps:Step)
-				// account for omitted guarantee (i.e.: 'G' == 'G ; none')
+				// account for omitted guarantees (i.e.: 'G' == 'G ; none')
 				if( gs.type !== types.GuaranteeType ){
 					gs = new GuaranteeType( gs, NoneType );
 				}
@@ -316,64 +333,63 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 					gp = new GuaranteeType( gp, NoneType );
 				}
 
-				// guaranteed state must match
+				// guarantee state must match
 				if( equals( gs.guarantee(), gp.guarantee() ) ){
-					return [ W( gs.rely(), gp.rely() ) ];
+					return [ R( gs.rely(), gp.rely() ) ];
 				}
 			}
 			
 			return null;
-		}
 
-		//
-		// State Stepping (i.e. else)
-		//
-		
-		// attempts to find matching type/location to open existential
-		if( p.type === types.ExistsType ){
-			// by (ss:OpenType) and by (ss:OpenLoc)
-			var u = unifyState( s, p );
-			// TODO: check bound if necessary.
-			return step( s, u, q, isLeft );
-		}
+		} else {
+			// STATE STEPPING
 
-		if( p.type === types.RelyType && subtype( s, p.rely() ) ){
-			// case analysis on the guarantee type, 'b'
-			var b = p.guarantee();
-
-			// by (ss:Step)
-			if( b.type === types.GuaranteeType ){
-				return [ W( b.guarantee(), b.rely() ) ];
+			// by (ss:Recovery)
+			if( equals(s,p) ){
+				return [ R( NoneType, NoneType ) ];
 			}
-		
-			// by (ss:Step-Type) and by (ss:Step-Loc)
-			if( b.type === types.ForallType ){
+			
+			// by (ss:OpenType) and by (ss:OpenLoc)
+			if( p.type === types.ExistsType ){
+				// attempts to find matching type/location to open existential
+				// correctness of type bound is checked inside 'unifyExists'
+				return step( s, unifyExists( s, p ), q, isLeft );
+			}
 
-				// WARNING: moving inside a quantifier of 'b'
-				// indexes remain unchanged for this protocol. However, the other protocol
-				// must be shifted to preserve its index.
-				var i = b.inner(); // body of forall type: forall ?.'i'
-				q = shift( q, 0, 1 ); // shift 'q' to match new index depth
-				s = i.guarantee(); // state
-				p = i.rely(); //step
+			// by (ss:ForallType) and by (ss:ForallLoc)
+			if( p.type === types.RelyType && p.guarantee().type === types.ForallType ){
+
+				// opening the forall, we must ensure that all old indexes match the new depth
+				p = new RelyType(
+					shift( p.rely(), 0, 1 ),
+					p.guarantee().inner() // direct access to forall guarantee
+					);
+				q = shift( q, 0, 1 );
+				s = shift( s, 0, 1 );
 
 				var tmp = rebase( s, p, q );
 				s = tmp[0];
 				p = tmp[1];
 				q = tmp[2];
 
-				if( isLeft )
-					return [ Work( s, p, q ) ];
-				else
-					return [ Work( s, q, p ) ];
+				return step( s, p, q, isLeft );
 			}
 
-			// assume case is that of omitted '; none' a 'b' is the new state.
-			// assume that type was previously checked to be well-formed.
-			return [ W( b, NoneType ) ];
-		}
+			// by (ss:Step)
+			if( p.type === types.RelyType && subtype( s, p.rely() ) ){
+				var b = p.guarantee();
+				if( b.type === types.GuaranteeType ){
+					// single step of the protocol
+					return [ R( b.guarantee(), b.rely() ) ];
+				} else {
+					// assume case is that of omitted '; none' and that 'b' is the new state.
+					// assume that type was previously checked to be well-formed.
+					return [ R( b, NoneType ) ];
+				}
+			}
 
-		return null;
+			return null;
+		}
 	};
 
 	var rebase = function( s, a, b ){
