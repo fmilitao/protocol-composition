@@ -54,7 +54,7 @@ var TypeChecker = (function( AST, exports ){
 	const equals = exports.equals;
 	const isFree = exports.isFree;
 	const isProtocol = exports.isProtocol;
-
+	const indexSet = exports.indexSet;
 
 	//
 	// Auxiliary Definitions
@@ -77,16 +77,15 @@ var TypeChecker = (function( AST, exports ){
 			error( t.type === types.RelyType || '@unifyState: invalid unification for '+t );
 
 			var r = t.rely();
-//FIXME: --- this looks ugly needs good justification.
+			// moves 'state' inside the existential bound
 			state = shift( state, 0, 1 );
 			var x = unify( i, r, state );
 //FIXME check bound			
 			error( x !== false || '@unifyState: invalid unification for '+r+' and '+state );
 
-			// if contains valid type.
+			// if 'x' contains some non-empty valid type that was unified
 			if( x !== true ){
-				// shift because it is going inside the existential
-				x = shift( x, 0, 1 );
+				// assuming type was already shifted
 				t = substitution( t, i, x );
 				// unshift because we are opening the existential
 				t = shift( t, 0, -1 );
@@ -96,37 +95,6 @@ var TypeChecker = (function( AST, exports ){
 		}
 		return protocol;
 	}
-
-	// i.e. weakening rule, but going upwards ("strengthen").
-	// removes unnecessary levels on names
-	/*
-	var unWeaken = function( g, t ){
-		var i = 0;
-		var x = null;
-console.debug( '\t\tunWeaken: '+t );
-		while( g !== null ){
-			// fetches the type of the variable
-			x = g.getType( 0 );
-			if( x === undefined )
-				break;
-
-
-			// variable should be at index 0, thus
-			// we shift the variable to current depth
-			x = shift( x, 0, i );
-			// if variable does not occur in t, then
-			// unshift all values before that one
-			if( isFree( x, t ) ){
-				t = shift( t, i, -1 );
-			}
-console.debug( '\t\t'+i+'--: '+t );
-			g = g.endScope();
-			++i;
-		}
-console.debug( '\t\tdone: '+t );
-		return t;
-	}
-	*/
 
 	var contains = function( visited, w ){
 		for( var v of visited ){
@@ -154,12 +122,13 @@ console.debug( '\t\tdone: '+t );
 	// Protocol Conformance
 	//
 
-	var Work = function( g, s, p, q ){
-		return { g: g, s: s, p: p, q: q };
+	var Work = function( s, p, q ){
+		return { s: s, p: p, q: q };
 	}
 
 	var checkConformance = function( g, s, p, q ){
-		var work = [ Work(g, s, p, q) ];
+		// we can ignore 'g' because of using indexes
+		var work = [ Work(s, p, q) ];
 		var visited = [];
 		return checkConformanceAux( work, visited );
 	}
@@ -172,36 +141,38 @@ console.debug( '' );
 			var w = work.pop();
 
 			if( !contains( visited, w ) ){
-				var g = w.g;
 				var s = w.s;
 				var p = w.p;
 				var q = w.q;
 
 console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			
-				var left = step( g, s, p, q, true );
-				var right = step( g, s, q, p, false );
+				var left = step( s, p, q, true );
+				var right = step( s, q, p, false );
 				if( left === null || right === null )
 					return null; // fails
 
 				work = work.concat(left).concat(right);
 
-				visited.push( w );
+				visited.push( w ); //FIXME consider rebasing the indexes here
 			}
+
+			if( i > 100 )
+				error('loop bug...');
 		}
 		return visited;
 	}
 
 	// returns: potentially empty array of work or null
-	var step = function( g, s, p, q, isLeft ){
+	var step = function( s, p, q, isLeft ){
 		s = unfold(s); // I don't like this
 		p = unfold(p); // I don't like this
 
-		var W = function( g, s, p ){
+		var W = function( s, p ){ // should be R
 			if( isLeft )
-				return Work( g, s, p, q );
+				return Work( s, p, q );
 			else
-				return Work( g, s, q, p );
+				return Work( s, q, p );
 		};
 
 		//
@@ -213,7 +184,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			var res = [];
 			// protocol must consider *all* cases
 			for( var i=0; i<ss.length; ++i ){
-				var tmp = step( g, ss[i], p, q, isLeft );
+				var tmp = step( ss[i], p, q, isLeft );
 				// one failed!
 				if( tmp === null )
 					return null;
@@ -225,7 +196,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			var ss = s.inner();
 			// protocol only needs to consider *one* case
 			for( var i=0; i<ss.length; ++i ){
-				var tmp = step( g, ss[i], p, q, isLeft );
+				var tmp = step( ss[i], p, q, isLeft );
 				// one step, we are done
 				if( tmp !== null )
 					return tmp;
@@ -249,7 +220,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			var pp = p.inner();
 			// protocol only needs to consider *one* case
 			for( var i=0; i<pp.length; ++i ){
-				var tmp = step( g, s, pp[i], q, isLeft );
+				var tmp = step( s, pp[i], q, isLeft );
 				// one step, we are done
 				if( tmp !== null )
 					return tmp;
@@ -262,7 +233,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			var res = [];
 			// protocol must consider *all* cases
 			for( var i=0; i<pp.length; ++i ){
-				var tmp = step( g, s, pp[i], q, isLeft );
+				var tmp = step( s, pp[i], q, isLeft );
 				// one failed!
 				if( tmp === null )
 					return null;
@@ -273,7 +244,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 
 		// by (step:Recovery) of non-protocol states.
 		if( s.type !== types.RelyType && equals(s,p) ){
-			return [ W( g, NoneType, NoneType ) ];
+			return [ W( NoneType, NoneType ) ];
 		}
 
 		//
@@ -296,7 +267,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			}
 
 			if( equals( gs.guarantee(), gp.guarantee() ) ){
-				return [ W( g, gs.rely(), gp.rely() ) ];
+				return [ W( gs.rely(), gp.rely() ) ];
 			}
 		}
 
@@ -310,51 +281,73 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			// by (step:Open-Type)
 			// by (step:Open-Loc)
 			var u = unifyState( s, p );
-console.debug( '\t\t'+p.toString()+'\t\t>> '+u.toString() );
+//console.debug( '? '+s.toString()+'\t\t'+p.toString()+'\t\t>> '+u.toString() );
 			// substitute, check bound
 
-			return step( g, s, u, q, isLeft );
+			return step( s, u, q, isLeft );
 		}
 
-//TODO wasn't this suppose to be subtypign instead of 'equals'?
 		if( p.type === types.RelyType && subtype( s, p.rely() ) ){
 			// case analysis on the guarantee type, 'b'
 			var b = p.guarantee();
 
 			// by (step:Step)
 			if( b.type === types.GuaranteeType ){
-				return [ W( g, b.guarantee(), b.rely() ) ];
+				return [ W( b.guarantee(), b.rely() ) ];
 			}
 		
 			// by (step:Step-Type)
 			// by (step:Step-Loc)
 			if( b.type === types.ForallType ){
-				var i = b.inner();
-				var id = b.id();
-				var name = id.name();
-				var bound = b.bound();
 
-				// indexes remain unchanged for this protocol, because we pushed the
-				// forall declaration declaration to gamma. However, the other protocol
+				// WARNING: moving inside a quantifier of 'b'
+				// indexes remain unchanged for this protocol. However, the other protocol
 				// must be shifted to preserve its index.
-				q = shift( q, 0, 1 );
-				g = g.newScope( name, id, bound );
+				var i = b.inner(); // body of forall type: forall ?.'i'
+				q = shift( q, 0, 1 ); // shift 'q' to match new index depth
 				s = i.guarantee(); // state
 				p = i.rely(); //step
 
+				var tmp = rebase( s, p, q );
+				s = tmp[0];
+				p = tmp[1];
+				q = tmp[2];
+
 				if( isLeft )
-					return [ Work( g, s, p, q ) ];
+					return [ Work( s, p, q ) ];
 				else
-					return [ Work( g, s, q, p ) ];
+					return [ Work( s, q, p ) ];
 			}
 
 			// assume case is that of omitted '; none' a 'b' is the new state.
 			// assume that type was previously checked to be well-formed.
-			return [ W( g, b, NoneType ) ];
+			return [ W( b, NoneType ) ];
 		}
 
 		return null;
-	}
+	};
+
+	var rebase = function( s, a, b ){
+
+		var set = indexSet(s);
+		indexSet(a).forEach( function(v){ set.add(v); } );
+		indexSet(b).forEach( function(v){ set.add(v); } );
+		
+		if( set.size > 0 ){
+			var v = [];
+			set.forEach( function(val){ v.push(val); });
+			v.sort();
+			for( var i=0; i<v.length; ++i ){
+				if( v[i] !== i ){
+					s = shift( s, i, i-v[i] );
+					a = shift( a, i, i-v[i] );
+					b = shift( b, i, i-v[i] );
+				}
+			}
+		}
+		
+		return [s,a,b];
+	};
 
 		/*
 TODO: missing cases.	

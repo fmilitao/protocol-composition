@@ -192,3 +192,7 @@ not subtype forall X.int <: forall X<:int.X
 // <X> equals (forall Y <: X.H[Y]){int/X} == forall Y <: int.H[Y]
 // <Z> equals exists X<:Z.X == exists Y<:Z.Y
 // <Z><W> not equals exists X<:W.X == exists Y<:Z.Y
+//<B><A <: B> subtype forall X<:B.X <: A // X == A, iff A <: B
+//<B><A <: B> subtype A <: exists X<:B.X // X == A, iff A <: B
+// this should fail at the type creation level, since W is not bound on the right of <:
+//subtype exists X<:int.X <: exists W<:W.W
