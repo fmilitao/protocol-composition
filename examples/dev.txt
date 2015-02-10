@@ -1,12 +1,24 @@
+// BUG when exists has other types besides a guarantee
+
+// v1
+typedef Wait[p] = (exists A.( (rw p Held#A) => (rw p Held#A) ; Wait[p] ))
+					(+) ( (rw p Free#int) => (rw p Free#int) ; (rw p Free#int) )
+typedef Hold[p,A] = ( (rw p Held#A) => forall B.( (rw p Held#B) ; Hold[p,B] ) )
+					& ( (rw p Held#A) => (rw p Free#int) ; none )
+
+<q> share (rw q Held#int) as Wait[q] || Hold[q,int]
+<q><A> share (rw q Held#A) as Wait[q] || Hold[q,A]
 
 
-// v2
-typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
+// === Asymmetrically Shared Pair ===
 
-<q> share (rw q int) as Any[q] || Any[q]
-<q> share Any[q] as Any[q] || Any[q]
+typedef P[p,A,B] = rw p [A,B]
+typedef L[p,A] = exists C.( P[p,A,C] => forall A0.( P[p,A0,C] ; L[p,A0] ))
+typedef R[p,A] = exists D.( P[p,D,A] => forall A0.( P[p,D,A0] ; R[p,A0] ))
 
-/*
+//<q> share P[q,int,boolean] as L[q,int] || R[q,boolean] // FIXME unification error!
+
+
 
 // === Pipe Example ===
 
@@ -19,7 +31,6 @@ typedef T[p] = Empty[p] => ( Close[p] (+) Node[p] )
 typedef H[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 				( Close[p] => Close[p] ; Close[p] ) (+)
 				( exists X.( Hide[p,X] => Hide[p,X] ; H[p] ) ) // retries H
-
 
 <q> equals H[q] == H[q]
 <q> equals T[q] == T[q]
@@ -36,7 +47,11 @@ typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 <q> share (rw q int) as Nothing[q] || Full[q,int]
 
-// ----- HERE <<<<<<
+// v2
+typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
+
+<q> share (rw q int) as Any[q] || Any[q]
+<q> share Any[q] as Any[q] || Any[q]
 
 // v3
 typedef W = int -o int
@@ -50,34 +65,23 @@ typedef AddRemove[p,B] = rw p B => forall Y <: AR.( rw p Y ; AddRemove[p,Y] )
 
 <q> share (rw q AR) as AddOnly[q] || AddRemove[q,AR]
 
-// === Asymmetrically Shared Pair ===
-
-typedef P[p,A,B] = rw p [A,B]
-typedef L[p,A] = exists C.( P[p,A,C] => forall A0.( P[p,A0,C] ; L[p,A0] ))
-typedef R[p,A] = exists D.( P[p,D,A] => forall A0.( P[p,D,A0] ; R[p,A0] ))
-
-
-// <q> share (P[q,int,boolean]) as L[q,int] || R[q,boolean] // FIXME unification error!
+// >>> here
 
 share none as none || none
-
-*/
-
-/*
 
 // === Extending Existing Step ===
 
 // v0
-typedef Hold0[p] = ( rw p Held#[] => rw p Held#[] ; Hold0[p] ) &
-					( rw p Held#[] => rw p Free#int ; none )
-typedef Wait0[p] = ( rw p Held#[] => rw p Held#[] ; Wait0[p] ) (+)
-					( rw p Free#int => rw p Free#int ; rw p Free#int )
+typedef Hold0[p] = ( (rw p Held#[]) => (rw p Held#[]) ; Hold0[p] ) &
+					( (rw p Held#[]) => (rw p Free#int) ; none )
+typedef Wait0[p] = ( (rw p Held#[]) => (rw p Held#[]) ; Wait0[p] ) (+)
+					( (rw p Free#int) => (rw p Free#int) ; (rw p Free#int) )
 
-// v1
-typedef Wait[p] = exists A.( ( rw p Held#A => rw p Held#A ; Wait[p] ) 
-					(+) ( rw p Free#int => rw p Free#int ; rw p Free#int ) )
-typedef Hold[p,A] = ( rw p Held#A => forall B.( rw p Held#B ; Hold[B] ) )
-					& ( rw p Held#A => rw p Free#int ; none )
+<q> share (rw q Held#[]) as Hold0[q] || Wait0[q]
+
+
+/*
+
 
 // v2 - re-split of Hold
 typedef Hold1[p] = ( rw p Held#inner#[] => rw p Held#Inner#[] ; Hold1[p] )

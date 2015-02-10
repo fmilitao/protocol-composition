@@ -108,7 +108,7 @@ var TypeChecker = (function( AST, exports ){
 			// now unify the inner step, if needed in case of nested exists
 			t = unifyExists( state, t );
 
-			error( t.type === types.RelyType || ('@unifyExists: invalid unification for '+t) );
+			error( t.type === types.RelyType || ('@unifyExists: invalid unification for: '+t) );
 
 			// moves 'state' inside the existential bound
 			state = shift( state, 0, 1 );
@@ -173,7 +173,7 @@ console.debug( '' );
 				var q = w.q;
 
 console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
-			
+
 				var left = step( s, p, q, true );
 				var right = step( s, q, p, false );
 				if( left === null || right === null )
@@ -196,6 +196,11 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 		p = unfold(p); // I don't like this
 
 		var R = function( s, p ){
+			var tmp = reIndex( s, p, q );
+			s = tmp[0];
+			p = tmp[1];
+			q = tmp[2];
+
 			return isLeft ? Work( s, p, q ) : Work( s, q, p );
 		};
 
@@ -302,11 +307,6 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				p = new RelyType( shift( p.rely(), 0, 1 ), gs.inner() );
 				q = shift( q, 0, 1 ); // must match same depth as others
 
-				var tmp = rebase( s, p, q );
-				s = tmp[0];
-				p = tmp[1];
-				q = tmp[2];
-
 				return step( s, p, q, isLeft );
 			}
 
@@ -353,7 +353,11 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			if( p.type === types.ExistsType ){
 				// attempts to find matching type/location to open existential
 				// correctness of type bound is checked inside 'unifyExists'
-				return step( s, unifyExists( s, p ), q, isLeft );
+try{ //FIXME! exceptions make this messy
+					return step( s, unifyExists( s, p ), q, isLeft );
+				}catch(e){
+					return null;
+				}
 			}
 
 			// by (ss:ForallType) and by (ss:ForallLoc)
@@ -366,11 +370,6 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 					);
 				q = shift( q, 0, 1 );
 				s = shift( s, 0, 1 );
-
-				var tmp = rebase( s, p, q );
-				s = tmp[0];
-				p = tmp[1];
-				q = tmp[2];
 
 				return step( s, p, q, isLeft );
 			}
@@ -392,8 +391,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 		}
 	};
 
-	var rebase = function( s, a, b ){
-
+	var reIndex = function( s, a, b ){
 		var set = indexSet(s);
 		indexSet(a).forEach( function(v){ set.add(v); } );
 		indexSet(b).forEach( function(v){ set.add(v); } );
