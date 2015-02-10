@@ -243,47 +243,97 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 		}
 
 		// by (step:Recovery) of non-protocol states.
-		if( s.type !== types.RelyType && equals(s,p) ){
+		if( !isProtocol(s) && equals(s,p) ){
 			return [ W( NoneType, NoneType ) ];
 		}
 
 		//
 		// Protocol Stepping
 		//
+// FIXME: changes of using 'subtyping' must be reflected on draft!
 
-		// by (step:SimProtocol) --- FIXME: changes must be reflected on draft!
-		if( s.type === types.RelyType && p.type === types.RelyType &&
-			subtype( s.rely(), p.rely()) ){
+		if( isProtocol(s) ){
 
-			// check 's' and 'o' guarantee: ( G ; R )
-			var gs = s.guarantee();
-			var gp = p.guarantee();
-			// must account for omitted guarantee (i.e.: G == G ; none)
-			if( gs.type !== types.GuaranteeType ){
-				gs = new GuaranteeType( gs, NoneType );
-			}
-			if( gp.type !== types.GuaranteeType ){
-				gp = new GuaranteeType( gp, NoneType );
+			// by (ps:ExistsType) and by (ps:ExistsLoc)
+			if( s.type === types.ExistsType && p.type === types.ExistsType ){
+
+				if( s.id().type !== p.id().type )
+					return null; // type mismatch
+				//TODO: also check bound
+
+				return step ( s.inner() , p.inner(), q, isLeft );
 			}
 
-			if( equals( gs.guarantee(), gp.guarantee() ) ){
-				return [ W( gs.rely(), gp.rely() ) ];
+			if( s.type === types.RelyType && p.type === types.RelyType && subtype( s.rely(), p.rely()) ){
+
+				// check 's' and 'p' guarantee: ( G ; R )
+				var gs = s.guarantee();
+				var gp = p.guarantee();
+
+				// by (ps:ForallType) and by (ps:ForallLoc)
+				if( gs.type === types.ForallType && gp.type === types.ForallType ){
+					if( gs.id().type !== gp.id().type )
+						return null;
+					//TODO: also check bound
+
+					// move inside the forall
+					gs = gs.inner();
+					gp = gp.inner();
+					q = shift( q, 0, 1 ); // must match same depth
+
+					if( equals( gs.guarantee(), gp.guarantee() ) ){
+						var tmp = rebase( gs.rely(), gp.rely(), q );
+						gs = tmp[0];
+						gp = tmp[1];
+						q = tmp[2];
+
+						if( isLeft )
+							return [ Work( gs, gp, q ) ];
+						else
+							return [ Work( gs, q, gp ) ];
+					}
+
+				}
+			
+				// by (ps:TypeApp) and by (ps:LocApp)
+				if( gs.type === types.ForallType && gp.type !== types.ForallType ){
+					// attempt to unify the guarantee
+					
+					var u = unifyState( gs, gp );
+// FIXME ... getting dizzy.
+					// unshift 'gs'
+					// check that guarantees match
+					return [ Work( gs, q, gp ) ];
+				}
+
+
+				// by (ps:Step)
+				// account for omitted guarantee (i.e.: 'G' == 'G ; none')
+				if( gs.type !== types.GuaranteeType ){
+					gs = new GuaranteeType( gs, NoneType );
+				}
+				if( gp.type !== types.GuaranteeType ){
+					gp = new GuaranteeType( gp, NoneType );
+				}
+
+				// guaranteed state must match
+				if( equals( gs.guarantee(), gp.guarantee() ) ){
+					return [ W( gs.rely(), gp.rely() ) ];
+				}
 			}
+			
+			return null;
 		}
 
 		//
-		// State Stepping
+		// State Stepping (i.e. else)
 		//
 		
 		// attempts to find matching type/location to open existential
 		if( p.type === types.ExistsType ){
-// TODO: check bound?
-			// by (step:Open-Type)
-			// by (step:Open-Loc)
+			// by (ss:OpenType) and by (ss:OpenLoc)
 			var u = unifyState( s, p );
-//console.debug( '? '+s.toString()+'\t\t'+p.toString()+'\t\t>> '+u.toString() );
-			// substitute, check bound
-
+			// TODO: check bound if necessary.
 			return step( s, u, q, isLeft );
 		}
 
@@ -291,13 +341,12 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			// case analysis on the guarantee type, 'b'
 			var b = p.guarantee();
 
-			// by (step:Step)
+			// by (ss:Step)
 			if( b.type === types.GuaranteeType ){
 				return [ W( b.guarantee(), b.rely() ) ];
 			}
 		
-			// by (step:Step-Type)
-			// by (step:Step-Loc)
+			// by (ss:Step-Type) and by (ss:Step-Loc)
 			if( b.type === types.ForallType ){
 
 				// WARNING: moving inside a quantifier of 'b'
@@ -348,32 +397,6 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 		
 		return [s,a,b];
 	};
-
-		/*
-TODO: missing cases.	
-	// forall
-	if $p = A_0 => \forall X <: A_1. ( A_2 ; P ) $ and $q = A_0 => \forall X <: A_1 .( A_2 ; Q )$ then
-		work.add( ($\Gamma, X : \kb{type}, X <: A_1$), $P$, $Q$ ); // by (step:SimForallType)
-		return true
-	
-	if $p = A_0 => \forall t. ( A_1 ; P ) $ and $q = A_0 => \forall t.( A_1 ; Q )$ then
-		work.add( ($\Gamma, t : \kb{loc}$), $P$, $Q$ ); // by (step:SimForallLoc)
-		return true
-
-	// exists
-	if $p = \exists t.P $ and $q = \exists t.Q$ then
-		return stepSim( ($\Gamma, t : \kb{loc}$), $P$, $Q$ ) // by (step:SimExistsLoc)
-
-	if $p = \exists X <: A.P $ and $q = \exists X <: A.Q$ then
-		return stepSim( ($\Gamma, X : \kb{type}, X <: A$), $P$, $Q$ ) // by (step:SimExistsType)
-
-	// application
-	if $p = A => \forall X <: D.P $ and $q = A => Q$ and unify($Q$, $P$, $X$) = $D'$ and $\Gamma |- D' <: D$ then
-		return stepSim( $\Gamma$, $P\{D'/X\}$, $Q$ ) // by (step:SimTypeApp)
-		
-	if $p = A => \forall t.P $ and $q = A => Q$ and unify($Q$, $P$, $t$) = $t'$ then
-		return stepSim( $\Gamma$, $A => P\{t'/t\}$, $A => Q$ ) // by (step:SimLocApp)
-	*/
 
 	/**
 	 * @param {AST} ast, tree to check

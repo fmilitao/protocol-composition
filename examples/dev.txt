@@ -1,4 +1,13 @@
 
+
+// v2
+typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
+
+<q> share (rw q int) as Any[q] || Any[q]
+<q> share Any[q] as Any[q] || Any[q]
+
+/*
+
 // === Pipe Example ===
 
 typedef   Node[p] = exists q.( (rw p Node#![element: int, next: ref q]) * H[q] )
@@ -27,11 +36,7 @@ typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 <q> share (rw q int) as Nothing[q] || Full[q,int]
 
-// v2
-typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
-
-<q> share (rw q int) as Any[q] || Any[q]
-// <q> share Any[q] as Any[q] || Any[q] // FIXME!!
+// ----- HERE <<<<<<
 
 // v3
 typedef W = int -o int
@@ -55,6 +60,8 @@ typedef R[p,A] = exists D.( P[p,D,A] => forall A0.( P[p,D,A0] ; R[p,A0] ))
 // <q> share (P[q,int,boolean]) as L[q,int] || R[q,boolean] // FIXME unification error!
 
 share none as none || none
+
+*/
 
 /*
 
