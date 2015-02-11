@@ -1,23 +1,5 @@
-// v2
-typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
 
-<q> share (rw q int) as Any[q] || Any[q]
-<q> share Any[q] as Any[q] || Any[q]
-
-/*
-// === Futures ===
-
-typedef E = rw t Empty#[]
-typedef D = rw t Done#A
-typedef D[X] = rw t Done#X
-
-//typedef Join, same as before
-typedef Future = ( E => E ; Future ) (+) ( D => D ; D )
-				// ensures D#? remains intact
-				& ( E => E ; X ) (+) exists Y.( D[Y] => D[Y] ; X )
-
-*/
-
+share none as none || none
 
 // === Asymmetrically Shared Pair ===
 
@@ -27,8 +9,6 @@ typedef R[p,A] = exists X.( P[p,X,A] => forall Y.( P[p,X,Y] ; R[p,Y] ) )
 
 <q> share P[q,int,boolean] as L[q,int] || R[q,boolean]
 <q><A><B> share P[q,A,B] as L[q,A] || R[q,B]
-
-share none as none || none
 
 
 // === Pipe Example ===
@@ -58,7 +38,11 @@ typedef  Full[p,B] = rw p B => forall Y.( rw p Y ; Full[p,Y] )
 
 <q> share (rw q int) as Nothing[q] || Full[q,int]
 
-// >>>>>
+// v2
+typedef Any[p] = exists Y.( rw p Y => forall X.( rw p Y ; Any[p] ) )
+
+<q> share (rw q int) as Any[q] || Any[q]
+<q> share Any[q] as Any[q] || Any[q]
 
 // v3
 typedef W = int -o int
@@ -110,7 +94,16 @@ typedef M[t] = ( Wait[t] => Wait[t] ; M[t] ) (+) ( Result[t] => Done[t] ; Done[t
 
 <q> share (Wait[q]) as F[q] || M[q]
 
+// === FUTURES ===
 
+typedef Join[t] = (rw t Empty#[]) => (rw t Done#int) ; none
+typedef Future[t] =
+	( (rw t Empty#[]) => (rw t Empty#[]) ; Future[t] )
+	(+) 
+	// choice on what to do: either leave it as done or recover
+	( ( (rw t Done#int) => (rw t int) ; (rw t int) ) & ( exists Y.( (rw t Done#Y) => (rw t Done#Y) ; Future[t] ) ) )
+
+<q> share (rw q Empty#[]) as Future[q] || Join[q]
 
 
 /*
