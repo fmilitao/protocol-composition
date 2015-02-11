@@ -65,40 +65,6 @@ var TypeChecker = (function( AST, exports ){
 		return n[0] === n[0].toUpperCase();
 	}
 
-	// "forall x.s" >> "p ; ..."
-//FIXME test me...
-/*
-	var unifyForall = function( g, state ){
-		if( g.type === types.Forall ){
-			var t = g.inner();
-			var i = g.id();
-
-			// in case of nested foralls
-			t = unifyForall( t, state );
-
-			//...
-			error( t.type === types.GuaranteeType || ('@unifyForall: invalid unification for '+t) );
-
-			// move state inside the forall depth
-			state = shift( state, 0, 1 );
-			var x = unify( i, t.guarantee(), state );
-
-			error( x !== false || ('@unifyForall: invalid unification for '+t.guarantee()+' and '+state) );
-
-			// if 'x' contains some non-empty valid type that was unified
-			if( x !== true ){
-				// assuming type was already shifted
-				t = substitution( t, i, x );
-				// unshift because we are opening the forall
-				t = shift( t, 0, -1 );
-			}
-
-			return t;
-		}
-
-		return g;
-	} */
-
 	var unifyRely = function( id, step, state ){
 		switch( step.type ){
 			case types.ExistsType:
@@ -138,7 +104,45 @@ var TypeChecker = (function( AST, exports ){
 			default:
 				return false;
 		}
-	}
+	};
+
+	var unifyGuarantee = function( id, step, state ){
+		switch( step.type ){
+			case types.ForallType:
+				return unifyGuarantee( shift( id, 0, 1 ), step.inner(), shift( state, 0, 1 ) );
+			case types.GuaranteeType:
+				return unify( id, step.guarantee(), state );
+			case types.AlternativeType: {
+				var is = step.inner();
+				for( var i=0; i<is.length; ++i ){
+					var tmp = unifyGuarantee( id, is[i], state );
+					// if found one unification that is valid (either empty or not)
+					if( tmp !== false )
+						return tmp;
+				}
+				return false;
+			}
+			case types.IntersectionType: {
+				var is = step.inner();
+				var res = null; // assuming at least one element in 'is'
+				for( var i=0; i<is.length; ++i ){
+					var tmp = unifyGuarantee( id, is[i], state );
+					// if one fails, they all do.
+					if( tmp === false )
+						return tmp;
+					if( res === null ){
+						res = tmp;
+					}else{
+						if( !equals( res, tmp ) )
+							return false;
+					}
+				}
+				return res;
+			}
+			default:
+				return false;
+		}
+	};
 
 	var contains = function( visited, w ){
 		for( var v of visited ){
@@ -153,7 +157,7 @@ var TypeChecker = (function( AST, exports ){
 		}
 
 		return false;
-	}
+	};
 
 	//
 	// Protocol Conformance
@@ -161,14 +165,14 @@ var TypeChecker = (function( AST, exports ){
 
 	var Work = function( s, p, q ){
 		return { s: s, p: p, q: q };
-	}
+	};
 
 	var checkConformance = function( g, s, p, q ){
 		// we can ignore 'g' because of using indexes
 		var work = [ Work( s, p, q ) ];
 		var visited = [];
 		return checkConformanceAux( work, visited );
-	}
+	};
 
 	var checkConformanceAux = function( work, visited ){
 
@@ -324,9 +328,31 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			if( s.type === types.RelyType && s.guarantee().type === types.ForallType &&
 				p.type === types.RelyType && p.guarantee().type !== types.ForallType ){
 				// unifies the guarantee of 's' with that of 'p'
-				// bounds are checked inside 'unifyForall'
-				s = new RelyType( s.rely(), unifyForall( s.guarantee(), p.guarantee().guarantee() ) );
-				return step( s, p, q, isLeft );
+				var b = s.guarantee();
+				var i = b.id();
+				var t = b.inner();
+
+				// find the guarantee:
+				b = p.guarantee();
+				if( b.type === types.GuaranteeType )
+					b = b.guarantee();
+				// else the next step was omitted.
+
+				// shifts 'b' to the same depth as 't'
+				var x = unifyGuarantee( i, t, shift( b, 0, 1 ) );
+				
+				// fails to unify
+				if( x === false )
+					return null;
+				// TODO: check bound
+				// is some valid unification
+				if( x !== true ){
+					t = substitution( t, i, x );
+				}
+				// unshift because we are opening the forall
+				t = shift( t, 0, -1 );
+
+				return step( new RelyType( s.rely(), t ), p, q, isLeft );
 			}
 
 			// by (ps:Step)
