@@ -1,6 +1,31 @@
 
 share none as none || none
 
+// === MVars ====
+
+typedef M_E[t] = rw t Empty#[]
+typedef M_F[t] = rw t Full#int
+
+typedef MVar[t] = 
+	( ( M_E[t] => M_E[t] ; MVar[t] ) & ( M_E[t] => M_F[t] ; MVar[t] ) )
+	(+) 
+	( ( M_F[t] => M_E[t] ; MVar[t] ) & ( M_F[t] => M_F[t] ; MVar[t] ) )
+
+<q> share M_E[q] as MVar[q] || none
+<q> share M_E[q] as MVar[q] || MVar[q]
+<q> share MVar[q] as MVar[q] || MVar[q]
+
+// abstracting the contents of Empty / Full:
+typedef MVar2[t] = 
+	(exists Z.( (rw t Empty#Z) => (rw t Empty#Z) ; MVar2[t] ) & ( (rw t Empty#Z) => M_F[t] ; MVar2[t] ) )
+	(+) 
+	( ( M_F[t] => M_E[t] ; MVar2[t] ) & (exists Y.( (rw t Full#Y) => (rw t Full#Y) ; MVar2[t] ) ) )
+
+<q> share M_E[q] as MVar2[q] || none
+<q> share M_E[q] as MVar2[q] || MVar2[q]
+<q> share MVar2[q] as MVar2[q] || MVar2[q]
+
+
 // === Asymmetrically Shared Pair ===
 
 typedef P[p,A,B] = rw p [A,B]
@@ -105,39 +130,6 @@ typedef Future[t] =
 
 <q> share (rw q Empty#[]) as Future[q] || Join[q]
 
-
-/*
-
-// === OLD RE-SPLIT EXAMPLES ===
-
-// 1.
-typedef R = E => E ; R & E => N (+) C; ( ( N => N ; N ) (+) ( C => C ; C ) )
-// splits into:
-typedef R0 = E => N (+) C ; none
-typedef R1 = E => E; R1 (+) ( N => N ; N ) (+) ( C => C;C )
-
-// 2. U splits arbitrarily
-typedef U = NE (+) E => NE ; UN
-typedef UN = NE => NE ; UN
-
-// 3.
-typedef M = N => P ; M
-typedef MM = ( P => N; M ) & ( N => P; MM )
-
-// 4.
-typedef J = ( (F => F; J) & (F => R; R => R; R) )
-typedef J0 = F => R ; none
-typedef J1 = ( F => F ; J1 ) (+) ( R => R ; R )
-// re-split:
-typedef J10 = ( F => F; J10 ) (+) ( R => D )
-typedef J11 = ( F => F; J11 ) (+) J11A
-typedef J11A = ( R => R; J11A ) (+) ( D => D; D )
-
-// 5.
-typedef L = H => F ; F => F; F
-typedef LL = ( H => F ; none ) (+) ( F => F ; F )
-
-*/
 
 /*
 // these types are invalid because they are bottom types.

@@ -121,3 +121,13 @@ typedef H[p] = ( E[p] => E[p] ; H[p] ) (+) ( N[p] => N[p] ; N[p] ) (+) ( C[p] =>
 typedef O[p] = ( E[p] => E[p] ; O[p] ) & ( E[p] => N[p] (+) C[p] ; ( N[p] => N[p] ; N[p] ) (+) ( C[p] => C[p] ; C[p] ) )
 
 <t> share O[t] as T[t] || H[t]
+
+// old "monotonically sharing ADT" example
+	// NE -> non-empty stack and E for empty stack.
+	// U = ( NE (+) E ) => NE ; rec X.( NE => NE ; X )
+
+typedef U[t] = ( (rw t NE#[]) (+) (rw t E#[]) ) => (rw t NE#[]) ; UN[t]
+typedef UN[t] = (rw t NE#[]) => (rw t NE#[]) ; UN[t]
+
+<q> share (rw q NE#[]) as U[q] || U[q]
+<q> share U[q] as U[q] || U[q]

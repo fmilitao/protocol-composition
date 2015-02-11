@@ -217,9 +217,11 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			return isLeft ? Work( s, p, q ) : Work( s, q, p );
 		};
 
-		//
-		// break down of STATE
-		//
+		// by (rs:None)
+		if( p.type === types.NoneType ){
+			// no need to add new work, we already know this configuration steps
+			return [];
+		}
 
 		// by (rs:StateAlternative)
 		if( s.type === types.AlternativeType ){
@@ -236,44 +238,6 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			return res;
 		}
 
-		// by (rs:StateIntersection)
-		if( s.type === types.IntersectionType ){
-			var ss = s.inner();
-			// protocol only needs to consider *one* case
-			for( var i=0; i<ss.length; ++i ){
-				var tmp = step( ss[i], p, q, isLeft );
-				// one step, we are done
-				if( tmp !== null )
-					return tmp;
-			}
-			// did not find a good step, fail.
-			return null;
-		}
-
-		//
-		// break down of PROTOCOL
-		//
-
-		// by (rs:None)
-		if( p.type === types.NoneType ){
-			// no need to add new work, we already know this configuration steps
-			return [];
-		}
-
-		// by (rs:ProtocolAlternative)
-		if( p.type === types.AlternativeType ){
-			var pp = p.inner();
-			// protocol only needs to consider *one* case
-			for( var i=0; i<pp.length; ++i ){
-				var tmp = step( s, pp[i], q, isLeft );
-				// one step, we are done
-				if( tmp !== null )
-					return tmp;
-			}
-			// did not find a good step, fail.
-			return null;
-		}
-
 		// by (rs:ProtocolIntersection)
 		if( p.type === types.IntersectionType ){
 			var pp = p.inner();
@@ -288,6 +252,35 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			}
 			return res;
 		}
+
+		// by (rs:ProtocolAlternative)
+		if( p.type === types.AlternativeType ){
+			var pp = p.inner();
+			// protocol only needs to consider *one* case
+			for( var i=0; i<pp.length; ++i ){
+				var tmp = step( s, pp[i], q, isLeft );
+				// one steps, we are done
+				if( tmp !== null )
+					return tmp;
+			}
+			// did not find a good step, fail.
+			return null;
+		}
+
+		// by (rs:StateIntersection)
+		if( s.type === types.IntersectionType ){
+			var ss = s.inner();
+			// protocol only needs to consider *one* case
+			for( var i=0; i<ss.length; ++i ){
+				var tmp = step( ss[i], p, q, isLeft );
+				// one steps, we are done
+				if( tmp !== null )
+					return tmp;
+			}
+			// did not find a good step, fail.
+			return null;
+		}
+
 
 // FIXME: changes of using 'subtyping' must be reflected on draft!
 
