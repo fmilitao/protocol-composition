@@ -1,3 +1,10 @@
+
+typedef P[p,A,B] = rw p [A,B]
+typedef L[p,A] = exists X.( P[p,A,X] => forall Y.( P[p,Y,X] ; L[p,Y] ) )
+typedef R[p,A] = exists X.( P[p,X,A] => forall Y.( P[p,X,Y] ; R[p,Y] ) )
+
+<q> share P[q,int,boolean] as L[q,int] || R[q,boolean]
+
 /*
 // === Futures ===
 
@@ -12,16 +19,10 @@ typedef Future = ( E => E ; Future ) (+) ( D => D ; D )
 
 */
 
-
 // ----
 
 // === Asymmetrically Shared Pair ===
 
-typedef P[p,A,B] = rw p [A,B]
-typedef L[p,A] = exists C.( P[p,A,C] => forall A0.( P[p,A0,C] ; L[p,A0] ))
-typedef R[p,A] = exists D.( P[p,D,A] => forall A0.( P[p,D,A0] ; R[p,A0] ))
-
-//<q> share P[q,int,boolean] as L[q,int] || R[q,boolean] // FIXME unification error!
 share none as none || none
 
 

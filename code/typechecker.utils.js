@@ -1124,13 +1124,13 @@ var TypeChecker = (function( exports ){
 		var t = d.getDefinition();
 		var args = d.args();
 		var pars = d.getParams();
+		// WARNING assumes same length in 'args' and in 'pars'
 		// type definitions will only replace Type or Location Variables, we
 		// can use the simpler kind of substitution.
 		for(var i=(args.length-1);i>=0;--i){
-			t = substitution(t,pars[i],args[i]);
+			t = substitution( t, pars[i], shift( args[i], 0, pars.length ) );
 		}
-		// since a typedef does not have enclosing environment, we do not need to
-		// shift by -1 for type 't' as it does not have free variables here.
+		t = shift( t, 0, -pars.length );
 		return t;
 	};
 

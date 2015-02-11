@@ -187,7 +187,6 @@ console.debug( '' );
 				var q = w.q;
 
 console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
-
 				var left = step( s, p, q, true );
 				var right = step( s, q, p, false );
 				if( left === null || right === null )
@@ -393,7 +392,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				var t = p.inner();
 				// shifts 's' to the same depth as 't'
 				var x = unifyRely( i, t, shift( s, 0, 1 ) );
-				
+
 				// fails to unify
 				if( x === false )
 					return null;
@@ -404,6 +403,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				}
 				// unshift because we are opening the existential
 				t = shift( t, 0, -1 );
+				
 				return step( s, t, q, isLeft );
 			}
 
