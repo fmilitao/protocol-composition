@@ -67,6 +67,7 @@ var TypeChecker = (function( AST, exports ){
 
 	// "forall x.s" >> "p ; ..."
 //FIXME test me...
+/*
 	var unifyForall = function( g, state ){
 		if( g.type === types.Forall ){
 			var t = g.inner();
@@ -96,38 +97,47 @@ var TypeChecker = (function( AST, exports ){
 		}
 
 		return g;
-	}
+	} */
 
-	var unifyExists = function( state, protocol ){
-
-		if( protocol.type === types.ExistsType ){
-			var t = protocol.inner();
-			var i = protocol.id();
-			//var b = protocol.bound(); //FIXME check bound?
-
-			// now unify the inner step, if needed in case of nested exists
-			t = unifyExists( state, t );
-
-			error( t.type === types.RelyType || ('@unifyExists: invalid unification for: '+t) );
-
-			// moves 'state' inside the existential bound
-			state = shift( state, 0, 1 );
-			var x = unify( i, t.rely(), state );
-
-			error( x !== false || ('@unifyExists: invalid unification for '+t.rely()+' and '+state) );
-
-			// if 'x' contains some non-empty valid type that was unified
-			if( x !== true ){
-				// assuming type was already shifted
-				t = substitution( t, i, x );
-				// unshift because we are opening the existential
-				t = shift( t, 0, -1 );
+	var unifyRely = function( id, step, state ){
+		switch( step.type ){
+			case types.ExistsType:
+				return unifyRely( // must shift indexes to match new depth
+					shift( id, 0, 1 ),
+					step.inner(),
+					shift( state, 0, 1 ) );
+			case types.RelyType:
+				return unify( id, step.rely(), state );
+			case types.AlternativeType: {
+				var is = step.inner();
+				for( var i=0; i<is.length; ++i ){
+					var tmp = unifyRely( id, is[i], state );
+					// if found one unification that is valid (either empty or not)
+					if( tmp !== false )
+						return tmp;
+				}
+				return false;
 			}
-
-			return t;
+			case types.IntersectionType: {
+				var is = step.inner();
+				var res = null; // assuming at least one element in 'is'
+				for( var i=0; i<is.length; ++i ){
+					var tmp = unifyRely( id, is[i], state );
+					// if one fails, they all do.
+					if( tmp === false )
+						return tmp;
+					if( res === null ){
+						res = tmp;
+					}else{
+						if( !equals( res, tmp ) )
+							return false;
+					}
+				}
+				return res;
+			}
+			default:
+				return false;
 		}
-
-		return protocol;
 	}
 
 	var contains = function( visited, w ){
@@ -353,11 +363,22 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			if( p.type === types.ExistsType ){
 				// attempts to find matching type/location to open existential
 				// correctness of type bound is checked inside 'unifyExists'
-try{ //FIXME! exceptions make this messy
-					return step( s, unifyExists( s, p ), q, isLeft );
-				}catch(e){
+				var i = p.id();
+				var t = p.inner();
+				// shifts 's' to the same depth as 't'
+				var x = unifyRely( i, t, shift( s, 0, 1 ) );
+				
+				// fails to unify
+				if( x === false )
 					return null;
+				// TODO: check bound
+				// is some valid unification
+				if( x !== true ){
+					t = substitution( t, i, x );
 				}
+				// unshift because we are opening the existential
+				t = shift( t, 0, -1 );
+				return step( s, t, q, isLeft );
 			}
 
 			// by (ss:ForallType) and by (ss:ForallLoc)

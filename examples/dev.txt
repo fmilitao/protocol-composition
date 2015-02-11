@@ -1,8 +1,7 @@
-// BUG when exists has other types besides a guarantee
 
 // v1
-typedef Wait[p] = (exists A.( (rw p Held#A) => (rw p Held#A) ; Wait[p] ))
-					(+) ( (rw p Free#int) => (rw p Free#int) ; (rw p Free#int) )
+typedef Wait[p] = exists A.( ( (rw p Held#A) => (rw p Held#A) ; Wait[p] )
+					(+) ( (rw p Free#int) => (rw p Free#int) ; (rw p Free#int) ) )
 typedef Hold[p,A] = ( (rw p Held#A) => forall B.( (rw p Held#B) ; Hold[p,B] ) )
 					& ( (rw p Held#A) => (rw p Free#int) ; none )
 
