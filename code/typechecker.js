@@ -301,7 +301,8 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 					return null; // type mismatch
 				//TODO: also check bound
 
-				return step ( s.inner() , p.inner(), q, isLeft );
+				// must shift index in 'q' to match depth of the opened existential
+				return step ( s.inner() , p.inner(), shift( q, 0, 1 ), isLeft );
 			}
 
 			// by (ps:ForallType) and by (ps:ForallLoc)
@@ -403,7 +404,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				}
 				// unshift because we are opening the existential
 				t = shift( t, 0, -1 );
-				
+
 				return step( s, t, q, isLeft );
 			}
 
@@ -447,11 +448,20 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			var v = [];
 			set.forEach( function(val){ v.push(val); });
 			v.sort();
+			// find shifting value
 			for( var i=0; i<v.length; ++i ){
 				if( v[i] !== i ){
-					s = shift( s, i, i-v[i] );
-					a = shift( a, i, i-v[i] );
-					b = shift( b, i, i-v[i] );
+					v[i] = i-v[i]-(i>0?v[i-1]:0);
+				}else{
+					v[i] = 0; // no shift
+				}
+			}
+			// apply shifts
+			for( var i=0; i<v.length; ++i ){
+				if( v[i] < 0 ){
+					s = shift( s, i, v[i] );
+					a = shift( a, i, v[i] );
+					b = shift( b, i, v[i] );
 				}
 			}
 		}
