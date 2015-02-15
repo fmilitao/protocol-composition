@@ -176,8 +176,8 @@ var TypeChecker = (function( AST, exports ){
 
 	var checkConformanceAux = function( work, visited ){
 
-var i=0;
-console.debug( '' );
+// var i=0;
+// console.debug( '' );
 		while( work.length > 0 ){
 			var w = work.pop();
 
@@ -186,7 +186,7 @@ console.debug( '' );
 				var p = w.p;
 				var q = w.q;
 
-console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
+// console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				var left = step( s, p, q, true );
 				var right = step( s, q, p, false );
 				if( left === null || right === null )
@@ -197,16 +197,96 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				visited.push( w );
 			}
 
-			if( i > 100 ) //FIXME this is temporary.
-				error('loop bug...');
+			// if( i > 100 ) //FIXME this is temporary.
+			// 	error('loop bug...');
 		}
 		return visited;
 	}
 
-	// returns: potentially empty array of work or null
 	var step = function( s, p, q, isLeft ){
-		s = unfold(s); // I don't like this
-		p = unfold(p); // I don't like this
+		// expands recursion
+		s = unfold(s);
+		p = unfold(p);
+
+		var res = singleStep( s, p, q, isLeft );
+		if( res !== null )
+			return res; // valid stepping
+		
+		// else step failed, attempt breaking 's' or 'p'
+		
+		// by (rs:StateAlternative)
+		if( s.type === types.AlternativeType ){
+			var ss = s.inner();
+			var res = [];
+			// protocol must consider *all* cases
+			for( var i=0; i<ss.length; ++i ){
+				var tmp = step( ss[i], p, q, isLeft );
+				// one failed!
+				if( tmp === null ){
+					res = null; // signal fail
+					break;
+				}
+				res = res.concat(tmp);
+			}
+
+			if( res !== null )
+				return res;
+			// else intentionally fall through
+		}
+
+		// by (rs:ProtocolIntersection)
+		if( p.type === types.IntersectionType ){
+			var pp = p.inner();
+			var res = [];
+			// protocol must consider *all* cases
+			for( var i=0; i<pp.length; ++i ){
+				var tmp = step( s, pp[i], q, isLeft );
+				// one failed!
+				if( tmp === null ){
+					res = null;
+					break;
+				}
+				res = res.concat(tmp);
+			}
+			if( res !== null )
+				return res;
+			// else intentionally fall through
+		}
+
+		// by (rs:ProtocolAlternative)
+		if( p.type === types.AlternativeType ){
+			var pp = p.inner();
+			// protocol only needs to consider *one* case
+			for( var i=0; i<pp.length; ++i ){
+				var tmp = step( s, pp[i], q, isLeft );
+				// one steps, we are done
+				if( tmp !== null )
+					return tmp;
+			}
+			
+			// did not find a good step, fall through.
+		}
+
+		// by (rs:StateIntersection)
+		if( s.type === types.IntersectionType ){
+			var ss = s.inner();
+			// protocol only needs to consider *one* case
+			for( var i=0; i<ss.length; ++i ){
+				var tmp = step( ss[i], p, q, isLeft );
+				// one steps, we are done
+				if( tmp !== null )
+					return tmp;
+			}
+
+			// did not find a good step, fall through.
+		}
+
+		// fails to step
+		return null;
+	};
+
+	// may return null on failed stepping, or set of new configurations
+	var singleStep = function( s, p, q, isLeft ){
 
 		var R = function( s, p ){
 			var tmp = reIndex( s, p, q );
@@ -222,67 +302,6 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 			// no need to add new work, we already know this configuration steps
 			return [];
 		}
-
-		// by (rs:StateAlternative)
-		if( s.type === types.AlternativeType ){
-			var ss = s.inner();
-			var res = [];
-			// protocol must consider *all* cases
-			for( var i=0; i<ss.length; ++i ){
-				var tmp = step( ss[i], p, q, isLeft );
-				// one failed!
-				if( tmp === null )
-					return null;
-				res = res.concat(tmp);
-			}
-			return res;
-		}
-
-		// by (rs:ProtocolIntersection)
-		if( p.type === types.IntersectionType ){
-			var pp = p.inner();
-			var res = [];
-			// protocol must consider *all* cases
-			for( var i=0; i<pp.length; ++i ){
-				var tmp = step( s, pp[i], q, isLeft );
-				// one failed!
-				if( tmp === null )
-					return null;
-				res = res.concat(tmp);
-			}
-			return res;
-		}
-
-		// by (rs:ProtocolAlternative)
-		if( p.type === types.AlternativeType ){
-			var pp = p.inner();
-			// protocol only needs to consider *one* case
-			for( var i=0; i<pp.length; ++i ){
-				var tmp = step( s, pp[i], q, isLeft );
-				// one steps, we are done
-				if( tmp !== null )
-					return tmp;
-			}
-			// did not find a good step, fail.
-			return null;
-		}
-
-		// by (rs:StateIntersection)
-		if( s.type === types.IntersectionType ){
-			var ss = s.inner();
-			// protocol only needs to consider *one* case
-			for( var i=0; i<ss.length; ++i ){
-				var tmp = step( ss[i], p, q, isLeft );
-				// one steps, we are done
-				if( tmp !== null )
-					return tmp;
-			}
-			// did not find a good step, fail.
-			return null;
-		}
-
-
-// FIXME: changes of using 'subtyping' must be reflected on draft!
 
 		if( isProtocol(s) ){
 			// PROTOCOL STEPPING
@@ -417,7 +436,7 @@ console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 
 			// by (ss:Step)
 			if( p.type === types.RelyType && subtype( s, p.rely() ) ){
-				var b = p.guarantee();
+				var b = p.guarantee(); // TODO missing subtyping on the guarantees
 				if( b.type === types.GuaranteeType ){
 					// single step of the protocol
 					return [ R( b.guarantee(), b.rely() ) ];

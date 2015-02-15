@@ -1,18 +1,7 @@
-//FIXME: well-formed check will flag some cases as wrong!
-//FIXME: this does not correctly recover ownership when considering the lock model!!
 
 /* === CONFORMANCE TESTS === */
 
 share none as none || none
-
-// Pipe
-typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
-					( rw p !(Closed#[]) => none ) (+) 
-					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
-
-typedef Tail[p] =  (rw p !Empty#[]) => ( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: Head[q])]) )
-
-<l> share (rw l !Empty#[]) as Head[l] || Tail[l]
 
 // Iteratively Sharing
 typedef G[f,c] = (rw f Free#[]) * (rw c [])
@@ -131,3 +120,13 @@ typedef UN[t] = (rw t NE#[]) => (rw t NE#[]) ; UN[t]
 
 <q> share (rw q NE#[]) as U[q] || U[q]
 <q> share U[q] as U[q] || U[q]
+
+// FIXME: old version use just for testing, but protocol is not well-formed! recovery is wrong!
+// Pipe
+typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
+					( rw p !(Closed#[]) => none ) (+) 
+					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
+
+typedef Tail[p] =  (rw p !Empty#[]) => ( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: Head[q])]) )
+
+<l> share (rw l !Empty#[]) as Head[l] || Tail[l]
