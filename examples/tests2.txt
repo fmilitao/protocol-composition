@@ -76,26 +76,6 @@ typedef HH[p] = rw p H#int
 	  ( HH[t] => FF[t] ; none ) (+) ( FF[t] => FF[t] ; FF[t] )
 	||( HH[t] => FF[t] ; none ) (+) ( FF[t] => FF[t] ; FF[t] )
 
-// Simple Monotonic 2-State Counter
-	//	rec X.( N => P ; rec Y.( P => N ; X & N => P ; Y ) )
-	//	>>
-	//	rec X.( N => P ; P => N ; X )
-	//	||	rec X.( N => P ; X )
-typedef NN[p] = rw p Z#[]+NZ#int
-typedef PP[p] = rw p NZ#int
-
-typedef IncOnly[p] =  NN[p] => PP[p] ; IncOnly[p]
-typedef Any[p] = NN[p] => PP[p]; PP[p] => NN[p] ; Any[p]
-
-typedef M0[p] = NN[p] => PP[p] ; M1[p]
-typedef M1[p] = ( PP[p] => NN[p] ; M0[p] ) & ( NN[p] => PP[p] ; M1[p] )
-
-<t> share NN[t] as IncOnly[t] || Any[t]
-<t> share M0[t] as IncOnly[t] || Any[t]
-
-<t> share IncOnly[t] as IncOnly[t] || IncOnly[t]
-<t> not share Any[t] as Any[t] || Any[t]
-
 // Pipe
 	//	    rec X.( E => E ; X & E => N (+) C ; ( N => N ; N ) (+) ( C => C ; C ) )
 	//	>>	E => N (+) C ; none
