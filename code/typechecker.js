@@ -381,8 +381,8 @@ var TypeChecker = (function( AST, exports ){
 					gp = new GuaranteeType( gp, NoneType );
 				}
 
-				// guarantee state must match
-				if( equals( gs.guarantee(), gp.guarantee() ) ){
+				// guarantee state must match  // TODO missing subtyping on the guarantees
+				if( equals( gp.guarantee(), gs.guarantee() ) ){
 					return [ R( gs.rely(), gp.rely() ) ];
 				}
 			}
@@ -436,7 +436,7 @@ var TypeChecker = (function( AST, exports ){
 
 			// by (ss:Step)
 			if( p.type === types.RelyType && subtype( s, p.rely() ) ){
-				var b = p.guarantee(); // TODO missing subtyping on the guarantees
+				var b = p.guarantee();
 				if( b.type === types.GuaranteeType ){
 					// single step of the protocol
 					return [ R( b.guarantee(), b.rely() ) ];

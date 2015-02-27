@@ -784,6 +784,22 @@ var TypeChecker = (function( exports ){
 		// "ref" t1: (ref p) <: !(ref p)
 		if ( t1.type === types.ReferenceType && t2.type === types.BangType )
 			return subtypeAux( t1, t2.inner(), trail );
+
+		// (st:PurifyRec)
+		if( t1.type === types.RecordType && t2.type === types.BangType &&
+				equals( t1, t2.inner() ) ){
+				var t1fields = t1.fields();
+				var allPure = true;
+				for( var k of t1fields.keys() ){
+					if( t1fields.get(k).type !== types.BangType ){
+						allPure = false;
+						break;
+					}
+				}
+				if( allPure )
+					return true;
+				// else intentionally fall through.
+		}
 		
 		if( t1.type !== types.AlternativeType && t2.type === types.AlternativeType ){
 			// only requirement is that t1 is one of t2's alternative
