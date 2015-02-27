@@ -176,8 +176,8 @@ var TypeChecker = (function( AST, exports ){
 
 	var checkConformanceAux = function( work, visited ){
 
- var i=0;
- console.debug( '' );
+// var i=0;
+// console.debug( '' );
 		while( work.length > 0 ){
 			var w = work.pop();
 
@@ -186,7 +186,7 @@ var TypeChecker = (function( AST, exports ){
 				var p = w.p;
 				var q = w.q;
 
- console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
+// console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
 				var left = step( s, p, q, true );
 				var right = step( s, q, p, false );
 				if( left === null || right === null )
@@ -381,10 +381,7 @@ var TypeChecker = (function( AST, exports ){
 					gp = new GuaranteeType( gp, NoneType );
 				}
 
-				// guarantee state must match  // TODO missing subtyping on the guarantees
-console.log( gp.guarantee() + ' == '+ gs.guarantee() +' ' + equals( gp.guarantee(), gs.guarantee() ) )
-console.log( gp.guarantee() + ' <: '+ gs.guarantee() +' ' + subtype( gp.guarantee(), gs.guarantee() ) )
-
+				// guarantee state must match
 				if( subtype( gp.guarantee(), gs.guarantee() ) ){
 					return [ R( gs.rely(), gp.rely() ) ];
 				}
