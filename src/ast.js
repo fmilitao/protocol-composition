@@ -1,7 +1,7 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
-/* 
+/*
  * GLOBALS defined:
  * 	- AST (for ast node kinds and creating nodes)
  *  - ErrorWrapper
@@ -11,7 +11,7 @@
  * Note: AST.kinds for ALL available kinds while each node will have an .kind to list its own kind of AST node.
  */
 
-// http://www.gnu.org/software/bison/manual/html_node/Actions-and-Locations.html#Actions-and-Locations 
+// http://www.gnu.org/software/bison/manual/html_node/Actions-and-Locations.html#Actions-and-Locations
 var AST = new function(){
 	var aux = function(id,ast, info){
 		ast.kind = id;
@@ -24,7 +24,7 @@ var AST = new function(){
 		}
 		return ast;
 	};
-	
+
 	var Enum = function() {
 	    for (var i in arguments) {
 	    	// technically, this would be more efficient with ints:
@@ -34,7 +34,7 @@ var AST = new function(){
 	        this[arguments[i]] = arguments[i];
 	    }
 	};
-	
+
 	this.kinds = new Enum (
 		// entry nodes
 		'PROGRAM',
@@ -96,7 +96,7 @@ var AST = new function(){
 		'LET_TUPLE',
 		'SUBSTITUTION'
 	);
-	
+
 	this.makeTypedef = function(id,type,pars,info){
 		return aux( this.kinds.TYPEDEF, {id:id,type:type,pars:pars}, info);
 	}
@@ -110,7 +110,7 @@ var AST = new function(){
 	this.makeSubstitution = function(type,to,from,info){
 		return aux( this.kinds.SUBSTITUTION, {type:type,to:to,from:from}, info);
 	}
-	
+
 	//
 	this.makeLetTuple = function(ids,val,exp,info){
 		return aux( this.kinds.LET_TUPLE, {ids:ids,val:val,exp:exp}, info);
@@ -133,7 +133,7 @@ var AST = new function(){
 	this.makeEquals = function(v,a,b,info){
 		return aux( this.kinds.EQUALS, {value:v,a:a,b:b}, info);
 	}
-	
+
 	// expressions
 	this.makeLet = function(id,val,exp, info){
 		return aux( this.kinds.LET, {id: id, val: val, exp: exp}, info);
@@ -145,7 +145,7 @@ var AST = new function(){
 		return aux( this.kinds.ASSIGN, {lvalue: lvalue, exp : exp}, info);
 	}
 	this.makeCall = function(fun,arg, info){
-		return aux( this.kinds.CALL, {fun: fun, arg : arg}, info);	
+		return aux( this.kinds.CALL, {fun: fun, arg : arg}, info);
 	}
 	this.makeDeRef = function(exp,info){
 		return aux( this.kinds.DEREF, {exp: exp}, info);
@@ -157,7 +157,7 @@ var AST = new function(){
 		return aux( this.kinds.DELETE, {exp: exp}, info);
 	}
 	this.makeFunction = function(rec,parms,exp,result,type_params,info){
-		return aux( this.kinds.FUN, {rec:rec,parms: parms, 
+		return aux( this.kinds.FUN, {rec:rec,parms: parms,
 			result:result, // recursive functions must give result
 			type_pars: type_params, // if rec function has type pars (foralls)
 			exp: exp}, info);
@@ -248,15 +248,15 @@ var AST = new function(){
 		return tmp;
 	}
 	this.makeStarType = function(l,r,info){
-		var types = merge( this.kinds.STAR_TYPE, l, r ); 
+		var types = merge( this.kinds.STAR_TYPE, l, r );
 		return aux( this.kinds.STAR_TYPE, {types:types}, info);
 	}
 	this.makeIntersectionType = function(l,r,info){
-		var types = merge( this.kinds.INTERSECTION_TYPE, l, r ); 
+		var types = merge( this.kinds.INTERSECTION_TYPE, l, r );
 		return aux( this.kinds.INTERSECTION_TYPE, {types: types}, info);
 	}
 	this.makeAlternativeType = function(l,r,info){
-		var types = merge( this.kinds.ALTERNATIVE_TYPE, l, r ); 
+		var types = merge( this.kinds.ALTERNATIVE_TYPE, l, r );
 		return aux( this.kinds.ALTERNATIVE_TYPE, {types: types}, info);
 	}
 
@@ -337,60 +337,6 @@ var assertF = function(kind,f,msg,ast){
 		debug = ( e || e.message );
 	}
 	if( error )
-		throw new ErrorWrapper(msg,kind,ast,debug); 
+		throw new ErrorWrapper(msg,kind,ast,debug);
 	return result;
-}
-
-var Parser = function(file){
-
-    var Jison = require('jison');
-    var bnf = require('jison/bnf');
-    
-    // synchronous fetch of grammar file (this doesn't work locally due to
-    // permissions on fetching from javascript, must be run in a server)
-    var r = new XMLHttpRequest();
-	r.open("GET", file, false); // async fetch
-	r.send(null);
-	if( r.status !== 200 ){
-		// some error HTTP code other than OK
-		throw new Error('Failed to fetch grammar "'+file+'" ('+r.status+')');
-	}
-
-    var cfg = bnf.parse( r.responseText );
-    var parser = new Jison.Generator(cfg, { type : "lalr" });
-	
-    if ( parser.conflicts ) {
-    	// taken from Jison's example file
-    	var msg = 'Error generating parser, conflicts encountered:';
-        parser.resolutions.forEach(function(res) {
-            var r = res[2];
-            if (!r.bydefault)
-                return null;
-			msg = msg + '\n' +
-				// Jison's style error message 
-				(r.msg + "\n" + "(" + r.s + ", " + r.r + ") -> " + r.action);
-        });
-        throw new Error(msg);
-    }
-    
-	parser = parser.createParser();
-    
-	return (function(p){
-		return function(source){
-			try{
-				return p.parse(source);
-			}catch(e){
-				// wraps parser exception into one that has line numbers, etc.
-				throw new ErrorWrapper(
-					e.message,
-					'Parse Error',
-					// lexer.yylineno works better than just yylineno
-					// however, we must consider the whole line to be wrong
-					{ line: p.lexer.yylineno, col: 0 },
-					e,
-					e.stack
-				);
-			}
-		};
-	})(parser);    
 }

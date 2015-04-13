@@ -13,7 +13,7 @@ FIXMES:
 
 * missing failure tests on conformance on 'test2.txt'
 
-* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bouned quantification.
+* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bounded quantification.
 
 
 - define error constants/enum instead of having constants spread out through the code.
@@ -30,4 +30,3 @@ Extra Credits:
 
 - Types and Programming Languages, Chapter 6 (for De Bruijn stuff).
 - Subtyping Recursive Types, for recursion checks.
-

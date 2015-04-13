@@ -43,8 +43,9 @@ if( !worker_enabled ){
 	var MAIN_HANDLER = null;
 
 	console.log('importing scripts to run locally...');
-	importScript('lib/jison.js');
+	importScript('lib/jison.js'); // FIXME: make this conditional on parser.js
 	importScript('src/ast.js');
+	importScript('src/parser.js');
 	importScript('src/typechecker.types.js');
 	importScript('src/typechecker.utils.js');
 	importScript('src/typechecker.js');
