@@ -3,7 +3,6 @@
 /// <reference path='../lib/def/ace.d.ts' />
 /// <reference path='../lib/def/jquery.d.ts' />
 /// <reference path='../lib/def/chrome.d.ts' />
-var MAIN_HANDLER = null;
 var Setup;
 (function (Setup) {
     var INFO = "info";
@@ -382,49 +381,25 @@ var Setup;
             };
         })();
         var comm = new function () {
+            var send, resetWorker;
+            Comm.MainThread.setReceiver(handle);
             if (worker_enabled) {
-                var worker = null;
-                this.resetWorker = function () {
-                    if (worker !== null) {
-                        worker.terminate();
-                    }
-                    worker = new Worker(WORKER_JS);
-                    worker.addEventListener('message', function (e) {
-                        var m = e.data;
-                        try {
-                            handle[m.kind](m.data);
-                        }
-                        catch (er) {
-                            console.error(er);
-                        }
-                    }, false);
-                    this.send = function (k, msg) {
-                        worker.postMessage({ kind: k, data: msg });
-                    };
-                };
-                this.resetWorker();
+                _a = Comm.MainThread.getSenderAndReset(WORKER_JS), send = _a[0], resetWorker = _a[1];
             }
             else {
-                MAIN_HANDLER = handle;
-                this.send = function (kind, data) {
-                    try {
-                        WORKER_HANDLER[kind](data);
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
-                };
+                _b = Comm.MainThread.getSenderAndReset(null), send = _b[0], resetWorker = _b[1];
             }
             this.eval = function () {
-                this.send('EVAL', editor.getSession().getValue());
+                send('EVAL', editor.getSession().getValue());
             };
             this.checker = function (p) {
-                this.send('CHECKER', p);
+                send('CHECKER', p);
             };
             this.reset = function () {
-                this.resetWorker();
+                resetWorker();
                 this.eval();
             };
+            var _a, _b;
         };
         var cursor_elem = $(_CURSOR_);
         var onCursorChange = function () {

@@ -33,4 +33,4 @@ var parser = function (file) {
         };
     })(parser);
 };
-parser = parser(((typeof (window) === 'undefined') ? '../src/' : 'src/') + 'parser.jison');
+parser = parser((((typeof window) === 'undefined') ? '../src/' : 'src/') + 'parser.jison');

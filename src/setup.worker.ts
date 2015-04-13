@@ -1,16 +1,15 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
-/// <reference path='../lib/def/chrome.d.ts' />
-
 //
 // Worker thread
 //
 
-const isWorker = typeof (window) === 'undefined';
-const IMPORTS = ['../lib/jison.js', 'ast.js', 'parser.js', 'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
+const IMPORTS = ['../lib/jison.js', 'setup.comm.js', 'ast.js', 'parser.js',
+    'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
 
-// only loads the following if it is a standalone thread
+const isWorker = typeof (window) === 'undefined';
+
 if (isWorker) {
 
     // convenient debug
@@ -41,31 +40,7 @@ var checker = TypeChecker.check;
 // Send function
 //
 
-var send;
-if (isWorker) {
-    send = function(k, msg) {
-        (<any>self).postMessage({ kind: k, data: msg });
-    };
-
-    self.addEventListener('message', function(e) {
-        var m = e.data;
-        try {
-            // this is the 'receiver' var from below
-            receiver[m.kind](m.data);
-        } catch (e) {
-            (<any>console).error(e);
-        }
-    }, false);
-} else {
-    // Just for local debugging, MAIN_HANDLER is global var in 'setup.js'
-    send = function(kind, data) {
-        try {
-            MAIN_HANDLER[kind](data);
-        } catch (e) {
-            (<any>console).error(e);
-        }
-    };
-}
+var send = Comm.WorkerThread.getSender();
 
 //
 // Receiver object
@@ -134,8 +109,7 @@ var receiver = new function() {
 };
 
 if (!isWorker) {
-    // intentional GLOBAL variable
-    var WORKER_HANDLER = receiver;
+    Comm.WorkerThread.setReceiver(receiver);
 }
 
 

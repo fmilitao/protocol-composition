@@ -5,9 +5,6 @@
 /// <reference path='../lib/def/jquery.d.ts' />
 /// <reference path='../lib/def/chrome.d.ts' />
 
-// uses this GLOBAL var to communicate with fake worker
-var MAIN_HANDLER = null;
-
 module Setup {
 
     // HTML element IDs that need to be present in the .html file
@@ -551,77 +548,40 @@ module Setup {
         // Communication Object
         //
 
-//
-// FIXME FIXME ===================================
-//
+        //
+        // FIXME FIXME ===================================
+        //
+
 
         var comm = new function() {
 
+            let send: Function, resetWorker: Function;
+            Comm.MainThread.setReceiver(handle);
             if (worker_enabled) {
-
-                let worker : Worker = null;
-
-                // launch worker
-                this.resetWorker = function() {
-                    if (worker !== null) {
-                        // stops old worker
-                        worker.terminate();
-                    }
-
-                    worker = new Worker(WORKER_JS);
-                    worker.addEventListener('message', function(e) {
-                        var m = e.data;
-                        try {
-                            handle[m.kind](m.data);
-                        } catch (er) {
-                            console.error(er);
-                        }
-                    }, false);
-
-                    // generic send, tags k as 'kind' and msg as 'data'
-                    this.send = function(k, msg) {
-                        worker.postMessage({ kind: k, data: msg });
-                    };
-                };
-
-                this.resetWorker();
-
+                [send, resetWorker] = Comm.MainThread.getSenderAndReset(WORKER_JS);
             } else {
-
-                // make handle function available to worker THIS IS A GLOBAL VAR
-                MAIN_HANDLER = handle;
-
-                this.send = function(kind, data) {
-                    try {
-                        // imported code should defin global variable 'WORKER_HANDLER' to
-                        // enable "communication".
-                        WORKER_HANDLER[kind](data);
-                    } catch (e) {
-                        console.error(e);
-                    }
-                };
-
+                [send, resetWorker] = Comm.MainThread.getSenderAndReset(null);
             }
 
             this.eval = function() {
-                this.send('EVAL', editor.getSession().getValue());
+                send('EVAL', editor.getSession().getValue());
             };
 
             this.checker = function(p) {
-                this.send('CHECKER', p);
+                send('CHECKER', p);
             };
 
             this.reset = function() {
-                this.resetWorker();
+                resetWorker();
                 this.eval();
             };
 
         };
         // END communication object.
 
-//
-// FIXME FIXME ===================================
-//
+        //
+        // FIXME FIXME ===================================
+        //
 
         var cursor_elem = $(_CURSOR_);
 

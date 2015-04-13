@@ -1,8 +1,8 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
-/// <reference path='../lib/def/chrome.d.ts' />
+var IMPORTS = ['../lib/jison.js', 'setup.comm.js', 'ast.js', 'parser.js',
+    'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
 var isWorker = typeof (window) === 'undefined';
-var IMPORTS = ['../lib/jison.js', 'ast.js', 'parser.js', 'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
 if (isWorker) {
     var console = function () {
         var aux = function (k, arg) {
@@ -21,31 +21,7 @@ if (isWorker) {
 }
 var types = TypeChecker.types;
 var checker = TypeChecker.check;
-var send;
-if (isWorker) {
-    send = function (k, msg) {
-        self.postMessage({ kind: k, data: msg });
-    };
-    self.addEventListener('message', function (e) {
-        var m = e.data;
-        try {
-            receiver[m.kind](m.data);
-        }
-        catch (e) {
-            console.error(e);
-        }
-    }, false);
-}
-else {
-    send = function (kind, data) {
-        try {
-            MAIN_HANDLER[kind](data);
-        }
-        catch (e) {
-            console.error(e);
-        }
-    };
-}
+var send = Comm.WorkerThread.getSender();
 var receiver = new function () {
     var ast = null;
     var typeinfo = null;
@@ -84,7 +60,7 @@ var receiver = new function () {
     };
 };
 if (!isWorker) {
-    var WORKER_HANDLER = receiver;
+    Comm.WorkerThread.setReceiver(receiver);
 }
 var printAST = function (ast, r) {
     var res = '';
