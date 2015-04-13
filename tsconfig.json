@@ -21,9 +21,9 @@
         "./src/ast.ts",
         "./src/parser.ts",
         "./src/setup.ts",
+        "./src/setup.worker.ts",
         "./src/typechecker.ts",
         "./src/typechecker.types.ts",
-        "./src/typechecker.utils.ts",
-        "./src/worker.ts"
+        "./src/typechecker.utils.ts"
     ]
 }

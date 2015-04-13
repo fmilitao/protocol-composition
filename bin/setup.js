@@ -19,7 +19,7 @@ var Setup;
     var _TYPEINFO_ = '#' + TYPEINFO;
     var _TYPING_ = '#' + TYPING;
     var _RESET_ = '#reset';
-    var WORKER_JS = 'bin/worker.js';
+    var WORKER_JS = 'bin/setup.worker.js';
     var DEBUG_MSG = true;
     var worker_enabled = true;
     var default_file = 'examples/welcome.txt';

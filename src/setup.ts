@@ -26,7 +26,7 @@ module Setup {
     const _TYPING_ = '#' + TYPING;
     const _RESET_ = '#reset';
 
-    const WORKER_JS = 'bin/worker.js';
+    const WORKER_JS = 'bin/setup.worker.js';
 
     let DEBUG_MSG = true;
     let worker_enabled = true;
@@ -551,6 +551,10 @@ module Setup {
         // Communication Object
         //
 
+//
+// FIXME FIXME ===================================
+//
+
         var comm = new function() {
 
             if (worker_enabled) {
@@ -614,6 +618,10 @@ module Setup {
 
         };
         // END communication object.
+
+//
+// FIXME FIXME ===================================
+//
 
         var cursor_elem = $(_CURSOR_);
 
