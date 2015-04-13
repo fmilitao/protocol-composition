@@ -1,0 +1,29 @@
+{
+    "compilerOptions": {
+        "target": "es5",
+        "module": "commonjs",
+        "declaration": false,
+        "noImplicitAny": false,
+        "removeComments": true,
+        "outDir": "bin/",
+        "noLib": false
+    },
+    "filesGlob": [
+        "./**/*.ts",
+        "!./node_modules/**/*.ts"
+    ],
+    "files": [
+        "./lib/def/MediaStream.d.ts",
+        "./lib/def/ace.d.ts",
+        "./lib/def/chrome.d.ts",
+        "./lib/def/jison.d.ts",
+        "./lib/def/jquery.d.ts",
+        "./src/ast.ts",
+        "./src/parser.ts",
+        "./src/setup.ts",
+        "./src/typechecker.ts",
+        "./src/typechecker.types.ts",
+        "./src/typechecker.utils.ts",
+        "./src/worker.ts"
+    ]
+}

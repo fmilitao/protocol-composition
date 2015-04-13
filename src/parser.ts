@@ -1,3 +1,5 @@
+/// <reference path='../lib/def/jison.d.ts' />
+
 var parser = function(file){
 
     var Jison = require('jison');
@@ -58,4 +60,4 @@ var parser = function(file){
 // generates parser
 // worker will have to consider src/ root.
 // isWorker = typeof(window) === 'undefined';
-parser = parser( ((typeof(window) === 'undefined')?'':'src/') + 'parser.jison' );
+parser = parser( ((typeof(window) === 'undefined')?'../src/':'src/') + 'parser.jison' );

@@ -6,10 +6,10 @@
  *  assertf : for error handling/flagging.
  */
 
-var TypeChecker = (function( assertF ){
+var TypeChecker : any = (function( assertF ){
 
-	var exports = {};
-	
+	var exports : any = {};
+
 	/*
 	 * WARNING - Usage Notes:
 	 * The following two function smake use of a side-effect when evaluating
@@ -21,7 +21,7 @@ var TypeChecker = (function( assertF ){
 	 *		assert( CONDITION || EXPENSIVE_ERROR_MSG , AST );
 	 * and not compute EXPENSIVE_ERROR_MSG unless CONDITION is false.
 	 */
-	
+
 	// yields true or string on error
 	var assert = function( msg, ast ){
 		// if a boolean and true
@@ -29,7 +29,7 @@ var TypeChecker = (function( assertF ){
 			return;
 		assertF( 'Type error', false, msg, ast );
 	}
-	
+
 	// these are program assertions and should never be seen by users
 	// unless there is a major malfunction in the code (bug...)
 	var error = function(msg){
@@ -43,14 +43,14 @@ var TypeChecker = (function( assertF ){
 	//
 	// TYPES
 	//
-	
-	var types = {}; // types enumeration, useful for case analysis
-	var fct = {}; // types factory
+
+	var types : any = {}; // types enumeration, useful for case analysis
+	var fct : any = {}; // types factory
 
 	var newType = function( type, constructor ){
 		error( ( !types.hasOwnProperty(type) && !fct.hasOwnProperty(type) )
 			|| ( '@newType: already exists: '+type ) );
-		
+
 		// default stuff for that particular type
 		constructor.prototype.type = type;
 
@@ -60,7 +60,7 @@ var TypeChecker = (function( assertF ){
 		fct[type] = constructor;
 		return constructor;
 	};
-	
+
 	// Note: all constructors are labelled to make heap profiling easier.
 
 	newType('FunctionType',
@@ -69,13 +69,13 @@ var TypeChecker = (function( assertF ){
 			this.body = function(){ return body; }
 		}
 	);
-	
+
 	newType('BangType',
 		function BangType( inner ) {
 			this.inner = function(){ return inner; }
 		}
 	);
-	
+
 	newType('SumType',
 		function SumType() {
 			var tags = new Map();
@@ -109,13 +109,13 @@ var TypeChecker = (function( assertF ){
 			_Init( this );
 		}
 	);
-	
+
 	newType('AlternativeType',
 		function AlternativeType() {
 			_Init( this );
 		}
 	);
-	
+
 	newType('IntersectionType',
 		function IntersectionType() {
 			_Init( this );
@@ -127,7 +127,7 @@ var TypeChecker = (function( assertF ){
 			_Init( this );
 		}
 	);
-	
+
 	newType('ForallType',
 		function ForallType( id, inner, bound ) {
 			this.id = function(){ return id; }
@@ -135,7 +135,7 @@ var TypeChecker = (function( assertF ){
 			this.bound = function(){ return bound; }
 		}
 	);
-	
+
 	newType('ExistsType',
 		function ExistsType( id, inner, bound ) {
 			this.id = function(){ return id; }
@@ -143,7 +143,7 @@ var TypeChecker = (function( assertF ){
 			this.bound = function(){ return bound; }
 		}
 	);
-	
+
 	newType('RecordType',
 		function RecordType(){
 			var fields = new Map();
@@ -166,16 +166,16 @@ var TypeChecker = (function( assertF ){
 			}
 		}
 	);
-	
+
 	newType('NoneType',
 		function NoneType(){
-			// intentionally empty	
+			// intentionally empty
 		}
 	);
-	
+
 	newType('TopType',
 		function TopType(){
-			// intentionally empty	
+			// intentionally empty
 		}
 	);
 
@@ -198,7 +198,7 @@ var TypeChecker = (function( assertF ){
 			this.value = function(){ return val; }
 		}
 	);
-	
+
 	var _Variable = function( obj, name, index, bound ){
 		obj.index = function(){ return index; }
 		obj.name = function(){ return name; }
@@ -211,19 +211,19 @@ var TypeChecker = (function( assertF ){
 			_Variable( this, name, index, null );
 		}
 	);
-	
+
 	newType('TypeVariable',
 		function TypeVariable( name, index, bound ){
 			_Variable( this, name, index, bound );
 		}
 	);
-	
+
 	newType('PrimitiveType',
 		function PrimitiveType( name ){
 			this.name = function(){ return name; }
 		}
 	);
-	
+
 	newType('RelyType',
 		function RelyType( rely, guarantee ){
 			this.rely = function(){ return rely; }
@@ -254,8 +254,8 @@ var TypeChecker = (function( assertF ){
 			}
 		}
 	);
-	
-	
+
+
 	// append 'toString' method to types
 	// toString( indexesOnly ) // undefined means false
 	// if indexesOnly == true then it will only print variable's indexes, not their names.
@@ -266,22 +266,22 @@ var TypeChecker = (function( assertF ){
 			if( t.type === types.ReferenceType ||
 				t.type === types.FunctionType ||
 				t.type === types.StackedType ||
-				t.type === types.StarType || 
+				t.type === types.StarType ||
 				t.type === types.AlternativeType ||
 				t.type === types.SumType ){
 					return '('+t.toString(v)+')';
 				}
 			return t.toString(v);
 		};
-		
+
 		var setupToString = function(type){
 			switch( type ){
-				
+
 				case types.FunctionType:
 				return function( v ){
 					return wrap( this.argument(), v )+" -o "+wrap( this.body(), v );
 				};
-				
+
 				case types.BangType:
 				return function( v ){
 					return "!"+wrap( this.inner(), v );
@@ -296,12 +296,12 @@ var TypeChecker = (function( assertF ){
 				return function( v ){
 					return wrap( this.guarantee(), v )+' ; '+wrap( this.rely(), v );
 				};
-		
+
 				case types.SumType:
 				return function( v ){
 					var res = [];
 					this.tags().forEach( function(value,key){
-						res.push( key+'#'+wrap( value, v ) ); 
+						res.push( key+'#'+wrap( value, v ) );
 					});
 					return res.join('+');
 				};
@@ -311,57 +311,57 @@ var TypeChecker = (function( assertF ){
 					var inners = this.inner();
 					var res = [];
 					for( var i=0; i<inners.length; ++i )
-						res.push( wrap( inners[i], v ) ); 
+						res.push( wrap( inners[i], v ) );
 					return res.join(' * ');
 				};
-		
+
 				case types.AlternativeType:
 				return function( v ){
 					var inners = this.inner();
 					var res = [];
 					for( var i=0; i<inners.length; ++i )
-						res.push( wrap( inners[i], v ) ); 
+						res.push( wrap( inners[i], v ) );
 					return res.join(' (+) ');
 				};
-				
+
 				case types.IntersectionType:
 				return function( v ){
 					var inners = this.inner();
 					var res = [];
 					for( var i=0; i<inners.length; ++i )
-						res.push( wrap( inners[i], v ) ); 
+						res.push( wrap( inners[i], v ) );
 					return res.join(' & ');
 				};
-				
+
 				case types.ExistsType:
 				return function( v ){
 					return 'exists'+(v?'':' '+this.id().name())
 						+( !this.bound()?'':'<:'+wrap( this.bound(), v ))
 						+'.'+wrap( this.inner(), v );
 				};
-				
+
 				case types.ForallType:
 				return function( v ){
 					return 'forall'+(v?'':' '+this.id().name())
 						+( !this.bound() ? '':'<:'+wrap( this.bound(), v ))
 						+'.'+wrap( this.inner(), v );
 				};
-		
+
 				case types.ReferenceType:
 				return function( v ){
 					return "ref "+wrap( this.location(), v );
 				};
-		
+
 				case types.CapabilityType:
 				return function( v ){
 					return 'rw '+wrap( this.location(), v )+' '+wrap( this.value(), v );
 				};
-				
+
 				case types.StackedType:
 				return function( v ){
 					return wrap( this.left(), v )+' :: '+wrap( this.right(), v );
 				};
-		
+
 				case types.RecordType:
 				return function( v ){
 					var res = [];
@@ -370,7 +370,7 @@ var TypeChecker = (function( assertF ){
 					});
 					return "["+res.join()+"]";
 				};
-				
+
 				case types.TupleType:
 				return function( v ){
 					var res = [];
@@ -379,7 +379,7 @@ var TypeChecker = (function( assertF ){
 						res.push( wrap( fields[i], v ) );
 					return "["+res.join()+"]";
 				};
-				
+
 				case types.DefinitionType:
 				return function(v){
 					if( this.args().length > 0 ){
@@ -398,7 +398,7 @@ var TypeChecker = (function( assertF ){
 				return function( v ){
 					if( !v )
 						return this.name()+'^'+this.index();
-					
+
 					var str = '';
 					// only add type bound if it is a TypeVariable
 					if( this.type === types.TypeVariable ){
@@ -415,10 +415,10 @@ var TypeChecker = (function( assertF ){
 
 				case types.PrimitiveType:
 				return function(v){ return this.name(); };
-		
+
 				case types.NoneType:
 				return function(v){ return 'none'; };
-				
+
 				case types.TopType:
 				return function(v){ return 'top'; };
 
@@ -434,9 +434,9 @@ var TypeChecker = (function( assertF ){
 			error( !fct[t].hasOwnProperty('toString') || ("Duplicated " +t) );
 			fct[t].prototype.toString = fun;
 		}
-		
+
 	})();
-	
+
 	/**
 	 * The typing environment is a spaghetti stack where the parent
 	 * may be shared among several different typing environments.
@@ -451,8 +451,8 @@ var TypeChecker = (function( assertF ){
 		this.getTypeDef = function(){
 			return typedef;
 		}
-		
-		// scope methods		
+
+		// scope methods
 		this.newScope = function( id, type, bound ){
 			return new Gamma( typedef, this, id, type, bound );
 		}
@@ -493,7 +493,7 @@ var TypeChecker = (function( assertF ){
 				return -1; // not found
 
 			var tmp = parent.getNameIndex( name );
-			if( tmp === -1 ) 
+			if( tmp === -1 )
 				return tmp;
 			return 1+tmp;
 		}
@@ -503,17 +503,17 @@ var TypeChecker = (function( assertF ){
 				i = 0;
 
 			f( i, id, type, bound );
-			
+
 			if( parent !== null )
 				parent.forEach( f, i+1 );
 		}
-		
+
 	};
 
 	var TypeDefinition = function(){
 		var typedefs;
 		var typedefs_args;
-		
+
 		this.addType = function(name,array){
 			if( typedefs_args.has(name) )
 				return false;
@@ -550,4 +550,3 @@ var TypeChecker = (function( assertF ){
 	return exports;
 
 })( assertF ); // required globals
-

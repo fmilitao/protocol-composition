@@ -1,6 +1,10 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
+/// <reference path='../lib/def/ace.d.ts' />
+/// <reference path='../lib/def/jquery.d.ts' />
+/// <reference path='../lib/def/chrome.d.ts' />
+
 var DEBUG_MSG = true;
 var worker_enabled = true;
 var default_file = 'examples/welcome.txt';
@@ -42,15 +46,15 @@ if( !worker_enabled ){
 	// uses this GLOBAL var to communicate with fake worker
 	var MAIN_HANDLER = null;
 
-	console.log('importing scripts to run locally...');
+	(<any>console).log('importing scripts to run locally...');
 	importScript('lib/jison.js'); // FIXME: make this conditional on parser.js
-	importScript('src/ast.js');
-	importScript('src/parser.js');
-	importScript('src/typechecker.types.js');
-	importScript('src/typechecker.utils.js');
-	importScript('src/typechecker.js');
-	importScript('src/worker.js');
-	console.log('done.');
+	importScript('bin/ast.js');
+	importScript('bin/parser.js');
+	importScript('bin/typechecker.types.js');
+	importScript('bin/typechecker.utils.js');
+	importScript('bin/typechecker.js');
+	importScript('bin/worker.js');
+	(<any>console).log('done.');
 }
 
 // HTML element IDs that need to be present in the .html file
@@ -84,7 +88,7 @@ $(document).ready(function() {
 	// window layout setup
 	//
 
-	window.onresize = function () {
+	window.onresize = function (ev) {
 		// note that all these constants must be set through javascript
 		// or they will not be accessible to use in these computaitons.
 		// the values are just empirically picked to look OK.
@@ -125,14 +129,14 @@ $(document).ready(function() {
 		typing.style.left = (w/2)+"px";
 		typing.style.maxHeight = h+"px";
 		typing.style.maxWidth = (w/2)+"px";
-		typing.style.opacity = 0.8;
+		typing.style.opacity = '0.8';
 		TYPE_INFO_WIDTHS = { maxWidth : w, defaultWidth : w/2,
 				minLeft : 0, defaultLeft : (w/2),
 				maxOpacity : 1, defaultOpacity : 0.8 };
 
 	}
 
- 	window.onresize(); // only do this after the rest is initialized!
+ 	window.onresize(null); // only do this after the rest is initialized!
 
     //
     // Editor and Buttons setup
@@ -171,8 +175,8 @@ $(document).ready(function() {
 	    });
 	}());
 
-    var editor = ace.edit(EDITOR);
-		editor.$blockScrolling = Infinity; // FIXME on warning. useful?
+    var editor : any = ace.edit(EDITOR);
+		(<any>editor).$blockScrolling = Infinity; // FIXME on warning. useful?
 	var Range = ace.require("ace/range").Range;
 
 	(function(){
@@ -221,7 +225,7 @@ $(document).ready(function() {
 			// re-enable event handlers
 			editor.selection.on("changeCursor", onCursorChange);
 			editor.on("change", onChange );
-			onChange();
+			onChange(null); // FIXME: warning!
 		}
 
 		var addExample = function(file,name){
@@ -451,9 +455,9 @@ $(document).ready(function() {
 		// console
 		//
 
-		log : function(msg){ console.log( msg ); },
-		debug : function(msg){ console.debug( msg ); },
-		error : function(msg){ console.error( msg ); },
+		log : function(msg){ (<any>console).log( msg ); },
+		debug : function(msg){ (<any>console).debug( msg ); },
+		error : function(msg){ (<any>console).error( msg ); },
 
 		//
 		// info
@@ -507,13 +511,13 @@ $(document).ready(function() {
 
 			if( DEBUG_MSG || groupName != null ){
 				if( groupName == null ) {
-					console.groupCollapsed( '[Debug-Info] '+msg );
+					(<any>console).groupCollapsed( '[Debug-Info] '+msg );
 				} else {
 					// real error, show expanded
-					console.group( groupName );
+					(<any>console).group( groupName );
 				}
-				console.debug("Extra Info: "+e.debug+"\nStack Trace:\n"+e.stack);
-				console.groupEnd();
+				(<any>console).debug("Extra Info: "+e.debug+"\nStack Trace:\n"+e.stack);
+				(<any>console).groupEnd();
 			}
             out.printError( msg );
 
@@ -576,13 +580,13 @@ $(document).ready(function() {
 					worker.terminate();
 				}
 
-				worker = new Worker('src/worker.js');
+				worker = new Worker('bin/worker.js');
 				worker.addEventListener('message', function(e) {
 					var m = e.data;
 					try{
 						handle[m.kind](m.data);
 					}catch(er){
-						console.error(er);
+						(<any>console).error(er);
 					}
 				}, false);
 
@@ -605,7 +609,7 @@ $(document).ready(function() {
 					// enable "communication".
 					WORKER_HANDLER[kind](data);
 				}catch(e){
-					console.error(e);
+					(<any>console).error(e);
 				}
 			};
 
@@ -649,7 +653,7 @@ $(document).ready(function() {
     editor.on("change", onChange );
 
     // the initial run to parse the example text.
-    onChange();
+    onChange(null); //FIXME!
     // editor apparently automatically gets focused, even without this.
     editor.focus();
 

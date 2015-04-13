@@ -25,7 +25,7 @@ var AST = new function(){
 		return ast;
 	};
 
-	var Enum = function() {
+	var Enum = function( arguments : any[]) : void {
 	    for (var i in arguments) {
 	    	// technically, this would be more efficient with ints:
 	        // this[arguments[i]] = i;
@@ -37,7 +37,7 @@ var AST = new function(){
 
 	this.kinds = new Enum (
 		// entry nodes
-		'PROGRAM',
+		['PROGRAM',
 		'IMPORT',
 		'TYPEDEF',
 		// rest
@@ -94,7 +94,7 @@ var AST = new function(){
 		'DEFOCUS',
 		'TUPLE',
 		'LET_TUPLE',
-		'SUBSTITUTION'
+		'SUBSTITUTION']
 	);
 
 	this.makeTypedef = function(id,type,pars,info){
@@ -303,12 +303,12 @@ var AST = new function(){
 
 }();
 
-var ErrorWrapper = function(msg,kind,ast,debug,stack){
+var ErrorWrapper = function(msg,kind,ast,debug,stack?){
 	this.message = msg;
 	this.kind = kind;
 	this.ast = ast;
 	this.debug = debug;
-	this.stack = stack || new Error().stack.toString();
+	this.stack = stack || (<any>(new Error())).stack.toString();
 	this.toString = function(){
 		return this.kind+': '+this.message;
 	}

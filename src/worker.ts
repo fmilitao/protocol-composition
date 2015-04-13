@@ -1,3 +1,5 @@
+/// <reference path='../lib/def/chrome.d.ts' />
+
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
@@ -17,7 +19,7 @@ if( isWorker ){
 			var tmp =[];
 			for( var i=0; i<arg.length; ++i )
 				tmp.push( arg[i].toString() );
-			self.postMessage({kind: k, data: '[Worker] '+tmp.join(' ') });
+			(<any>self).postMessage({kind: k, data: '[Worker] '+tmp.join(' ') });
 		}
 
 		return {
@@ -42,7 +44,7 @@ var checker = TypeChecker.check;
 var send;
 if( isWorker ){
 	send = function(k,msg){
-		self.postMessage({ kind: k, data: msg });
+		(<any>self).postMessage({ kind: k, data: msg });
 	};
 
 	self.addEventListener('message', function(e) {
@@ -51,7 +53,7 @@ if( isWorker ){
 			// this is the 'receiver' var from below
 			receiver[m.kind](m.data);
 		}catch(e){
-			console.error(e);
+			(<any>console).error(e);
 		}
 	}, false);
 } else {
@@ -60,7 +62,7 @@ if( isWorker ){
 		try{
 			MAIN_HANDLER[kind](data);
 		} catch(e) {
-			console.error(e);
+			(<any>console).error(e);
 		}
 	};
 }
@@ -79,7 +81,7 @@ var receiver = new function(){
 
 	var handleError = function(e){
 		if( e.stack )
-			console.error( e.stack.toString() );
+			(<any>console).error( e.stack.toString() );
 		send('errorHandler', JSON.stringify(e));
 	};
 
@@ -97,7 +99,7 @@ var receiver = new function(){
 
 			if( !isWorker ){
 				// some debug information
-				console.debug( 'checked in: '+typeinfo.diff+' ms' );
+				(<any>console).debug( 'checked in: '+typeinfo.diff+' ms' );
 			}
 
 			// no errors!
@@ -169,7 +171,7 @@ var printConformance = function(cf){
 }
 
 var printEnvironment = function(env){
-	var gamma = _printEnvironment(env);
+	var gamma : any = _printEnvironment(env);
 
 	gamma = gamma.join(',\n    ');
 
@@ -266,7 +268,7 @@ var info = function(tp,pos){
 
 	var res = [];
 
-	for(var i=0;i<indexes.length;++i){
+	for(var i : any=0;i<indexes.length;++i){
 		var ptr = indexes[i];
 		// minor trick: only print if the same kind since alternatives
 		// are always over the same kind...
@@ -298,7 +300,7 @@ var info = function(tp,pos){
 		}
 	}
 
-	for(var i=0;i<res.length;++i){
+	for(var i : any=0;i<res.length;++i){
 		var tmp = res[i];
 		msg += "<hr class='type_hr'/>"
 			+ tmp.ast
@@ -412,7 +414,7 @@ var toHTML = function (t){
 		case types.TupleType: {
 			var res = [];
 			var values = t.inner();
-			for( var i in values )
+			for( let i in values )
 				res.push( toHTML(values[i]) );
 			return "["+res.join(', ')+"]";
 		}
@@ -434,7 +436,7 @@ var toHTML = function (t){
 
 			var res = [];
 			var as = t.args();
-			for( var i in as )
+			for( let i in as )
 				res.push( toHTML(as[i]) );
 			return wq( t_def+wQ('[')+res.join(', ')+wQ(']') );
 		}
@@ -444,7 +446,7 @@ var toHTML = function (t){
 		case types.GuaranteeType:
 			return wq( wq( _toHTML(t.guarantee()) )+wQ(' ; ') + wq(_toHTML(t.rely())) );
 		default:
-			console.error( "Error @toHTML: " +t.type );
+			(<any>console).error( "Error @toHTML: " +t.type );
 			return null;
 		}
 };

@@ -9,7 +9,7 @@
  *  TypeChecker : stuff in typechecker.*.js
  */
 
-var TypeChecker = (function( AST, exports ){
+var TypeChecker : any = (function( AST, exports ){
 
 	// define constants for convenience
 	const assert = exports.assert;
@@ -34,7 +34,7 @@ var TypeChecker = (function( AST, exports ){
 	const LocationVariable = fct.LocationVariable;
 	const TypeVariable = fct.TypeVariable;
 	const PrimitiveType = fct.PrimitiveType;
-	const RelyType = fct.RelyType;	
+	const RelyType = fct.RelyType;
 	const DefinitionType = fct.DefinitionType;
 	const GuaranteeType = fct.GuaranteeType;
 
@@ -211,13 +211,13 @@ var TypeChecker = (function( AST, exports ){
 		var res = singleStep( s, p, q, isLeft );
 		if( res !== null )
 			return res; // valid stepping
-		
+
 		// else step failed, attempt breaking 's' or 'p'
-		
+
 		// by (rs:StateAlternative)
 		if( s.type === types.AlternativeType ){
 			var ss = s.inner();
-			var res = [];
+			var res :any = [];
 			// protocol must consider *all* cases
 			for( var i=0; i<ss.length; ++i ){
 				var tmp = step( ss[i], p, q, isLeft );
@@ -237,7 +237,7 @@ var TypeChecker = (function( AST, exports ){
 		// by (rs:ProtocolIntersection)
 		if( p.type === types.IntersectionType ){
 			var pp = p.inner();
-			var res = [];
+			var res : any = [];
 			// protocol must consider *all* cases
 			for( var i=0; i<pp.length; ++i ){
 				var tmp = step( s, pp[i], q, isLeft );
@@ -263,7 +263,7 @@ var TypeChecker = (function( AST, exports ){
 				if( tmp !== null )
 					return tmp;
 			}
-			
+
 			// did not find a good step, fall through.
 		}
 
@@ -352,7 +352,7 @@ var TypeChecker = (function( AST, exports ){
 
 				// shifts 'b' to the same depth as 't'
 				var x = unifyGuarantee( i, t, shift( b, 0, 1 ) );
-				
+
 				// fails to unify
 				if( x === false )
 					return null;
@@ -386,7 +386,7 @@ var TypeChecker = (function( AST, exports ){
 					return [ R( gs.rely(), gp.rely() ) ];
 				}
 			}
-			
+
 			return null;
 
 		} else {
@@ -396,7 +396,7 @@ var TypeChecker = (function( AST, exports ){
 			if( equals(s,p) ){
 				return [ R( NoneType, NoneType ) ];
 			}
-			
+
 			// by (ss:OpenType) and by (ss:OpenLoc)
 			if( p.type === types.ExistsType ){
 				// attempts to find matching type/location to open existential
@@ -455,7 +455,7 @@ var TypeChecker = (function( AST, exports ){
 		var set = indexSet(s);
 		indexSet(a).forEach( function(v){ set.add(v); } );
 		indexSet(b).forEach( function(v){ set.add(v); } );
-		
+
 		if( set.size > 0 ){
 			var v = [];
 			set.forEach( function(val){ v.push(val); });
@@ -477,7 +477,7 @@ var TypeChecker = (function( AST, exports ){
 				}
 			}
 		}
-		
+
 		return [s,a,b];
 	};
 
@@ -488,7 +488,7 @@ var TypeChecker = (function( AST, exports ){
 	 * 	what failed to type check.
 	 */
 	var setupAST = function( kind, check ) {
-		
+
 		switch( kind ) {
 
 			case AST.SUBSTITUTION:
@@ -521,7 +521,7 @@ var TypeChecker = (function( AST, exports ){
 				return left;
 			};
 
-			case AST.SUM_TYPE: 
+			case AST.SUM_TYPE:
 			return function( ast, env ){
 				var sum = new SumType();
 				for( var i=0; i<ast.sums.length; ++i ){
@@ -531,8 +531,8 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return sum;
 			};
-			
-			case AST.INTERSECTION_TYPE: 
+
+			case AST.INTERSECTION_TYPE:
 			return function( ast, env ){
 				var alt = new IntersectionType();
 				for( var i=0; i<ast.types.length; ++i ){
@@ -540,8 +540,8 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return alt;
 			};
-			
-			case AST.ALTERNATIVE_TYPE: 
+
+			case AST.ALTERNATIVE_TYPE:
 			return function( ast, env ){
 				var alt = new AlternativeType();
 				for( var i=0; i<ast.types.length; ++i ){
@@ -549,8 +549,8 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return alt;
 			};
-			
-			case AST.STAR_TYPE: 
+
+			case AST.STAR_TYPE:
 			return function( ast, env ){
 				var star = new StarType();
 				for( var i=0; i<ast.types.length; ++i ){
@@ -558,8 +558,8 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return star;
 			};
-			
-			case AST.NAME_TYPE: 
+
+			case AST.NAME_TYPE:
 			return function( ast, env ){
 				// the typing environment remains unchanged because all type
 				// definitions and type/location variables should not interfere
@@ -574,7 +574,7 @@ var TypeChecker = (function( AST, exports ){
 					  tmp.type === types.LocationVariable ) ){
 						return tmp.copy( env.getNameIndex(label) );
 				}
-				
+
 				// look for type definitions with 0 arguments
 				var lookup_args = typedef.getType(label);
 				if( lookup_args !== undefined && lookup_args.length === 0 )
@@ -582,41 +582,41 @@ var TypeChecker = (function( AST, exports ){
 
 				assert( 'Unknown type '+label, ast);
 			};
-			
+
 			case AST.DEFINITION_TYPE:
 			return function( ast, env ){
 				var typedef = env.getTypeDef();
 				var id = ast.name;
 				var args = ast.args;
 				var t_args = typedef.getType(id);
-				
+
 				assert( t_args !== undefined || ('Unknown typedef: '+id), ast);
 				assert( t_args.length === args.length ||
 					('Argument number mismatch: '+args.length+' vs '+t_args.length), ast);
 
 				var arguments = new Array(args.length);
-				for(var i=0;i<args.length;++i){					
+				for(var i=0;i<args.length;++i){
 					var tmp = check( args[i], env );
 
 					if( t_args[i].type === types.LocationVariable ){
 						assert( ( tmp.type === types.LocationVariable ) ||
-							( 'Argument #'+i+' is not LocationVariable: '+tmp.type ), 
+							( 'Argument #'+i+' is not LocationVariable: '+tmp.type ),
 							args[i] );
 					}
-					
+
 					if( t_args[i].type === types.TypeVariable ){
 						assert( ( tmp.type !== types.LocationVariable ) ||
-							( 'Argument #'+i+' cannot be a LocationVariable' ), 
+							( 'Argument #'+i+' cannot be a LocationVariable' ),
 							args[i] );
 					}
-					
+
 					arguments[i] = tmp;
 				}
-				
+
 				return new DefinitionType( id, arguments, typedef );
 			};
-			
-			case AST.TAGGED: 
+
+			case AST.TAGGED:
 			return function( ast, env ){
 				var sum = new SumType();
 				var tag = ast.tag;
@@ -627,7 +627,7 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return sum;
 			};
-			
+
 			case AST.TUPLE_TYPE:
 			return function( ast, env ){
 				// Note that TUPLE cannot move to the auto-bang block
@@ -637,21 +637,21 @@ var TypeChecker = (function( AST, exports ){
 				// what it consumes from the environment
 				var rec = new TupleType();
 				var bang = true;
-						
+
 				for(var i=0;i<ast.exp.length;++i){
 					var value = check( ast.exp[i], env );
 					rec.add(value);
 					if( value.type !== types.BangType )
 						bang = false;
 				}
-				
+
 				if( bang )
 					rec = new BangType(rec);
 
 				return rec;
 			};
-			
-			case AST.SHARE: 
+
+			case AST.SHARE:
 			return function( ast, env ){
 				var cap = check( ast.type, env );
 				var left = check( ast.a, env );
@@ -664,46 +664,46 @@ var TypeChecker = (function( AST, exports ){
 				var table = checkConformance( env, cap, left, right );
 				var res = table !== null ; // is valid if table not null
 				// checkProtocolConformance(cap, left, right, ast);
-				
+
 				assert( ast.value === res || ('Unexpected Result, got '+res+' expecting '+ast.value) , ast);
-				
+
 //FIXME return type should depend on the kind of node: types -> type , construct -> some info.
 				// returns an array or null
 				return table;
 			};
-			
+
 			// TYPES
-			case AST.RELY_TYPE: 
+			case AST.RELY_TYPE:
 			return function( ast, env ){
 				var rely = check( ast.left, env );
 				var guarantee = check( ast.right, env );
 				return new RelyType( rely, guarantee );
 			};
-			
-			case AST.GUARANTEE_TYPE: 
+
+			case AST.GUARANTEE_TYPE:
 			return function( ast, env ){
 				var guarantee = check( ast.left, env );
 				var rely = check( ast.right, env );
 				return new GuaranteeType( guarantee, rely );
 			};
-			
-			case AST.REF_TYPE: 
+
+			case AST.REF_TYPE:
 			return function( ast, env ){
 				var id = ast.text;
 				var loc = env.getTypeByName( id );
-				
+
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast );
-				
+
 				return new ReferenceType( loc.copy( env.getNameIndex( id ) ) );
 			};
-			
+
 			case AST.EXISTS_TYPE:
 			case AST.FORALL:
-			case AST.FORALL_TYPE: 
+			case AST.FORALL_TYPE:
 			return (function( ctr ){
 				return function( ast, env ){
-				var id = ast.id;				
+				var id = ast.id;
 				var variable;
 				var bound;
 
@@ -726,7 +726,7 @@ var TypeChecker = (function( AST, exports ){
 			}; })
 			// body is the same, but the CONSTRUCTOR is different:
 			( kind === AST.EXISTS_TYPE ? ExistsType : ForallType );
-						
+
 			case AST.NONE_TYPE:
 			return function( ast, env ){
 				return NoneType;
@@ -736,40 +736,40 @@ var TypeChecker = (function( AST, exports ){
 			return function( ast, env ){
 				return TopType;
 			};
-				
+
 			case AST.BANG_TYPE:
 			return function( ast, env ){
 				return new BangType( check( ast.type , env ) );
 			};
-			
-			case AST.FUN_TYPE: 
+
+			case AST.FUN_TYPE:
 			return function( ast, env ){
-				return new FunctionType( 
+				return new FunctionType(
 					check( ast.arg, env ),
 					check( ast.exp, env )
 				);
 			};
-			
-			case AST.CAP_TYPE: 
+
+			case AST.CAP_TYPE:
 			return function( ast, env ){
 				var id = ast.id;
 				var loc = env.getTypeByName( id );
-				
+
 				assert( (loc !== undefined && loc.type === types.LocationVariable) ||
 					('Unknow Location Variable '+id), ast);
 
 				return new CapabilityType( loc.copy( env.getNameIndex( id ) ), check( ast.type, env ) );
 			};
-			
-			case AST.STACKED_TYPE: 
+
+			case AST.STACKED_TYPE:
 			return function( ast, env ){
 				return new StackedType(
 					check( ast.left, env ),
 					check( ast.right, env )
 				);
 			};
-			
-			case AST.RECORD_TYPE: 
+
+			case AST.RECORD_TYPE:
 			return function( ast, env ){
 				var rec = new RecordType();
 				for( var i=0; i<ast.exp.length ; ++i ){
@@ -781,7 +781,7 @@ var TypeChecker = (function( AST, exports ){
 				}
 				return rec;
 			};
-			
+
 			case AST.PRIMITIVE_TYPE:
 			return function( ast, env ){
 				// relying on the parser to limit primitive types to ints, etc.
@@ -799,10 +799,10 @@ var TypeChecker = (function( AST, exports ){
 	var checkProgram = function( ast, check ){
 		// pre: ast is program's root
 		error( (ast.kind === AST.PROGRAM) || 'Unexpected AST node' );
-				
+
 		var typedef = new TypeDefinition();
 		var env = new Gamma( typedef, null );
-		
+
 		// handle type definitions
 		if( ast.typedefs !== null ){
 
@@ -810,33 +810,33 @@ var TypeChecker = (function( AST, exports ){
 			// duplication is not checked at this stage
 			for(var i=0;i<ast.typedefs.length;++i){
 				var it = ast.typedefs[i];
-				var args = [];
+				var args : any = [];
 				var pars = it.pars;
 
 				// only do this if there are any actual definition parameters
 				if( pars !== null ){
 					args = new Array(pars.length);
-					
+
 					for(var j=0;j<pars.length;++j){
 						// indexes MUST go [ n, n-1, ..., 1, 0 ] to match the
 						// desired depth of the DeBruijn indexes.
 						var n = pars[j];
-						args[j] = isTypeVariableName(n) ? 
+						args[j] = isTypeVariableName(n) ?
 							new TypeVariable(n,(pars.length-j-1),null) :
 							new LocationVariable(n,(pars.length-j-1));
 					}
 				}
-				
-				assert( typedef.addType(it.id,args) 
+
+				assert( typedef.addType(it.id,args)
 					|| ('Duplicated typedef: '+it.id), it );
 			}
-			
+
 			// 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
 			for(var i=0;i<ast.typedefs.length;++i){
-				var type = ast.typedefs[i];						
+				var type = ast.typedefs[i];
 				var tmp_env = env;
-				var args = typedef.getType( type.id );
-				
+				var args : any = typedef.getType( type.id );
+
 				// sets the variables, if there are any to setup
 				if( args !== null ){
 					for(var j=0;j<args.length;++j){
@@ -844,10 +844,10 @@ var TypeChecker = (function( AST, exports ){
 						tmp_env = tmp_env.newScope( args[j].name(), args[j], null );
 					}
 				}
-				
+
 				// map of type names to typechecker types
 // FIXME needs to ensure that definition is not a locationvariable?
-				assert( typedef.addDefinition(type.id, check(type.type, tmp_env)) 
+				assert( typedef.addDefinition(type.id, check(type.type, tmp_env))
 					|| ('Duplicated typedef: '+type.id), type );
 			}
 
@@ -882,7 +882,7 @@ var TypeChecker = (function( AST, exports ){
 	// monad like
 	// inspector( ast, env, checkFunction )
 	var buildChecker = function( inspector ){
-		var map = new Map();
+		var map : any = new Map();
 		var aux = function( ast, env ){
 			if( !map.has( ast.kind ) )
 				error( 'Error @buildChecker Not expecting '+ast.kind );
@@ -909,7 +909,7 @@ var TypeChecker = (function( AST, exports ){
 	// all these variable could be local variables of 'exports.check'
 	var type_info = [];
 	var inspector = function( ast, env, c ){
-			var info = { ast : ast, env : env };
+			var info : any = { ast : ast, env : env };
 			type_info.push( info );
 
 			var res = c( ast, env );
@@ -928,25 +928,25 @@ var TypeChecker = (function( AST, exports ){
 
 	// only exports checking function.
 	exports.check = function( ast, log ){
-		
+
 		type_info = []; // reset
 
 		// timer start
 		var start = new Date().getTime();
-		
+
 		try{
 			return checkProgram( ast, checker );
 		} finally {
 			if( log ){
 				log.diff = (new Date().getTime())-start;
-				log.info = type_info; 
+				log.info = type_info;
 			}
 		}
 
 	};
 
 	return exports;
-	
+
 })( AST.kinds, TypeChecker ); // required globals
 
 
@@ -955,7 +955,7 @@ var TypeChecker = (function( AST, exports ){
 
 	/*
 	var locSet = function( t ){
-		
+
 		if( isProtocol(t) )
 			return new Set(); // empty set
 
@@ -965,7 +965,7 @@ var TypeChecker = (function( AST, exports ){
 
 			case types.RelyType:
 				return locSet( t.rely() );
-			
+
 			case types.GuaranteeType:
 				return locSet( t.guarantee() );
 
@@ -981,7 +981,7 @@ var TypeChecker = (function( AST, exports ){
 							tmp.add(x);
 						});
 				}
-				
+
 				return tmp;
 			}
 
@@ -1042,7 +1042,7 @@ var TypeChecker = (function( AST, exports ){
 
 				return true;
 			}
-			
+
 			case types.GuaranteeType:
 				return wfProtocol( t.guarantee() ) && wfProtocol( t.rely() );
 
@@ -1062,7 +1062,7 @@ var TypeChecker = (function( AST, exports ){
 					if( !wfProtocol( ts[i] ) )
 						return false;
 				}
-				
+
 				return true;
 			}
 

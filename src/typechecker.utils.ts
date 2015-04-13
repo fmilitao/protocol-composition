@@ -33,13 +33,13 @@ var TypeChecker = (function( exports ){
 	const LocationVariable = fct.LocationVariable;
 	const TypeVariable = fct.TypeVariable;
 	const PrimitiveType = fct.PrimitiveType;
-	const RelyType = fct.RelyType;	
+	const RelyType = fct.RelyType;
 	const DefinitionType = fct.DefinitionType;
 	const GuaranteeType = fct.GuaranteeType;
 
 	// unify 'x' in 't' to match 'a'
 	var unify = function( x,t, a ){
-		if( x.type !== types.LocationVariable && 
+		if( x.type !== types.LocationVariable &&
 			x.type !== types.TypeVariable ){
 			error( "@unify: can only unify a Type/LocationVariable, got: "+x.type );
 		}
@@ -52,7 +52,7 @@ var TypeChecker = (function( exports ){
 	// returns 'type' if match is found,
 	// returns 'true' if match not found but types are equal.
 	var unifyAux = function( x, t, a, trail ){
-		
+
 		// base case: variable 'x' is found in 't'
 		if( x.type === t.type && x.index() === t.index() && (
 			// unified type must match x's kind
@@ -83,23 +83,23 @@ var TypeChecker = (function( exports ){
 		if( t.type !== a.type )
 			return false; // failed to match
 
-		var tmp = true;
-		
+		var tmp : any = true;
+
 		// returns whether it should abort, leaves result in 'tmp'
 		var aux = function( value ){
-			
+
 			// must use '=== false' to avoid conversions
 			// already failed, keeps with false.
 			if( tmp === false || value === false ){
 				tmp = false;
 				return false;
 			}
-			
+
 			if( tmp === true ){
 				tmp = value;
 				return true;
 			}
-			
+
 			// 'value' is not a type, no need for equality check
 			if( value === true )
 				return true;
@@ -203,7 +203,7 @@ var TypeChecker = (function( exports ){
 						cs[i] = 1; // count i position as 1 occurance
 						for( var j=i+1; j<as.length; ++j ){
 							if( equals( as[i], as[j] ) ){
-								cs[i] += 1; 
+								cs[i] += 1;
 								as.splice(j,1);
 								--j;
 							}
@@ -217,7 +217,7 @@ var TypeChecker = (function( exports ){
 					}
 				}
 
-				var tmp = new t.constructor();
+				var tmp : any = new t.constructor();
 				for( var i=0; i<as.length; ++i ){
 					tmp.add( as[i] );
 				}
@@ -250,11 +250,11 @@ var TypeChecker = (function( exports ){
 				var ab = a.bound();
 
 				// either have inconsistent 'null'
-				if( ( tb === null ^ ab === null ) || 
+				if( ( <number><any>(tb === null) ^ <number><any>(ab === null) ) ||
 				// or not null, but have invalid matching
 					( tb ===null && ab === null && !aux( unifyAux( x, tb, ab, trail ) ) ) )
 					return false;
-				
+
 				// going inside an existential, we must shift 'x' index
 				var xi = shift1(x,0);
 
@@ -335,7 +335,7 @@ var TypeChecker = (function( exports ){
 			case types.BangType:
 				return new BangType( shift( t.inner(), c, d ) );
 
-			case types.RelyType: 
+			case types.RelyType:
 				return new RelyType(
 							shift( t.rely(), c, d ),
 							shift( t.guarantee(), c, d ) );
@@ -347,7 +347,7 @@ var TypeChecker = (function( exports ){
 
 			case types.SumType:{
 				var sum = new SumType();
-				t.tags().forEach( 
+				t.tags().forEach(
 					function(value,key){
 						sum.add( key, shift( value, c, d ) );
 					} );
@@ -356,20 +356,20 @@ var TypeChecker = (function( exports ){
 
 			case types.AlternativeType:
 			case types.IntersectionType:
-			case types.StarType: 
+			case types.StarType:
 			case types.TupleType: {
 				var star = new t.constructor();
 				var inners = t.inner();
 				for( var i=0;i<inners.length;++i ){
 					star.add( shift( inners[i], c, d ) );
-				}	
+				}
 				return star;
 			}
 
 			case types.ExistsType:
 			case types.ForallType:{
 				// calls appropriate constructor function
-				return new t.constructor( t.id(), 
+				return new t.constructor( t.id(),
 						shift( t.inner(), c+1, d ),
 						( t.bound() !== null ? shift( t.bound(), c, d ) : null )
 						);
@@ -377,13 +377,13 @@ var TypeChecker = (function( exports ){
 
 			case types.ReferenceType:
 				return new ReferenceType( shift( t.location(), c, d ) );
-			
+
 			case types.StackedType:
 				return new StackedType( shift( t.left(), c, d ), shift( t.right(), c, d ) );
 
 			case types.CapabilityType:
 				return new CapabilityType( shift( t.location(), c, d ), shift( t.value(), c, d ) );
-			
+
 			case types.RecordType: {
 				var r = new RecordType();
 				t.fields().forEach(
@@ -422,7 +422,7 @@ var TypeChecker = (function( exports ){
 
 
 	var keyF = function( a, b ){
-		
+
 		var rebase = function( a ){
 			var s = indexSet(a);
 			if( s.size > 0 ){
@@ -485,13 +485,13 @@ var TypeChecker = (function( exports ){
 
 			return equalsAux( t1, t2, trail );
 		}
-		
+
 		if( t1.type !== t2.type )
 			return false;
-			
+
 		// assuming both same type
 		switch ( t1.type ){
-			case types.ForallType:		
+			case types.ForallType:
 			case types.ExistsType: {
 				if( t1.id().type !== t2.id().type )
 					return false;
@@ -546,13 +546,13 @@ var TypeChecker = (function( exports ){
 					return false;
 
 				for (var k of t2s.keys() ) {
-					if( !t1s.has(k) || 
+					if( !t1s.has(k) ||
 						!equalsAux( t1s.get(k), t2s.get(k), trail ) )
 						return false;
 				}
 
 				return true;
-			} 
+			}
 			case types.TupleType: {
 				var t1s = t1.inner();
 				var t2s = t2.inner();
@@ -571,7 +571,7 @@ var TypeChecker = (function( exports ){
 			case types.StarType:{
 				var i1s = t1.inner();
 				var i2s = t2.inner();
-				
+
 				if( i1s.length !== i2s.length )
 					return false;
 				// any order should do
@@ -612,17 +612,17 @@ var TypeChecker = (function( exports ){
 	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
 	 */
 	var substitutionAux = function(t,from,to){
-		
+
 		// for convenience...
 		var rec = function(type){
 			return substitutionAux(type,from,to);
 		}
-		
+
 		// base case: if X{to/X} = to and since we are only checking location
 		// variables or type variables, we only need to check the index.
 		if( t.type === from.type && t.index() === from.index() )
 			return to;
-			
+
 		switch ( t.type ){
 		case types.FunctionType:
 			return new FunctionType( rec(t.argument()), rec(t.body()) );
@@ -641,7 +641,7 @@ var TypeChecker = (function( exports ){
 				} );
 			return sum;
 		}
-		
+
 		case types.AlternativeType:
 		case types.IntersectionType:
 		case types.StarType:
@@ -649,12 +649,12 @@ var TypeChecker = (function( exports ){
 			var star = new t.constructor();
 			var inners = t.inner();
 			for( var i=0;i<inners.length;++i ){
-				star.add( rec(inners[i]) ); 
-			}	
+				star.add( rec(inners[i]) );
+			}
 			return star;
 		}
 
-		case types.ExistsType: 
+		case types.ExistsType:
 		case types.ForallType: {
 			var nvar = t.id();
 			var ninner = t.inner();
@@ -708,8 +708,8 @@ var TypeChecker = (function( exports ){
 	};
 
 	// =================================
-	
-	
+
+
 	/*
 	 * This is a "simpler" substitution where 'from' must either be a
 	 * LocationVariable or a TypeVariable. This restriction simplifies the
@@ -717,14 +717,14 @@ var TypeChecker = (function( exports ){
 	 * and instead are just looking for TypeVariables or LocationVariables
 	 */
 	var substitution = function(type,from,to){
-		if( from.type !== types.LocationVariable && 
+		if( from.type !== types.LocationVariable &&
 			from.type !== types.TypeVariable ){
 			error( "@substitution: can only substitute a Type/LocationVariable, got: "+from.type );
 		}
 
 		return substitutionAux(type,from,to);
 	};
-	
+
 	/**
 	 * Subtyping two types.
 	 * @param {Type} t1
@@ -739,7 +739,7 @@ var TypeChecker = (function( exports ){
 
 		if( t1 === t2 || equals(t1,t2) ) // A <: A
 			return true;
-		
+
 		// if mismatch on DefinitionType
 		var def1 = t1.type === types.DefinitionType;
 		var def2 = t2.type === types.DefinitionType;
@@ -773,14 +773,14 @@ var TypeChecker = (function( exports ){
 		// "pure to linear" - ( t1: !A ) <: ( t2: A )
 		if ( t1.type === types.BangType && t2.type !== types.BangType )
 			return subtypeAux( t1.inner(), t2, trail );
-	
+
 		// types that can be "banged"
 		if ( t2.type === types.BangType &&
 			( t1.type === types.ReferenceType
 			|| t1.type === types.PrimitiveType
 			|| ( t1.type === types.RecordType && t1.isEmpty() ) ) )
 			return subtypeAux( t1, t2.inner(), trail );
-			
+
 		// "ref" t1: (ref p) <: !(ref p)
 		if ( t1.type === types.ReferenceType && t2.type === types.BangType )
 			return subtypeAux( t1, t2.inner(), trail );
@@ -800,7 +800,7 @@ var TypeChecker = (function( exports ){
 					return true;
 				// else intentionally fall through.
 		}
-		
+
 		if( t1.type !== types.AlternativeType && t2.type === types.AlternativeType ){
 			// only requirement is that t1 is one of t2's alternative
 			var i2s = t2.inner();
@@ -811,7 +811,7 @@ var TypeChecker = (function( exports ){
 			}
 			return false;
 		}
-		
+
 		if( t1.type === types.IntersectionType && t2.type !== types.IntersectionType ){
 			// one of t1s alts is t2
 			var i1s = t1.inner();
@@ -840,13 +840,13 @@ var TypeChecker = (function( exports ){
 			var b = t2.bound();
 			return b === null || subtypeAux( u, b, trail );
 		}
-		
+
 		if( t1.type === types.ForallType && t2.type !== types.ForallType ){
 			// must shift 't2' to match 't1' depth
 			var t2_s = shift1( t2, 0 );
 
 			var u = unify( t1.id(), t1.inner(), t2_s );
-			
+
 			// must use '===' to avoid implicit conversions
 			if( u === false )
 				return false;
@@ -862,7 +862,7 @@ var TypeChecker = (function( exports ){
 		if( t1.type !== t2.type ){
 			return false;
 		}
-			
+
 		//else: safe to assume same type from here on
 		switch ( t1.type ){
 			case types.NoneType:
@@ -879,7 +879,7 @@ var TypeChecker = (function( exports ){
 
 			// we do not subtype inside a rely or guarantee type. thus, if this type
 			// appears here (after checking for equality) it must be 'false'
-			case types.RelyType: 
+			case types.RelyType:
 			case types.GuaranteeType:
 				return false
 
@@ -892,7 +892,7 @@ var TypeChecker = (function( exports ){
 
 				// all fields of t2 must be in t1
 				var t1fields = t1.fields();
-				var t2fields = t2.fields();				
+				var t2fields = t2.fields();
 				for( var k of t2fields.keys() ){
 					if( !t1fields.has(k) ||
 						!subtypeAux( t1fields.get(k), t2fields.get(k), trail ) ){
@@ -919,11 +919,11 @@ var TypeChecker = (function( exports ){
 			case types.AlternativeType:{
 				var i1s = t1.inner();
 				var i2s = t2.inner();
-				
+
 				// more alternatives in t1
 				if( i1s.length > i2s.length )
 					return false;
-					
+
 				// any order will do, but must ensure all of t1 is inside t2
 				var tmp_i2s = i2s.slice(0); // copies array
 				for(var i=0;i<i1s.length;++i){
@@ -947,11 +947,11 @@ var TypeChecker = (function( exports ){
 				// note intentionally inverts order, rest copy pasted from above.
 				var i1s = t2.inner();
 				var i2s = t1.inner();
-				
+
 				// more alternatives in t1
 				if( i1s.length > i2s.length )
 					return false;
-					
+
 				// any order will do, but must ensure all of t1 is inside t2
 				var tmp_i2s = i2s.slice(0); // copies array
 				for(var i=0;i<i1s.length;++i){
@@ -973,7 +973,7 @@ var TypeChecker = (function( exports ){
 			case types.StarType:{
 				var i1s = t1.inner();
 				var i2s = t2.inner();
-				
+
 				if( i1s.length !== i2s.length )
 					return false;
 				// for *-type, any order will do
@@ -1007,15 +1007,15 @@ var TypeChecker = (function( exports ){
 			case types.CapabilityType:
 				return subtypeAux( t1.location(), t2.location(), trail ) &&
 					subtypeAux( t1.value(), t2.value(), trail );
-				
-			case types.ForallType:		
+
+			case types.ForallType:
 			case types.ExistsType:{
-				
+
 				if( t1.id().type !== t2.id().type )
 					return false;
 				if( !equals( t1.bound(), t2.bound() ) )
 					return false;
-				
+
 				return subtypeAux( t1.inner(), t2.inner(), trail );
 			}
 
@@ -1029,9 +1029,9 @@ var TypeChecker = (function( exports ){
 
 	};
 
-	
+
 	var isFree = function( x, t ){
-		if( x.type !== types.LocationVariable && 
+		if( x.type !== types.LocationVariable &&
 			x.type !== types.TypeVariable ){
 			error( "@isFree: can only check a Type/LocationVariable, got: "+x.type );
 		}
@@ -1059,7 +1059,7 @@ var TypeChecker = (function( exports ){
 
 			case types.BangType:
 				return isFreeAux( x, t.inner(), trail );
-				
+
 			case types.ReferenceType:
 				return isFreeAux( x, t.location(), trail );
 
@@ -1108,7 +1108,7 @@ var TypeChecker = (function( exports ){
 				}
 				return true;
 			}
-			case types.ForallType:		
+			case types.ForallType:
 			case types.ExistsType:{
 				return ( t.bound() === null || isFreeAux( x, t.bound(), trail ) ) &&
 					// shifts 'x' by 1 when moving inside a forall/exists
@@ -1120,20 +1120,20 @@ var TypeChecker = (function( exports ){
 				return x.type !== t.type || x.index() !== t.index();
 
 			default:
-				error( "@isFreeAux: Not expecting " +t1.type );
+				error( "@isFreeAux: Not expecting " +t.type );
 		}
 	};
-	
+
 	// unfolds DefinitionType until it reaches some useful type
 	// NOTE: we previously checked for infinitely recursive definitions
 	// therefore this function should always terminate.
 	var unfold = function(t){
-		while( t.type === types.DefinitionType ){			
+		while( t.type === types.DefinitionType ){
 			t = unfoldDefinition(t);
 		}
 		return t;
 	};
-	
+
 	var unfoldDefinition = function(d){
 		if( d.type !== types.DefinitionType )
 			return d;
@@ -1213,7 +1213,7 @@ var TypeChecker = (function( exports ){
 				}
 				return;
 			}
-			case types.ForallType:		
+			case types.ForallType:
 			case types.ExistsType:{
 				if( t.bound() !== null ){
 					indexSetAux( t.bound(), c, set );
@@ -1228,7 +1228,7 @@ var TypeChecker = (function( exports ){
 				}
 				return;
 			}
-			case types.DefinitionType: {				
+			case types.DefinitionType: {
 				var ts = t.args();
 				for( var i=0 ; i<ts.length ; ++i ){
 					indexSetAux( ts[i], c, set );
@@ -1291,4 +1291,3 @@ var TypeChecker = (function( exports ){
 	return exports;
 
 })( TypeChecker ); // required globals
-
