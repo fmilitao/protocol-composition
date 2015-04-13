@@ -171,13 +171,14 @@ $(document).ready(function() {
 	}());
 
     var editor = ace.edit(EDITOR);
+		editor.$blockScrolling = Infinity; // FIXME on warning. useful?
 	var Range = ace.require("ace/range").Range;
 
 	(function(){
     	editor.setTheme(default_style);
     	// selected="selected"
 		var STYLE_LIST = $("#editor-style");
-		$.get( "ace/ace-themes-list" , function(data) {
+		$.get( "lib/ace/ace-themes-list" , function(data) {
 			var themes = data.split('\n');
 			for( var i=0 ; i<themes.length ; ++i ){
 				var name = themes[i];
