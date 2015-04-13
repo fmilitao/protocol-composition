@@ -1,7 +1,7 @@
-/// <reference path='../lib/def/chrome.d.ts' />
-
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
+
+/// <reference path='../lib/def/chrome.d.ts' />
 
 //
 // Worker thread
@@ -14,7 +14,7 @@ const IMPORTS = ['../lib/jison.js','ast.js','parser.js','typechecker.types.js','
 if( isWorker ){
 
 	// convenient debug
-	var console = function(){
+	var console = function() : any {
 		var aux = function(k,arg){
 			var tmp =[];
 			for( var i=0; i<arg.length; ++i )
@@ -94,6 +94,7 @@ var receiver = new function(){
 
 			ast = parser( data );
 
+/*
 			send('println', '<b>Type</b>: '+
 				toHTML( checker( ast , typeinfo ) ) );
 
@@ -104,6 +105,9 @@ var receiver = new function(){
 
 			// no errors!
 			send('setStatus','Checked in: '+typeinfo.diff+' ms');
+			send('updateAnnotations', null);
+			*/
+			send('setStatus','TYPE CHECKER DISABLED');
 			send('updateAnnotations', null);
 		}catch(e){
 			send('setStatus','Error!');

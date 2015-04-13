@@ -1,3 +1,5 @@
+// Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
+// GPL v3 Licensed http://www.gnu.org/licenses/
 /// <reference path='../lib/def/chrome.d.ts' />
 var isWorker = typeof (window) === 'undefined';
 var IMPORTS = ['../lib/jison.js', 'ast.js', 'parser.js', 'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
@@ -59,12 +61,7 @@ var receiver = new function () {
             send('clearAll', null);
             send('setStatus', 'Type checking...');
             ast = parser(data);
-            send('println', '<b>Type</b>: ' +
-                toHTML(checker(ast, typeinfo)));
-            if (!isWorker) {
-                console.debug('checked in: ' + typeinfo.diff + ' ms');
-            }
-            send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
+            send('setStatus', 'TYPE CHECKER DISABLED');
             send('updateAnnotations', null);
         }
         catch (e) {
