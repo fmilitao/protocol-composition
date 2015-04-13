@@ -44,11 +44,11 @@ if( !worker_enabled ){
 
 	console.log('importing scripts to run locally...');
 	importScript('lib/jison.js');
-	importScript('code/parser.js');
-	importScript('code/typechecker.types.js');
-	importScript('code/typechecker.utils.js');
-	importScript('code/typechecker.js');
-	importScript('code/worker.js');
+	importScript('src/parser.js');
+	importScript('src/typechecker.types.js');
+	importScript('src/typechecker.utils.js');
+	importScript('src/typechecker.js');
+	importScript('src/worker.js');
 	console.log('done.');
 }
 
@@ -154,7 +154,7 @@ $(document).ready(function() {
     	});
 
 	    $("#gear").click(function(){
-		
+
 			var position = $(this).offset();
 	    	var y = position.top;
 	      	var x = position.left;
@@ -574,7 +574,7 @@ $(document).ready(function() {
 					worker.terminate();
 				}
 
-				worker = new Worker('code/worker.js');
+				worker = new Worker('src/worker.js');
 				worker.addEventListener('message', function(e) {
 					var m = e.data;
 					try{

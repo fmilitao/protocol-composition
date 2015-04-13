@@ -7,7 +7,7 @@
 
 const isWorker = typeof(window) === 'undefined';
 const IMPORTS = ['../lib/jison.js','parser.js','typechecker.types.js','typechecker.utils.js','typechecker.js'];
-const GRAMMAR = (isWorker?'':'code/') + 'grammar.jison';
+const GRAMMAR = (isWorker?'':'src/') + 'grammar.jison';
 
 // only loads the following if it is a standalone thread
 if( isWorker ){
@@ -20,7 +20,7 @@ if( isWorker ){
 				tmp.push( arg[i].toString() );
 			self.postMessage({kind: k, data: '[Worker] '+tmp.join(' ') });
 		}
-		
+
 		return {
 			log : function(){ aux('log',arguments) },
 			error : function(){ aux('error',arguments) },
@@ -46,7 +46,7 @@ if( isWorker ){
 	send = function(k,msg){
 		self.postMessage({ kind: k, data: msg });
 	};
-	
+
 	self.addEventListener('message', function(e) {
 		var m = e.data;
 		try{
@@ -72,26 +72,26 @@ if( isWorker ){
 //
 
 var receiver = new function(){
-	
+
 	// local state between calls
 	// to avoid reparsing, the 'ast' is made available
 	// to the other listener functions through this var.
 	var ast = null;
 	var typeinfo = null;
-	
+
 	var handleError = function(e){
 		if( e.stack )
 			console.error( e.stack.toString() );
 		send('errorHandler', JSON.stringify(e));
 	};
-	
+
 	this.EVAL = function(data){
 		try{
 			ast = null;
 			typeinfo = {};
 			send('clearAll',null);
 			send('setStatus','Type checking...');
-	
+
 			ast = parser( data );
 
 			send('println', '<b>Type</b>: '+
@@ -101,7 +101,7 @@ var receiver = new function(){
 				// some debug information
 				console.debug( 'checked in: '+typeinfo.diff+' ms' );
 			}
-			
+
 			// no errors!
 			send('setStatus','Checked in: '+typeinfo.diff+' ms');
 			send('updateAnnotations', null);
@@ -110,7 +110,7 @@ var receiver = new function(){
 			handleError(e);
 		}
 	};
-	
+
 	this.CHECKER = function(pos){
 		try{
 			// only if parsed correctly
@@ -120,13 +120,13 @@ var receiver = new function(){
 		   		// resets typing output
 		   		send('clearTyping',null);
 		   	}
-		    
+
 			send('printTyping',info(typeinfo,pos).toString());
 		}catch(e){
 			handleError(e);
 		}
 	};
-	
+
 };
 
 if( !isWorker ){
@@ -161,8 +161,8 @@ var printConformance = function(cf){
 		'<th>P</th><th>Q</th>'+
 		'</tr>';
 	for(var i=0;i<cf.length;++i){
-		tmp += '<tr>' + '<td>' + i  +'</td>'+ 
-			'<td>'+ toHTML(cf[i].s) +'</td>'+ 
+		tmp += '<tr>' + '<td>' + i  +'</td>'+
+			'<td>'+ toHTML(cf[i].s) +'</td>'+
 			'<td>'+ toHTML(cf[i].p) +'</td>'+
 			'<td>'+ toHTML(cf[i].q) +'</td>'+
 			'</tr>';
@@ -172,9 +172,9 @@ var printConformance = function(cf){
 
 var printEnvironment = function(env){
 	var gamma = _printEnvironment(env);
-	
+
 	gamma = gamma.join(',\n    ');
-	
+
 	if( gamma === '' )
 		gamma = '&empty;';
 
@@ -183,8 +183,8 @@ var printEnvironment = function(env){
 
 var _printEnvironment = function(env){
 	var gamma = [];
-	
-	env.forEach( 
+
+	env.forEach(
 	// on element of the environment
 	function( i, id, type, bound ){
 
@@ -201,9 +201,9 @@ var _printEnvironment = function(env){
 		if( bound !== null && bound !== undefined ){
 			gamma.push('<span class="type_variable">'+id+'<sup>'+i+'</span> <: '+toHTML(bound));
 		}
-		
+
 	});
-	
+
 	return gamma;
 }
 
@@ -213,7 +213,7 @@ var info = function(tp,pos){
 	var diff = tp.diff;
 	var ptr = null;
 	var indexes = [];
-					
+
 	// search for closest one
 	for( var i in type_info ){
 		var ast = type_info[i].ast;
@@ -222,22 +222,22 @@ var info = function(tp,pos){
 			indexes = [i];
 		} else {
 			var old = type_info[ptr].ast;
-			
-			var dy = Math.abs(ast.line-pos.row);							
+
+			var dy = Math.abs(ast.line-pos.row);
 			var _dy = Math.abs(old.line-pos.row);
-			
+
 			if( dy < _dy ){
 				// if closer, pick new one
 				ptr = i;
 				indexes = [i];
 				continue;
 			}
-			
+
 			// on same line
 			if( dy === _dy ){
 				var dx = Math.abs(ast.col-pos.column);
 				var _dx = Math.abs(old.col-pos.column);
-					
+
 				// if closer, pick new one
 				if( dx < _dx ){
 					ptr = i;
@@ -248,26 +248,26 @@ var info = function(tp,pos){
 						// one more
 						indexes.push(i);
 						continue;
-					}	
+					}
 				}
 			}
 		}
 		/*
-		if( ( ast.line < pos.row || 
+		if( ( ast.line < pos.row ||
 	 		( ast.line === pos.row &&
 				ast.col <= pos.column ) ) ){
 	 			ptr = i;
 	 	}*/
 	}
-	
+
 	if( ptr === null || indexes.length === 0 )
 		return '';
 
 	var msg = '<b title="click to hide">Type Information</b> ('+diff+'ms)';
 	//msg += "<hr class='type_hr'/>";
-	
+
 	var res = [];
-	
+
 	for(var i=0;i<indexes.length;++i){
 		var ptr = indexes[i];
 		// minor trick: only print if the same kind since alternatives
@@ -280,8 +280,8 @@ var info = function(tp,pos){
 		var ev = printEnvironment( type_info[ptr].env );
 		var cf = type_info[ptr].conformance;
 		cf = (cf!==undefined?printConformance(cf):'');
-	
-		// group all those that have the same environment	
+
+		// group all those that have the same environment
 		var seen = false;
 		for(var j=0;!seen && j<res.length;++j){
 			var jj = res[j];
@@ -294,7 +294,7 @@ var info = function(tp,pos){
 				break;
 			}
 		}
-		
+
 		if( !seen ){
 			res.push( { ast : as, env : ev, cf : cf } );
 		}
@@ -303,12 +303,12 @@ var info = function(tp,pos){
 	for(var i=0;i<res.length;++i){
 		var tmp = res[i];
 		msg += "<hr class='type_hr'/>"
-			+ tmp.ast 
+			+ tmp.ast
 			+'<br/>'
 			+ tmp.env
-			+ tmp.cf;		
+			+ tmp.cf;
 	}
-	
+
 	return msg;
 }
 
@@ -321,7 +321,7 @@ var _toHTML = function(t){
 	if( t.type === types.ReferenceType ||
 		t.type === types.FunctionType ||
 		t.type === types.StackedType ||
-		t.type === types.StarType || 
+		t.type === types.StarType ||
 		t.type === types.AlternativeType ||
 		t.type === types.IntersectionType ||
 		t.type === types.SumType ){
@@ -336,14 +336,14 @@ var wQ = function(t){ return '<span class="Q">'+t+'</span>'; } // trigger
 var toHTML = function (t){
 	switch ( t.type ){
 		case types.FunctionType:
-			return wq( 
+			return wq(
 				wq( _toHTML(t.argument()) ) +
 				wQ( ' &#x22b8; ' ) +
 				//wQ( '<span class="type_fun"> &#x22b8; </span>' ) +
 				wq( _toHTML(t.body()) )
 				);
 		case types.BangType:{
-			var inner = t.inner();	
+			var inner = t.inner();
 			return wq( wQ("!") + wq(_toHTML(t.inner())) );
 		}
 		case types.SumType:{
@@ -361,21 +361,21 @@ var toHTML = function (t){
 			var inners = t.inner();
 			var res = [];
 			for( var i=0; i<inners.length; ++i )
-				res.push( wq( _toHTML( inners[i] ) ) ); 
+				res.push( wq( _toHTML( inners[i] ) ) );
 			return wq( res.join( wQ(' * ') ) );
 		}
 		case types.IntersectionType:{
 			var inners = t.inner();
 			var res = [];
 			for( var i=0; i<inners.length; ++i )
-				res.push( wq( _toHTML( inners[i] ) ) ); 
+				res.push( wq( _toHTML( inners[i] ) ) );
 			return wq( res.join( wQ(' &amp; ') ) );
 		}
 		case types.AlternativeType:{
 			var inners = t.inner();
 			var res = [];
 			for( var i=0; i<inners.length; ++i )
-				res.push( wq( _toHTML( inners[i] ) ) ); 
+				res.push( wq( _toHTML( inners[i] ) ) );
 			return wq( res.join( wQ(' &#8853; ') ) );
 		}
 		case types.ExistsType:
@@ -433,14 +433,14 @@ var toHTML = function (t){
 			var t_def = '<span class="type_definition">'+t.definition()+'</span>';
 			if( t.args().length === 0 )
 				return wq( t_def );
-			
+
 			var res = [];
 			var as = t.args();
 			for( var i in as )
 				res.push( toHTML(as[i]) );
 			return wq( t_def+wQ('[')+res.join(', ')+wQ(']') );
 		}
-		
+
 		case types.RelyType:
 			return wq( wq( _toHTML(t.rely()) )+wQ(' &#8658; ') + wq(_toHTML(t.guarantee())) );
 		case types.GuaranteeType:
