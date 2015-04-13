@@ -52,6 +52,9 @@ var parser = function(file){
 	})(parser);
 };
 
+// FIXME: this behaves differently from the compiled jison grammar.
+// debug compiled code to see what object is returned.
+
 // generates parser
 // worker will have to consider src/ root.
 // isWorker = typeof(window) === 'undefined';
