@@ -61,7 +61,7 @@
 %right '=>' ';'
 %left FORALL EXISTS
 %left '{'
-%right '::' 
+%right '::'
 %left '*' '(+)' '&'
 %left '!' RW
 %left ','
@@ -72,7 +72,7 @@
 
 file
 	: EOF
-		{ return AST.makeProgram(null,[],@$); }
+		{ return new AST.Exp.Program(null,[],@$); }
 	| program EOF
 		{ return $1; }
 	;
@@ -81,78 +81,78 @@ file
 
 t
 	: NONE
-		{ $$ = AST.makeNoneType(@$); }
+		{ $$ = new AST.Type.None(@$); }
 	| TOP
-		{ $$ = AST.makeTopType(@$); }
+		{ $$ = new AST.Type.Top(@$); }
 	| INT_TYPE
-	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
+	 	{ $$ = new AST.Type.Primitive(yytext,@$); }
 	| BOOLEAN_TYPE
-	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
+	 	{ $$ = new AST.Type.Primitive(yytext,@$); }
 	| STRING_TYPE
-	 	{ $$ = AST.makePrimitiveType(yytext,@$); }
+	 	{ $$ = new AST.Type.Primitive(yytext,@$); }
 
 	| '!' t
- 	  	{ $$ = AST.makeBangType($2,@$); }
+ 	  	{ $$ = new AST.Type.Bang($2,@$); }
 	| id
 	 	{ $$ = $1; }
 	| REF IDENTIFIER
-	 	{ $$ = AST.makeRefType($2,@$); }
+	 	{ $$ = new AST.Type.Reference($2,@$); }
 	| '(' t ')'
 	 	{ $$ = $2; }
 	| RW IDENTIFIER t
-		{ $$ = AST.makeCapabilityType($2,$3,@$); }
+		{ $$ = new AST.Type.Capability($2,$3,@$); }
 
 	| '[' ']'
-	 	{ $$ = AST.makeRecordType([],@$); }
+	 	{ $$ = new AST.Type.Record([],@$); }
 	| '[' field_types ']'
-	 	{ $$ = AST.makeRecordType($2,@$); }
+	 	{ $$ = new AST.Type.Record($2,@$); }
 	| '[' type_list ']'
-		{ $$ = AST.makeTupleType($2,@$); }
+		{ $$ = new AST.Type.Tuple($2,@$); }
 
 	| FORALL IDENTIFIER '.' t
-		{ $$ = AST.makeForallType($2,$4,null,@$); }
+		{ $$ = new AST.Type.Forall($2,$4,null,@$); }
 	| FORALL IDENTIFIER '<:' t '.' t
-		{ $$ = AST.makeForallType($2,$6,$4,@$); }
+		{ $$ = new AST.Type.Forall($2,$6,$4,@$); }
 	| EXISTS IDENTIFIER '.' t
-		{ $$ = AST.makeExistsType($2,$4,null,@$); }
+		{ $$ = new AST.Type.Exists($2,$4,null,@$); }
 	| EXISTS IDENTIFIER '<:' t '.' t
-		{ $$ = AST.makeExistsType($2,$6,$4,@$); }
+		{ $$ = new AST.Type.Exists($2,$6,$4,@$); }
 
 	| t '{' t '/' id '}'
-		{ $$ = AST.makeSubstitution($1,$3,$5,@$); }
+		{ $$ = new AST.Type.Substitution($1,$3,$5,@$); }
 
 	| sum_type
-		{ $$ = AST.makeSumType($1,@$); }
+		{ $$ = new AST.Type.Sum($1,@$); }
 
 	| t '=>' t
-		{ $$ = AST.makeRelyType($1,$3,@$); }
+		{ $$ = new AST.Type.Rely($1,$3,@$); }
 	| t ';' t
-		{ $$ = AST.makeGuaranteeType($1,$3,@$); }
+		{ $$ = new AST.Type.Guarantee($1,$3,@$); }
 
 	| t '-o' t
-		{ $$ = AST.makeFunType($1,$3,@$); }
+		{ $$ = new AST.Type.Function($1,$3,@$); }
 	| IDENTIFIER '[' type_list ']'
-		{ $$ = AST.makeDefinitionType($1,$3,@$); }
+		{ $$ = new AST.Type.Definition($1,$3,@$); }
 
 	| t '::' t
-		{ $$ = AST.makeStackedType($1,$3,@$); }
+		{ $$ = new AST.Type.Stacked($1,$3,@$); }
 
 	// these collapse their arguments for convenience
 	| t '*' t
-		{ $$ = AST.makeStarType($1,$3,@$); }
+		{ $$ = new AST.Type.Star($1,$3,@$); }
 	| t '&' t
-		{ $$ = AST.makeIntersectionType($1,$3,@$); }
+		{ $$ = new AST.Type.Intersection($1,$3,@$); }
 	| t '(+)' t
-		{ $$ = AST.makeAlternativeType($1,$3,@$); }
+		{ $$ = new AST.Type.Alternative($1,$3,@$); }
 	;
 
 // AUX
 
 sum_type
 	: IDENTIFIER '#' t
-		{ $$ = [AST.makeTaggedType($1,$3,@$)]; }
+		{ $$ = [new AST.Type.Tagged($1,$3,@$)]; }
 	| IDENTIFIER '#' t '+' sum_type
-		{ $$ = [AST.makeTaggedType($1,$3,@$)].concat($5); }
+		{ $$ = [new AST.Type.Tagged($1,$3,@$)].concat($5); }
 	;
 
 type_list
@@ -164,14 +164,14 @@ type_list
 
 id :
 	IDENTIFIER
-	 	{ $$ = AST.makeNameType(yytext,@$); }
+	 	{ $$ = new AST.Type.Name(yytext,@$); }
 	;
 
 field_type :
 	IDENTIFIER ':' t
-		{ $$ = AST.makeFieldType($1,$3,@$); }
+		{ $$ = new AST.Type.Field($1,$3,@$); }
 	;
-	
+
 field_types
 	: field_type
 		{ $$ = [$1]; }
@@ -183,18 +183,18 @@ field_types
 
 program
 	: sequence
-	  	{ $$ = AST.makeProgram(null,$1,@$); }
+	  	{ $$ = new AST.Exp.Program(null,$1,@$); }
 	| sequence blocks
-		{ $$ = AST.makeProgram($2.typedefs,$1.concat($2.exp),@$); }
+		{ $$ = new AST.Exp.Program($2.typedefs,$1.concat($2.exp),@$); }
 	| blocks
 		{ $$ = $1; }
 	;
 
 blocks :
 	  typedefs sequence
-		{ $$ = AST.makeProgram($1,$2,@$); }
-	| typedefs sequence blocks 
-		{ $$ = AST.makeProgram($1.concat($3.typedefs),$2.concat($3.exp),@$); }
+		{ $$ = new AST.Exp.Program($1,$2,@$); }
+	| typedefs sequence blocks
+		{ $$ = new AST.Exp.Program($1.concat($3.typedefs),$2.concat($3.exp),@$); }
 	;
 
 typedefs
@@ -206,9 +206,9 @@ typedefs
 
 typedef
 	: TYPEDEF IDENTIFIER '=' t
-		{ $$ = AST.makeTypedef($2,$4,null,@$); }
+		{ $$ = new AST.Exp.TypeDef($2,$4,null,@$); }
 	| TYPEDEF IDENTIFIER '[' ids_list ']' '=' t
-		{ $$ = AST.makeTypedef($2,$7,$4,@$); }
+		{ $$ = new AST.Exp.TypeDef($2,$7,$4,@$); }
 	;
 
 ids_list
@@ -227,9 +227,9 @@ sequence
 
 forall
 	: '<' IDENTIFIER '>' forall
-		{ $$ = [AST.makeForall($2,$4[0],null,@$)]; }
+		{ $$ = [new AST.Exp.Forall($2,$4[0],null,@$)]; }
 	| '<' IDENTIFIER '<:' t '>' forall
-		{ $$ = [AST.makeForall($2,$6[0],$4,@$)]; }
+		{ $$ = [new AST.Exp.Forall($2,$6[0],$4,@$)]; }
     | share
 		{ $$ = $1; }
 	| subtype
@@ -240,22 +240,21 @@ forall
 
 share
 	: SHARE t AS t '||' t
-		{ $$ = [AST.makeShare(true,$2,$4,$6,@$)]; }
+		{ $$ = [new AST.Exp.Share(true,$2,$4,$6,@$)]; }
 	| NOT SHARE t AS t '||' t
-		{ $$ = [AST.makeShare(false,$3,$5,$7,@$)]; }
+		{ $$ = [new AST.Exp.Share(false,$3,$5,$7,@$)]; }
 	;
 
 subtype
 	: SUBTYPE t '<:' t
-		{ $$ = [AST.makeSubtype(true,$2,$4,@$)]; }
+		{ $$ = [new AST.Exp.Subtype(true,$2,$4,@$)]; }
 	| NOT SUBTYPE t '<:' t
-		{ $$ = [AST.makeSubtype(false,$3,$5,@$)]; }
+		{ $$ = [new AST.Exp.Subtype(false,$3,$5,@$)]; }
 	;
 
 equals
 	: EQUALS t '==' t
-		{ $$ = [AST.makeEquals(true,$2,$4,@$)]; }
+		{ $$ = [new AST.Exp.Equals(true,$2,$4,@$)]; }
 	| NOT EQUALS t '==' t
-		{ $$ = [AST.makeEquals(false,$3,$5,@$)]; }
+		{ $$ = [new AST.Exp.Equals(false,$3,$5,@$)]; }
 	;
-

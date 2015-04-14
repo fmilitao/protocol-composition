@@ -113,18 +113,6 @@ var AST;
         })(BaseAST);
         Exp.Program = Program;
         ;
-        var Substitution = (function (_super) {
-            __extends(Substitution, _super);
-            function Substitution(type, to, from, info) {
-                _super.call(this, info);
-                this.type = type;
-                this.to = to;
-                this.from = from;
-            }
-            return Substitution;
-        })(BaseAST);
-        Exp.Substitution = Substitution;
-        ;
         var Share = (function (_super) {
             __extends(Share, _super);
             function Share(value, type, a, b, info) {
@@ -162,11 +150,35 @@ var AST;
         })(BaseAST);
         Exp.Equals = Equals;
         ;
+        var Forall = (function (_super) {
+            __extends(Forall, _super);
+            function Forall(id, bound, exp, info) {
+                _super.call(this, info);
+                this.id = id;
+                this.bound = bound;
+                this.exp = exp;
+            }
+            return Forall;
+        })(BaseAST);
+        Exp.Forall = Forall;
+        ;
     })(Exp = AST.Exp || (AST.Exp = {}));
     ;
     var Type;
     (function (Type) {
         ;
+        ;
+        var Substitution = (function (_super) {
+            __extends(Substitution, _super);
+            function Substitution(type, to, from, info) {
+                _super.call(this, info);
+                this.type = type;
+                this.to = to;
+                this.from = from;
+            }
+            return Substitution;
+        })(BaseAST);
+        Type.Substitution = Substitution;
         ;
         var Exists = (function (_super) {
             __extends(Exists, _super);

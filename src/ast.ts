@@ -104,10 +104,10 @@ module AST {
 												TypeDef(x: TypeDef): T;
 												Import(x: Import): T;
 												Program(x: Program): T;
-												Substitution(x: Substitution): T;
 												Share(x: Share): T;
 												Subtype(x: Subtype): T;
 												Equals(x: Equals): T;
+            Forall(x: Forall): T;
         };
 
 								export class TypeDef extends BaseAST {
@@ -141,16 +141,6 @@ module AST {
 												}
 								};
 
-								export class Substitution extends BaseAST {
-												constructor(
-																public type: Type.Type,
-																public to: Type.Type,
-																public from: Type.Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
 
 								export class Share extends BaseAST {
             constructor(
@@ -186,6 +176,17 @@ module AST {
             }
 								};
 
+        export class Forall extends BaseAST {
+												constructor(
+																public id: string,
+																public bound: Type.Type,
+																public exp: Exp,
+																info: any
+																) {
+																super(info);
+												}
+								};
+
 				};
 
 				//
@@ -199,29 +200,42 @@ module AST {
         };
 
         export interface MatchType<T> {
-            Exists( x : Exists ) : T;
-												Forall( x : Forall ) : T;
-												Stacked( x : Stacked ) : T;
-												Rely( x : Rely ) : T;
-												Guarantee( x : Guarantee ) : T;
-												Sum( x : Sum ) : T;
-												Star( x : Star ) : T;
-												Alternative( x : Alternative ) : T;
-												Intersection( x : Intersection ) : T;
-												Function(x: Function): T;
-            Capability( x : Capability) : T;
-            Name( x : Name ) : T;
-            Primitive( x : Primitive) : T;
-            Reference( x : Reference) : T;
-            Bang( x : Bang ) : T;
-            Record( x : Record) : T;
-            Field( x : Field ) : T;
-            Tuple( x : Tuple) : T;
-            Tagged( x : Tagged );
-            None( x : None ) : T;
-            Top ( x : Top ) : T;
-            Definition( x : Definition ) : T;
+            Substitution(x: Substitution): T;
 
+            Exists(x: Exists): T;
+												Forall(x: Forall): T;
+												Stacked(x: Stacked): T;
+												Rely(x: Rely): T;
+												Guarantee(x: Guarantee): T;
+												Sum(x: Sum): T;
+												Star(x: Star): T;
+												Alternative(x: Alternative): T;
+												Intersection(x: Intersection): T;
+												Function(x: Function): T;
+            Capability(x: Capability): T;
+            Name(x: Name): T;
+            Primitive(x: Primitive): T;
+            Reference(x: Reference): T;
+            Bang(x: Bang): T;
+            Record(x: Record): T;
+            Field(x: Field): T;
+            Tuple(x: Tuple): T;
+            Tagged(x: Tagged);
+            None(x: None): T;
+            Top(x: Top): T;
+            Definition(x: Definition): T;
+
+        };
+
+        export class Substitution extends BaseAST {
+            constructor(
+                public type: Type,
+                public to: Type,
+                public from: Type,
+                info: any
+                ) {
+                super(info);
+            }
         };
 
 								export class Exists extends BaseAST {
