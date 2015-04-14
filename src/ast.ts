@@ -107,7 +107,6 @@ module AST {
 
         export interface MatchExp<T> {
 												TypeDef(x: TypeDef): T;
-												Import(x: Import): T;
 												Program(x: Program): T;
 												Share(x: Share): T;
 												Subtype(x: Subtype): T;
@@ -120,16 +119,6 @@ module AST {
                 public id: Exp,
                 public type: Exp,
                 public pars: Exp[],
-                info: any
-                ) {
-                super(info);
-            }
-								};
-
-								// FIXME: is this useful??
-								export class Import extends BaseAST {
-            constructor(
-                public id: string,
                 info: any
                 ) {
                 super(info);
@@ -149,7 +138,7 @@ module AST {
 
 								export class Share extends BaseAST {
             constructor(
-                public value: Exp,
+                public value: boolean,
                 public type: Type.Type,
                 public a: Type.Type,
                 public b: Type.Type,

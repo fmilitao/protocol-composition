@@ -485,10 +485,111 @@ var TypeChecker: any = (function(exports) {
 
 
 				const matchExp: AST.Exp.MatchExp<any> = {
-        TypeDef: x => null,
-        Import: x => null,
-        Program: x => null,
-        Share: x => null,
+
+        // TypeDef should not be used like this
+        TypeDef: x => assert(false,x),
+
+        Program: ast => (c, _) => {
+
+            // ignores old environment, this is a new program!
+
+            let typedef = new TypeDefinition();
+            let env = new Gamma(typedef, null);
+
+            // handle type definitions
+            if (ast.typedefs !== null) {
+
+                // 1st pass: extract all argument definitions, note that
+                // duplication is not checked at this stage
+                for (var i = 0; i < ast.typedefs.length; ++i) {
+                    var it = ast.typedefs[i];
+                    var args: any = [];
+                    var pars = it.pars;
+
+                    // only do this if there are any actual definition parameters
+                    if (pars !== null) {
+                        args = new Array(pars.length);
+
+                        for (var j = 0; j < pars.length; ++j) {
+                            // indexes MUST go [ n, n-1, ..., 1, 0 ] to match the
+                            // desired depth of the DeBruijn indexes.
+                            var n = pars[j];
+                            args[j] = isTypeVariableName(n) ?
+                                new TypeVariable(n, (pars.length - j - 1), null) :
+                                new LocationVariable(n, (pars.length - j - 1));
+                        }
+                    }
+
+                    assert(typedef.addType(it.id, args)
+                        || ('Duplicated typedef: ' + it.id), it);
+                }
+
+                // 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
+                for (var i = 0; i < ast.typedefs.length; ++i) {
+                    var type = ast.typedefs[i];
+                    var tmp_env = env;
+                    var args: any = typedef.getType(type.id);
+
+                    // sets the variables, if there are any to setup
+                    if (args !== null) {
+                        for (var j = 0; j < args.length; ++j) {
+                            // should be for both LocationVariables and TypeVariables
+                            tmp_env = tmp_env.newScope(args[j].name(), args[j], null);
+                        }
+                    }
+
+                    // map of type names to typechecker types
+                    // FIXME needs to ensure that definition is not a locationvariable?
+                    assert(typedef.addDefinition(type.id, c.checkType(type.type, tmp_env))
+                        || ('Duplicated typedef: ' + type.id), type);
+                }
+
+                // 3rd pass: check for bottom types.
+                for (var i = 0; i < ast.typedefs.length; ++i) {
+                    var type = ast.typedefs[i];
+                    var x = typedef.getDefinition(type.id);
+                    var set = new Set();
+                    while (x.type === types.DefinitionType) {
+                        // note that we use the string-indexOnly representation of the type
+                        set.add(x.toString(false));
+                        x = unfoldDefinition(x);
+                        // if already seen this unfold, then type is a cycle
+                        assert(!set.has(x.toString(false))
+                            || ('Infinite typedef (i.e. bottom type): ' + type.id), type);
+                    }
+
+                }
+
+            }
+
+            // check main expressions:
+            for (let exp of ast.exp) {
+                c.checkExp(exp, env);
+            }
+
+            // FIXME: bogus return...
+            return NoneType;
+        },
+
+        Share: ast => (c, env) => {
+            var cap = c.checkType(ast.type, env);
+            var left = c.checkType(ast.a, env);
+            var right = c.checkType(ast.b, env);
+
+            // Protocol conformance, goes through all possible "protocol
+            // interleaving" and ensures that all those possibilities are
+            // considered in both protocols.
+
+            var table = checkConformance(env, cap, left, right);
+            var res = table !== null; // is valid if table not null
+            // checkProtocolConformance(cap, left, right, ast);
+
+            assert(ast.value === res || ('Unexpected Result, got ' + res + ' expecting ' + ast.value), ast);
+
+            //FIXME return type should depend on the kind of node: types -> type , construct -> some info.
+            // returns an array or null
+            return table;
+        },
 
         // subtyping of types
         Subtype: ast => (c, env) => {
@@ -508,7 +609,28 @@ var TypeChecker: any = (function(exports) {
             return left;
         },
 
-								Forall: x => null,
+								Forall: ast => (c, env) => {
+            let id = ast.id;
+            let variable;
+            let bound;
+
+            if (isTypeVariableName(id)) {
+                bound = !ast.bound ?
+                    TopType : // no bound, default is 'top'
+                    // else check with empty environment (due to decidability issues)
+                    c.checkType(ast.bound, new Gamma(env.getTypeDef(), null));
+                variable = new TypeVariable(id, 0, bound);
+            }
+            else {
+                variable = new LocationVariable(id, 0);
+                bound = null;
+            }
+
+            let e = env.newScope(id, variable, bound);
+            let type = c.checkExp(ast.exp, e);
+
+            return new ForallType(variable, type, bound);
+        },
 				};
 
 				const matchType: AST.Type.MatchType<any> = {
@@ -535,12 +657,12 @@ var TypeChecker: any = (function(exports) {
         Top: x => null,
         Definition: x => null,
 
-        Primitive: ast => (c,env) => {
+        Primitive: ast => (c, env) => {
 												// relying on the parser to limit primitive types to ints, etc.
 												return new PrimitiveType(ast.text);
 								},
 
-        None: ast => (c,env) => {
+        None: ast => (c, env) => {
             // uses singleton NoneType, there is only one.
 												return NoneType;
 								},
@@ -570,23 +692,6 @@ var TypeChecker: any = (function(exports) {
                       return substitution(type, from, to);
                   };
 
-              case AST.SUBTYPE:
-                  return function(ast, env) {
-                      var left = check(ast.a, env);
-                      var right = check(ast.b, env);
-                      var s = subtype(left, right);
-                      assert(s == ast.value || ('Unexpected Result, got ' + s + ' expecting ' + ast.value), ast);
-                      return left;
-                  };
-
-              case AST.EQUALS:
-                  return function(ast, env) {
-                      var left = check(ast.a, env);
-                      var right = check(ast.b, env);
-                      var s = equals(left, right);
-                      assert(s == ast.value || ('Unexpected Result, got ' + s + ' expecting ' + ast.value), ast);
-                      return left;
-                  };
 
               case AST.SUM_TYPE:
                   return function(ast, env) {
@@ -718,26 +823,6 @@ var TypeChecker: any = (function(exports) {
                       return rec;
                   };
 
-              case AST.SHARE:
-                  return function(ast, env) {
-                      var cap = check(ast.type, env);
-                      var left = check(ast.a, env);
-                      var right = check(ast.b, env);
-
-                      // Protocol conformance, goes through all possible "protocol
-                      // interleaving" and ensures that all those possibilities are
-                      // considered in both protocols.
-
-                      var table = checkConformance(env, cap, left, right);
-                      var res = table !== null; // is valid if table not null
-                      // checkProtocolConformance(cap, left, right, ast);
-
-                      assert(ast.value === res || ('Unexpected Result, got ' + res + ' expecting ' + ast.value), ast);
-
-                      //FIXME return type should depend on the kind of node: types -> type , construct -> some info.
-                      // returns an array or null
-                      return table;
-                  };
 
               // TYPES
               case AST.RELY_TYPE:
@@ -865,92 +950,6 @@ var TypeChecker: any = (function(exports) {
       }
       */
 
-    var checkProgram = function(ast: AST.Exp.Program, check) {
-        // pre: ast is program's root
-        error((ast instanceof AST.Exp.Program) || 'Unexpected AST node');
-
-
-        let typedef = new TypeDefinition();
-        let env = new Gamma(typedef, null);
-
-        /*
-        // handle type definitions
-        if (ast.typedefs !== null) {
-
-            // 1st pass: extract all argument definitions, note that
-            // duplication is not checked at this stage
-            for (var i = 0; i < ast.typedefs.length; ++i) {
-                var it = ast.typedefs[i];
-                var args: any = [];
-                var pars = it.pars;
-
-                // only do this if there are any actual definition parameters
-                if (pars !== null) {
-                    args = new Array(pars.length);
-
-                    for (var j = 0; j < pars.length; ++j) {
-                        // indexes MUST go [ n, n-1, ..., 1, 0 ] to match the
-                        // desired depth of the DeBruijn indexes.
-                        var n = pars[j];
-                        args[j] = isTypeVariableName(n) ?
-                            new TypeVariable(n, (pars.length - j - 1), null) :
-                            new LocationVariable(n, (pars.length - j - 1));
-                    }
-                }
-
-                assert(typedef.addType(it.id, args)
-                    || ('Duplicated typedef: ' + it.id), it);
-            }
-
-            // 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
-            for (var i = 0; i < ast.typedefs.length; ++i) {
-                var type = ast.typedefs[i];
-                var tmp_env = env;
-                var args: any = typedef.getType(type.id);
-
-                // sets the variables, if there are any to setup
-                if (args !== null) {
-                    for (var j = 0; j < args.length; ++j) {
-                        // should be for both LocationVariables and TypeVariables
-                        tmp_env = tmp_env.newScope(args[j].name(), args[j], null);
-                    }
-                }
-
-                // map of type names to typechecker types
-                // FIXME needs to ensure that definition is not a locationvariable?
-                assert(typedef.addDefinition(type.id, check(type.type, tmp_env))
-                    || ('Duplicated typedef: ' + type.id), type);
-            }
-
-            // 3rd pass: check for bottom types.
-            for (var i = 0; i < ast.typedefs.length; ++i) {
-                var type = ast.typedefs[i];
-                var x = typedef.getDefinition(type.id);
-                var set = new Set();
-                while (x.type === types.DefinitionType) {
-                    // note that we use the string-indexOnly representation of the type
-                    set.add(x.toString(false));
-                    x = unfoldDefinition(x);
-                    // if already seen this unfold, then type is a cycle
-                    assert(!set.has(x.toString(false))
-                        || ('Infinite typedef (i.e. bottom type): ' + type.id), type);
-                }
-
-            }
-
-        }
-        */
-
-        // check main expression:
-        var exps = ast.exp;
-        for (var i = 0; i < exps.length; ++i) {
-            check.checkExp(exps[i], env);
-        }
-
-
-        // bogus return... but anyway.
-        return NoneType;
-    }
 
     /*
     // inspector( ast, env, checkFunction )
@@ -1007,22 +1006,21 @@ var TypeChecker: any = (function(exports) {
 
         // timer start
         let start = new Date().getTime();
-        let checker = {
+        let c = {
 
             // for expressions
             checkExp: (ast: AST.Exp.Exp, env) => {
-                return (ast.match(matchExp))(checker,env);
+                return (ast.match(matchExp))(c, env);
             },
 
             // for types
             checkType: (ast: AST.Type.Type, env) => {
-                return (ast.match(matchType))(checker,env);
+                return (ast.match(matchType))(c, env);
             },
         };
 
-
         try {
-            return checkProgram(ast, checker);
+            return c.checkExp(ast, c);
         } finally {
             if (log) {
                 log.diff = (new Date().getTime()) - start;

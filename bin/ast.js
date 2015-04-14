@@ -97,16 +97,6 @@ var AST;
         })(BaseAST);
         Exp.TypeDef = TypeDef;
         ;
-        var Import = (function (_super) {
-            __extends(Import, _super);
-            function Import(id, info) {
-                _super.call(this, info);
-                this.id = id;
-            }
-            return Import;
-        })(BaseAST);
-        Exp.Import = Import;
-        ;
         var Program = (function (_super) {
             __extends(Program, _super);
             function Program(typedefs, exp, info) {

@@ -324,10 +324,67 @@ var TypeChecker = (function (exports) {
         return [s, a, b];
     };
     var matchExp = {
-        TypeDef: function (x) { return null; },
-        Import: function (x) { return null; },
-        Program: function (x) { return null; },
-        Share: function (x) { return null; },
+        TypeDef: function (x) { return assert(false, x); },
+        Program: function (ast) { return function (c, _) {
+            // ignores old environment, this is a new program!
+            var typedef = new TypeDefinition();
+            var env = new Gamma(typedef, null);
+            if (ast.typedefs !== null) {
+                for (var i = 0; i < ast.typedefs.length; ++i) {
+                    var it = ast.typedefs[i];
+                    var args = [];
+                    var pars = it.pars;
+                    if (pars !== null) {
+                        args = new Array(pars.length);
+                        for (var j = 0; j < pars.length; ++j) {
+                            var n = pars[j];
+                            args[j] = isTypeVariableName(n) ?
+                                new TypeVariable(n, (pars.length - j - 1), null) :
+                                new LocationVariable(n, (pars.length - j - 1));
+                        }
+                    }
+                    assert(typedef.addType(it.id, args)
+                        || ('Duplicated typedef: ' + it.id), it);
+                }
+                for (var i = 0; i < ast.typedefs.length; ++i) {
+                    var type = ast.typedefs[i];
+                    var tmp_env = env;
+                    var args = typedef.getType(type.id);
+                    if (args !== null) {
+                        for (var j = 0; j < args.length; ++j) {
+                            tmp_env = tmp_env.newScope(args[j].name(), args[j], null);
+                        }
+                    }
+                    assert(typedef.addDefinition(type.id, c.checkType(type.type, tmp_env))
+                        || ('Duplicated typedef: ' + type.id), type);
+                }
+                for (var i = 0; i < ast.typedefs.length; ++i) {
+                    var type = ast.typedefs[i];
+                    var x = typedef.getDefinition(type.id);
+                    var set = new Set();
+                    while (x.type === types.DefinitionType) {
+                        set.add(x.toString(false));
+                        x = unfoldDefinition(x);
+                        assert(!set.has(x.toString(false))
+                            || ('Infinite typedef (i.e. bottom type): ' + type.id), type);
+                    }
+                }
+            }
+            for (var _i = 0, _a = ast.exp; _i < _a.length; _i++) {
+                var exp = _a[_i];
+                c.checkExp(exp, env);
+            }
+            return NoneType;
+        }; },
+        Share: function (ast) { return function (c, env) {
+            var cap = c.checkType(ast.type, env);
+            var left = c.checkType(ast.a, env);
+            var right = c.checkType(ast.b, env);
+            var table = checkConformance(env, cap, left, right);
+            var res = table !== null;
+            assert(ast.value === res || ('Unexpected Result, got ' + res + ' expecting ' + ast.value), ast);
+            return table;
+        }; },
         Subtype: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
@@ -342,7 +399,24 @@ var TypeChecker = (function (exports) {
             assert(s == ast.value || ('Unexpected Result, got ' + s + ' expecting ' + ast.value), ast);
             return left;
         }; },
-        Forall: function (x) { return null; },
+        Forall: function (ast) { return function (c, env) {
+            var id = ast.id;
+            var variable;
+            var bound;
+            if (isTypeVariableName(id)) {
+                bound = !ast.bound ?
+                    TopType :
+                    c.checkType(ast.bound, new Gamma(env.getTypeDef(), null));
+                variable = new TypeVariable(id, 0, bound);
+            }
+            else {
+                variable = new LocationVariable(id, 0);
+                bound = null;
+            }
+            var e = env.newScope(id, variable, bound);
+            var type = c.checkExp(ast.exp, e);
+            return new ForallType(variable, type, bound);
+        }; },
     };
     var matchType = {
         Substitution: function (x) { return null; },
@@ -373,29 +447,19 @@ var TypeChecker = (function (exports) {
             return NoneType;
         }; },
     };
-    var checkProgram = function (ast, check) {
-        error((ast instanceof AST.Exp.Program) || 'Unexpected AST node');
-        var typedef = new TypeDefinition();
-        var env = new Gamma(typedef, null);
-        var exps = ast.exp;
-        for (var i = 0; i < exps.length; ++i) {
-            check.checkExp(exps[i], env);
-        }
-        return NoneType;
-    };
     exports.check = function (ast, log) {
         //type_info = []; // reset
         var start = new Date().getTime();
-        var checker = {
+        var c = {
             checkExp: function (ast, env) {
-                return (ast.match(matchExp))(checker, env);
+                return (ast.match(matchExp))(c, env);
             },
             checkType: function (ast, env) {
-                return (ast.match(matchType))(checker, env);
+                return (ast.match(matchType))(c, env);
             },
         };
         try {
-            return checkProgram(ast, checker);
+            return c.checkExp(ast, c);
         }
         finally {
             if (log) {
