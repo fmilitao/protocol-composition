@@ -51,7 +51,7 @@ var receiver = new function() {
     // local state between calls
     // to avoid reparsing, the 'ast' is made available
     // to the other listener functions through this var.
-    var ast = null;
+    var ast: AST.Exp.Program = null;
     var typeinfo = null;
 
     var handleError = function(e) {
@@ -67,23 +67,20 @@ var receiver = new function() {
             send('clearAll', null);
             send('setStatus', 'Type checking...');
 
-            ast = parser(data);
+            ast = <AST.Exp.Program> (parser(data));
 
-            /*
-                        send('println', '<b>Type</b>: '+
-                            toHTML( checker( ast , typeinfo ) ) );
+            send('println', '<b>Type</b>: ' +
+                toHTML(checker(ast, typeinfo)));
 
-                        if( !isWorker ){
-                            // some debug information
-                            (<any>console).debug( 'checked in: '+typeinfo.diff+' ms' );
-                        }
+            if (!isWorker) {
+                // some debug information
+                (<any>console).debug('checked in: ' + typeinfo.diff + ' ms');
+            }
 
-                        // no errors!
-                        send('setStatus','Checked in: '+typeinfo.diff+' ms');
-                        send('updateAnnotations', null);
-                        */
-            send('setStatus', 'TYPE CHECKER DISABLED');
+            // no errors!
+            send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
             send('updateAnnotations', null);
+
         } catch (e) {
             send('setStatus', 'Error!');
             handleError(e);

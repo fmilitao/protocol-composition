@@ -11,13 +11,13 @@ function ErrorWrapper(msg, kind, ast, debug, stack?) {
     this.toString = function() {
         return this.kind + ': ' + this.message;
     }
-}
+};
 
 // convenient assert function to wrap errors
 function assertF(kind, f, msg, ast) {
-    var result = undefined;
-    var error = true; // because exceptions
-    var debug = null;
+    let result = undefined;
+    let error = true; // because exceptions
+    let debug = null;
     try {
         if (f instanceof Function) {
             result = f();
@@ -38,7 +38,7 @@ function assertF(kind, f, msg, ast) {
     if (error)
         throw new ErrorWrapper(msg, kind, ast, debug);
     return result;
-}
+};
 
 
 module AST {
@@ -83,6 +83,11 @@ module AST {
         }
 
         match<T>(cases: any): T {
+
+            // for debugging:
+            // if (!cases.hasOwnProperty(this.kind))
+            //    throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
+
             // not very safe, but convenient way to do pattern matching within typescript
             return cases[this.kind](<any>this);
         }
@@ -133,7 +138,7 @@ module AST {
 
 								export class Program extends BaseAST {
 												constructor(
-																public typedefs: Exp[],
+																public typedefs: TypeDef[],
 																public exp: Exp[],
 																info: any
 																) {

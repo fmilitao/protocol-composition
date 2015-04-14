@@ -16,6 +16,7 @@ function ErrorWrapper(msg, kind, ast, debug, stack) {
         return this.kind + ': ' + this.message;
     };
 }
+;
 function assertF(kind, f, msg, ast) {
     var result = undefined;
     var error = true;
@@ -41,6 +42,7 @@ function assertF(kind, f, msg, ast) {
         throw new ErrorWrapper(msg, kind, ast, debug);
     return result;
 }
+;
 var AST;
 (function (AST) {
     function merge(kind, l, r) {
@@ -71,6 +73,9 @@ var AST;
             }
         }
         BaseAST.prototype.match = function (cases) {
+            // for debugging:
+            // if (!cases.hasOwnProperty(this.kind))
+            //    throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
             return cases[this.kind](this);
         };
         return BaseAST;

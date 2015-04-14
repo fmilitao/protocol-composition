@@ -36,8 +36,13 @@ var receiver = new function () {
             typeinfo = {};
             send('clearAll', null);
             send('setStatus', 'Type checking...');
-            ast = parser(data);
-            send('setStatus', 'TYPE CHECKER DISABLED');
+            ast = (parser(data));
+            send('println', '<b>Type</b>: ' +
+                toHTML(checker(ast, typeinfo)));
+            if (!isWorker) {
+                console.debug('checked in: ' + typeinfo.diff + ' ms');
+            }
+            send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
             send('updateAnnotations', null);
         }
         catch (e) {

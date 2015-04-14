@@ -1,6 +1,6 @@
 /// <reference path='../lib/def/jison.d.ts' />
 
-var parser = function(file) {
+var parser : any = function(file) {
 
     var Jison = require('jison');
     var bnf = require('jison/bnf');
