@@ -73,9 +73,8 @@ var AST;
             }
         }
         BaseAST.prototype.match = function (cases) {
-            // for debugging:
-            // if (!cases.hasOwnProperty(this.kind))
-            //    throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
+            if (!cases.hasOwnProperty(this.kind))
+                throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
             return cases[this.kind](this);
         };
         return BaseAST;
@@ -147,11 +146,11 @@ var AST;
         ;
         var Forall = (function (_super) {
             __extends(Forall, _super);
-            function Forall(id, bound, exp, info) {
+            function Forall(id, exp, bound, info) {
                 _super.call(this, info);
                 this.id = id;
-                this.bound = bound;
                 this.exp = exp;
+                this.bound = bound;
             }
             return Forall;
         })(BaseAST);
@@ -177,11 +176,11 @@ var AST;
         ;
         var Exists = (function (_super) {
             __extends(Exists, _super);
-            function Exists(id, bound, exp, info) {
+            function Exists(id, exp, bound, info) {
                 _super.call(this, info);
                 this.id = id;
-                this.bound = bound;
                 this.exp = exp;
+                this.bound = bound;
             }
             return Exists;
         })(BaseAST);
@@ -189,11 +188,11 @@ var AST;
         ;
         var Forall = (function (_super) {
             __extends(Forall, _super);
-            function Forall(id, bound, exp, info) {
+            function Forall(id, exp, bound, info) {
                 _super.call(this, info);
                 this.id = id;
-                this.bound = bound;
                 this.exp = exp;
+                this.bound = bound;
             }
             return Forall;
         })(BaseAST);

@@ -1,7 +1,6 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 var TypeChecker = (function (exports) {
-    //var AST: any = null; // FIXME!!!!
     var assert = exports.assert;
     var error = exports.error;
     var types = exports.types;
@@ -419,27 +418,172 @@ var TypeChecker = (function (exports) {
         }; },
     };
     var matchType = {
-        Substitution: function (x) { return null; },
-        Exists: function (x) { return null; },
-        Forall: function (x) { return null; },
-        Stacked: function (x) { return null; },
-        Rely: function (x) { return null; },
-        Guarantee: function (x) { return null; },
-        Sum: function (x) { return null; },
-        Star: function (x) { return null; },
-        Alternative: function (x) { return null; },
-        Intersection: function (x) { return null; },
-        Function: function (x) { return null; },
-        Capability: function (x) { return null; },
-        Name: function (x) { return null; },
-        Reference: function (x) { return null; },
-        Bang: function (x) { return null; },
-        Record: function (x) { return null; },
-        Field: function (x) { return null; },
-        Tuple: function (x) { return null; },
-        Tagged: function (x) { return null; },
-        Top: function (x) { return null; },
-        Definition: function (x) { return null; },
+        Substitution: function (ast) { return function (c, env) {
+            var type = c.checkType(ast.type, env);
+            var to = c.checkType(ast.to, env);
+            var from = c.checkType(ast.from, env);
+            assert((from.type === types.LocationVariable || from.type === types.TypeVariable)
+                || ("Can only substitute a Type/LocationVariable, got: " + from.type), ast.from);
+            return substitution(type, from, to);
+        }; },
+        _aux_: function (ctr, ast) { return function (c, env) {
+            var id = ast.id;
+            var variable;
+            var bound;
+            if (isTypeVariableName(id)) {
+                bound = !ast.bound ?
+                    TopType :
+                    c.checkType(ast.bound, new Gamma(env.getTypeDef(), null));
+                variable = new TypeVariable(id, 0, bound);
+            }
+            else {
+                variable = new LocationVariable(id, 0);
+                bound = null;
+            }
+            var e = env.newScope(id, variable, bound);
+            var type = c.checkType(ast.exp, e);
+            return new ctr(variable, type, bound);
+        }; },
+        Exists: function (ast) { return matchType._aux_(ExistsType, ast); },
+        Forall: function (ast) { return matchType._aux_(ForallType, ast); },
+        Stacked: function (ast) { return function (c, env) {
+            return new StackedType(c.checkType(ast.left, env), c.checkType(ast.right, env));
+        }; },
+        Rely: function (ast) { return function (c, env) {
+            var rely = c.checkType(ast.left, env);
+            var guarantee = c.checkType(ast.right, env);
+            return new RelyType(rely, guarantee);
+        }; },
+        Guarantee: function (ast) { return function (c, env) {
+            var guarantee = c.checkType(ast.left, env);
+            var rely = c.checkType(ast.right, env);
+            return new GuaranteeType(guarantee, rely);
+        }; },
+        Sum: function (ast) { return function (c, env) {
+            var sum = new SumType();
+            for (var i = 0; i < ast.sums.length; ++i) {
+                var tag = ast.sums[i].tag;
+                assert(sum.add(tag, c.checkType(ast.sums[i].exp, env)) ||
+                    "Duplicated tag: " + tag, ast.sums[i]);
+            }
+            return sum;
+        }; },
+        Star: function (ast) { return function (c, env) {
+            var star = new StarType();
+            for (var i = 0; i < ast.types.length; ++i) {
+                star.add(c.checkType(ast.types[i], env));
+            }
+            return star;
+        }; },
+        Alternative: function (ast) { return function (c, env) {
+            var alt = new AlternativeType();
+            for (var i = 0; i < ast.types.length; ++i) {
+                alt.add(c.checkType(ast.types[i], env));
+            }
+            return alt;
+        }; },
+        Intersection: function (ast) { return function (c, env) {
+            var alt = new IntersectionType();
+            for (var i = 0; i < ast.types.length; ++i) {
+                alt.add(c.checkType(ast.types[i], env));
+            }
+            return alt;
+        }; },
+        Function: function (ast) { return function (c, env) {
+            return new FunctionType(c.checkType(ast.arg, env), c.checkType(ast.exp, env));
+        }; },
+        Capability: function (ast) { return function (c, env) {
+            var id = ast.id;
+            var loc = env.getTypeByName(id);
+            assert((loc !== undefined && loc.type === types.LocationVariable) ||
+                ('Unknow Location Variable ' + id), ast);
+            return new CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
+        }; },
+        Name: function (ast) { return function (c, env) {
+            var label = ast.text;
+            var typedef = env.getTypeDef();
+            var tmp = env.getTypeByName(label);
+            if (tmp !== undefined &&
+                (tmp.type === types.TypeVariable ||
+                    tmp.type === types.LocationVariable)) {
+                return tmp.copy(env.getNameIndex(label));
+            }
+            var lookup_args = typedef.getType(label);
+            if (lookup_args !== undefined && lookup_args.length === 0)
+                return new DefinitionType(label, [], typedef);
+            assert('Unknown type ' + label, ast);
+        }; },
+        Reference: function (ast) { return function (c, env) {
+            var id = ast.text;
+            var loc = env.getTypeByName(id);
+            assert((loc !== undefined && loc.type === types.LocationVariable) ||
+                ('Unknow Location Variable ' + id), ast);
+            return new ReferenceType(loc.copy(env.getNameIndex(id)));
+        }; },
+        Bang: function (ast) { return function (c, env) {
+            return new BangType(c.checkType(ast.type, env));
+        }; },
+        Record: function (ast) { return function (c, env) {
+            var rec = new RecordType();
+            for (var i = 0; i < ast.exp.length; ++i) {
+                var field = ast.exp[i];
+                var id = field.id;
+                var value = c.checkType(field.exp, env);
+                assert(rec.add(id, value) ||
+                    ("Duplicated field '" + id + "' in '" + rec + "'"), field);
+            }
+            return rec;
+        }; },
+        Field: function (ast) { return assert(false, ast); },
+        Tuple: function (ast) { return function (c, env) {
+            var rec = new TupleType();
+            var bang = true;
+            for (var i = 0; i < ast.exp.length; ++i) {
+                var value = c.checkType(ast.exp[i], env);
+                rec.add(value);
+                if (value.type !== types.BangType)
+                    bang = false;
+            }
+            if (bang)
+                rec = new BangType(rec);
+            return rec;
+        }; },
+        Tagged: function (ast) { return function (c, env) {
+            var sum = new SumType();
+            var tag = ast.tag;
+            var exp = c.checkType(ast.exp, env);
+            sum.add(tag, exp);
+            if (exp.type === types.BangType) {
+                sum = new BangType(sum);
+            }
+            return sum;
+        }; },
+        Top: function (ast) { return function (c, env) {
+            return TopType;
+        }; },
+        Definition: function (ast) { return function (c, env) {
+            var typedef = env.getTypeDef();
+            var id = ast.name;
+            var args = ast.args;
+            var t_args = typedef.getType(id);
+            assert(t_args !== undefined || ('Unknown typedef: ' + id), ast);
+            assert(t_args.length === args.length ||
+                ('Argument number mismatch: ' + args.length + ' vs ' + t_args.length), ast);
+            var arguments = new Array(args.length);
+            for (var i = 0; i < args.length; ++i) {
+                var tmp = c.checkType(args[i], env);
+                if (t_args[i].type === types.LocationVariable) {
+                    assert((tmp.type === types.LocationVariable) ||
+                        ('Argument #' + i + ' is not LocationVariable: ' + tmp.type), args[i]);
+                }
+                if (t_args[i].type === types.TypeVariable) {
+                    assert((tmp.type !== types.LocationVariable) ||
+                        ('Argument #' + i + ' cannot be a LocationVariable'), args[i]);
+                }
+                arguments[i] = tmp;
+            }
+            return new DefinitionType(id, arguments, typedef);
+        }; },
         Primitive: function (ast) { return function (c, env) {
             return new PrimitiveType(ast.text);
         }; },

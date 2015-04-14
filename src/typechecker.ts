@@ -11,8 +11,6 @@
 
 var TypeChecker: any = (function(exports) {
 
-    //var AST: any = null; // FIXME!!!!
-
     // define constants for convenience
     const assert = exports.assert;
     const error = exports.error;
@@ -484,10 +482,10 @@ var TypeChecker: any = (function(exports) {
     };
 
 
-				const matchExp: AST.Exp.MatchExp<any> = {
+				const matchExp = {
 
         // TypeDef should not be used like this
-        TypeDef: x => assert(false,x),
+        TypeDef: x => assert(false, x),
 
         Program: ast => (c, _) => {
 
@@ -633,29 +631,238 @@ var TypeChecker: any = (function(exports) {
         },
 				};
 
-				const matchType: AST.Type.MatchType<any> = {
-        Substitution: x => null,
+				const matchType = {
 
-        Exists: x => null,
-        Forall: x => null,
-        Stacked: x => null,
-        Rely: x => null,
-        Guarantee: x => null,
-        Sum: x => null,
-        Star: x => null,
-        Alternative: x => null,
-        Intersection: x => null,
-        Function: x => null,
-        Capability: x => null,
-        Name: x => null,
-        Reference: x => null,
-        Bang: x => null,
-        Record: x => null,
-        Field: x => null,
-        Tuple: x => null,
-        Tagged: x => null,
-        Top: x => null,
-        Definition: x => null,
+        Substitution: ast => (c, env) => {
+            const type = c.checkType(ast.type, env);
+            const to = c.checkType(ast.to, env);
+            const from = c.checkType(ast.from, env);
+
+            assert((from.type === types.LocationVariable || from.type === types.TypeVariable)
+                || ("Can only substitute a Type/LocationVariable, got: " + from.type), ast.from);
+
+            return substitution(type, from, to);
+        },
+
+        // auxiliary function for common Forall/Exists code
+        _aux_: (ctr, ast: AST.Type.Exists|AST.Type.Forall) => (c, env) => {
+            var id = ast.id;
+            var variable;
+            var bound;
+
+            if (isTypeVariableName(id)) {
+                bound = !ast.bound ?
+                    TopType : // no bound, default is 'top'
+                    // else check with empty environment (due to decidability issues)
+                    c.checkType(ast.bound, new Gamma(env.getTypeDef(), null));
+                variable = new TypeVariable(id, 0, bound);
+            }
+            else {
+                variable = new LocationVariable(id, 0);
+                bound = null;
+            }
+
+            var e = env.newScope(id, variable, bound);
+            var type = c.checkType(ast.exp, e);
+
+            return new ctr(variable, type, bound);
+        },
+
+        Exists: ast => matchType._aux_(ExistsType, ast),
+        Forall: ast => matchType._aux_(ForallType, ast),
+
+        Stacked: ast => (c, env) => {
+            return new StackedType(
+                c.checkType(ast.left, env),
+                c.checkType(ast.right, env)
+                );
+        },
+
+        Rely: ast => (c, env) => {
+            var rely = c.checkType(ast.left, env);
+            var guarantee = c.checkType(ast.right, env);
+            return new RelyType(rely, guarantee);
+        },
+
+        Guarantee: ast => (c, env) => {
+            var guarantee = c.checkType(ast.left, env);
+            var rely = c.checkType(ast.right, env);
+            return new GuaranteeType(guarantee, rely);
+        },
+
+        Sum: ast => (c, env) => {
+            const sum = new SumType();
+            for (var i = 0; i < ast.sums.length; ++i) {
+                const tag = ast.sums[i].tag;
+                assert(sum.add(tag, c.checkType(ast.sums[i].exp, env)) ||
+                    "Duplicated tag: " + tag, ast.sums[i]);
+            }
+            return sum;
+        },
+
+        Star: ast => (c, env) => {
+            const star = new StarType();
+            for (var i = 0; i < ast.types.length; ++i) {
+                star.add(c.checkType(ast.types[i], env));
+            }
+            return star;
+        },
+
+        Alternative: ast => (c, env) => {
+            const alt = new AlternativeType();
+            for (var i = 0; i < ast.types.length; ++i) {
+                alt.add(c.checkType(ast.types[i], env));
+            }
+            return alt;
+        },
+
+        Intersection: ast => (c, env) => {
+            const alt = new IntersectionType();
+            for (var i = 0; i < ast.types.length; ++i) {
+                alt.add(c.checkType(ast.types[i], env));
+            }
+            return alt;
+        },
+
+        Function: ast => (c, env) => {
+            return new FunctionType(
+                c.checkType(ast.arg, env),
+                c.checkType(ast.exp, env)
+                );
+        },
+
+        Capability: ast => (c, env) => {
+            var id = ast.id;
+            var loc = env.getTypeByName(id);
+
+            assert((loc !== undefined && loc.type === types.LocationVariable) ||
+                ('Unknow Location Variable ' + id), ast);
+
+            return new CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
+        },
+
+        Name: ast => (c, env) => {
+            // the typing environment remains unchanged because all type
+            // definitions and type/location variables should not interfere
+            const label = ast.text;
+            const typedef = env.getTypeDef();
+            const tmp = env.getTypeByName(label);
+            // if label matches type in environment, but we only allow
+            // access to type variables and location variables using this
+            // AST.kind --- all other uses are assumed to be recursives.
+            if (tmp !== undefined &&
+                (tmp.type === types.TypeVariable ||
+                    tmp.type === types.LocationVariable)) {
+                return tmp.copy(env.getNameIndex(label));
+            }
+
+            // look for type definitions with 0 arguments
+            var lookup_args = typedef.getType(label);
+            if (lookup_args !== undefined && lookup_args.length === 0)
+                return new DefinitionType(label, [], typedef);
+
+            assert('Unknown type ' + label, ast);
+        },
+
+        Reference: ast => (c, env) => {
+            var id = ast.text;
+            var loc = env.getTypeByName(id);
+
+            assert((loc !== undefined && loc.type === types.LocationVariable) ||
+                ('Unknow Location Variable ' + id), ast);
+
+            return new ReferenceType(loc.copy(env.getNameIndex(id)));
+        },
+
+        Bang: ast => (c, env) => {
+            return new BangType(c.checkType(ast.type, env));
+        },
+
+
+        Record: ast => (c, env) => {
+            var rec = new RecordType();
+            for (var i = 0; i < ast.exp.length; ++i) {
+                var field = ast.exp[i];
+                var id = field.id;
+                var value = c.checkType(field.exp, env);
+                assert(rec.add(id, value) ||
+                    ("Duplicated field '" + id + "' in '" + rec + "'"), field);
+            }
+            return rec;
+        },
+
+        // should never occur at top level
+        Field: ast => assert(false, ast),
+
+        Tuple: ast => (c, env) => {
+            // Note that TUPLE cannot move to the auto-bang block
+            // because it may contain pure values that are not in the
+            // typing environment and therefore, its type is only bang
+            // or not as a consequence of each field's type and not just
+            // what it consumes from the environment
+            var rec = new TupleType();
+            var bang = true;
+
+            for (var i = 0; i < ast.exp.length; ++i) {
+                var value = c.checkType(ast.exp[i], env);
+                rec.add(value);
+                if (value.type !== types.BangType)
+                    bang = false;
+            }
+
+            if (bang)
+                rec = new BangType(rec);
+
+            return rec;
+        },
+
+        Tagged: ast => (c, env) => {
+            var sum = new SumType();
+            var tag = ast.tag;
+            var exp = c.checkType(ast.exp, env);
+            sum.add(tag, exp);
+            if (exp.type === types.BangType) {
+                sum = new BangType(sum);
+            }
+            return sum;
+        },
+
+        Top: ast => (c, env) => {
+            return TopType;
+        },
+
+
+        Definition: ast => (c, env) => {
+            var typedef = env.getTypeDef();
+            var id = ast.name;
+            var args = ast.args;
+            var t_args = typedef.getType(id);
+
+            assert(t_args !== undefined || ('Unknown typedef: ' + id), ast);
+            assert(t_args.length === args.length ||
+                ('Argument number mismatch: ' + args.length + ' vs ' + t_args.length), ast);
+
+            var arguments = new Array(args.length);
+            for (var i = 0; i < args.length; ++i) {
+                var tmp = c.checkType(args[i], env);
+
+                if (t_args[i].type === types.LocationVariable) {
+                    assert((tmp.type === types.LocationVariable) ||
+                        ('Argument #' + i + ' is not LocationVariable: ' + tmp.type),
+                        args[i]);
+                }
+
+                if (t_args[i].type === types.TypeVariable) {
+                    assert((tmp.type !== types.LocationVariable) ||
+                        ('Argument #' + i + ' cannot be a LocationVariable'),
+                        args[i]);
+                }
+
+                arguments[i] = tmp;
+            }
+
+            return new DefinitionType(id, arguments, typedef);
+        },
 
         Primitive: ast => (c, env) => {
 												// relying on the parser to limit primitive types to ints, etc.
@@ -667,289 +874,6 @@ var TypeChecker: any = (function(exports) {
 												return NoneType;
 								},
 				};
-
-	/**
-	 * @param {AST} ast, tree to check
-	 * @param {Environment} env, typing environment at beginning
-	 * @return either the type checked for 'ast' or throws a type error with
-	 * 	what failed to type check.
-	 */
-
-    /*
-      var setupAST = function(kind, check) {
-
-          switch (kind) {
-
-              case AST.SUBSTITUTION:
-                  return function(ast, env) {
-                      var type = check(ast.type, env);
-                      var to = check(ast.to, env);
-                      var from = check(ast.from, env);
-
-                      assert((from.type === types.LocationVariable || from.type === types.TypeVariable)
-                          || ("Can only substitute a Type/LocationVariable, got: " + from.type), ast.from);
-
-                      return substitution(type, from, to);
-                  };
-
-
-              case AST.SUM_TYPE:
-                  return function(ast, env) {
-                      var sum = new SumType();
-                      for (var i = 0; i < ast.sums.length; ++i) {
-                          var tag = ast.sums[i].tag;
-                          assert(sum.add(tag, check(ast.sums[i].exp, env)) ||
-                              "Duplicated tag: " + tag, ast.sums[i]);
-                      }
-                      return sum;
-                  };
-
-              case AST.INTERSECTION_TYPE:
-                  return function(ast, env) {
-                      var alt = new IntersectionType();
-                      for (var i = 0; i < ast.types.length; ++i) {
-                          alt.add(check(ast.types[i], env));
-                      }
-                      return alt;
-                  };
-
-              case AST.ALTERNATIVE_TYPE:
-                  return function(ast, env) {
-                      var alt = new AlternativeType();
-                      for (var i = 0; i < ast.types.length; ++i) {
-                          alt.add(check(ast.types[i], env));
-                      }
-                      return alt;
-                  };
-
-              case AST.STAR_TYPE:
-                  return function(ast, env) {
-                      var star = new StarType();
-                      for (var i = 0; i < ast.types.length; ++i) {
-                          star.add(check(ast.types[i], env));
-                      }
-                      return star;
-                  };
-
-              case AST.NAME_TYPE:
-                  return function(ast, env) {
-                      // the typing environment remains unchanged because all type
-                      // definitions and type/location variables should not interfere
-                      var label = ast.text;
-                      var typedef = env.getTypeDef();
-                      var tmp = env.getTypeByName(label);
-                      // if label matches type in environment, but we only allow
-                      // access to type variables and location variables using this
-                      // AST.kind --- all other uses are assumed to be recursives.
-                      if (tmp !== undefined &&
-                          (tmp.type === types.TypeVariable ||
-                              tmp.type === types.LocationVariable)) {
-                          return tmp.copy(env.getNameIndex(label));
-                      }
-
-                      // look for type definitions with 0 arguments
-                      var lookup_args = typedef.getType(label);
-                      if (lookup_args !== undefined && lookup_args.length === 0)
-                          return new DefinitionType(label, [], typedef);
-
-                      assert('Unknown type ' + label, ast);
-                  };
-
-              case AST.DEFINITION_TYPE:
-                  return function(ast, env) {
-                      var typedef = env.getTypeDef();
-                      var id = ast.name;
-                      var args = ast.args;
-                      var t_args = typedef.getType(id);
-
-                      assert(t_args !== undefined || ('Unknown typedef: ' + id), ast);
-                      assert(t_args.length === args.length ||
-                          ('Argument number mismatch: ' + args.length + ' vs ' + t_args.length), ast);
-
-                      var arguments = new Array(args.length);
-                      for (var i = 0; i < args.length; ++i) {
-                          var tmp = check(args[i], env);
-
-                          if (t_args[i].type === types.LocationVariable) {
-                              assert((tmp.type === types.LocationVariable) ||
-                                  ('Argument #' + i + ' is not LocationVariable: ' + tmp.type),
-                                  args[i]);
-                          }
-
-                          if (t_args[i].type === types.TypeVariable) {
-                              assert((tmp.type !== types.LocationVariable) ||
-                                  ('Argument #' + i + ' cannot be a LocationVariable'),
-                                  args[i]);
-                          }
-
-                          arguments[i] = tmp;
-                      }
-
-                      return new DefinitionType(id, arguments, typedef);
-                  };
-
-              case AST.TAGGED:
-                  return function(ast, env) {
-                      var sum = new SumType();
-                      var tag = ast.tag;
-                      var exp = check(ast.exp, env);
-                      sum.add(tag, exp);
-                      if (exp.type === types.BangType) {
-                          sum = new BangType(sum);
-                      }
-                      return sum;
-                  };
-
-              case AST.TUPLE_TYPE:
-                  return function(ast, env) {
-                      // Note that TUPLE cannot move to the auto-bang block
-                      // because it may contain pure values that are not in the
-                      // typing environment and therefore, its type is only bang
-                      // or not as a consequence of each field's type and not just
-                      // what it consumes from the environment
-                      var rec = new TupleType();
-                      var bang = true;
-
-                      for (var i = 0; i < ast.exp.length; ++i) {
-                          var value = check(ast.exp[i], env);
-                          rec.add(value);
-                          if (value.type !== types.BangType)
-                              bang = false;
-                      }
-
-                      if (bang)
-                          rec = new BangType(rec);
-
-                      return rec;
-                  };
-
-
-              // TYPES
-              case AST.RELY_TYPE:
-                  return function(ast, env) {
-                      var rely = check(ast.left, env);
-                      var guarantee = check(ast.right, env);
-                      return new RelyType(rely, guarantee);
-                  };
-
-              case AST.GUARANTEE_TYPE:
-                  return function(ast, env) {
-                      var guarantee = check(ast.left, env);
-                      var rely = check(ast.right, env);
-                      return new GuaranteeType(guarantee, rely);
-                  };
-
-              case AST.REF_TYPE:
-                  return function(ast, env) {
-                      var id = ast.text;
-                      var loc = env.getTypeByName(id);
-
-                      assert((loc !== undefined && loc.type === types.LocationVariable) ||
-                          ('Unknow Location Variable ' + id), ast);
-
-                      return new ReferenceType(loc.copy(env.getNameIndex(id)));
-                  };
-
-              case AST.EXISTS_TYPE:
-              case AST.FORALL:
-              case AST.FORALL_TYPE:
-                  return (function(ctr) {
-                      return function(ast, env) {
-                          var id = ast.id;
-                          var variable;
-                          var bound;
-
-                          if (isTypeVariableName(id)) {
-                              bound = !ast.bound ?
-                                  TopType : // no bound, default is 'top'
-                                  // else check with empty environment (due to decidability issues)
-                                  check(ast.bound, new Gamma(env.getTypeDef(), null));
-                              variable = new TypeVariable(id, 0, bound);
-                          }
-                          else {
-                              variable = new LocationVariable(id, 0);
-                              bound = null;
-                          }
-
-                          var e = env.newScope(id, variable, bound);
-                          var type = check(ast.exp, e);
-
-                          return new ctr(variable, type, bound);
-                      };
-                  })
-                  // body is the same, but the CONSTRUCTOR is different:
-                      (kind === AST.EXISTS_TYPE ? ExistsType : ForallType);
-
-              case AST.NONE_TYPE:
-                  return function(ast, env) {
-                      return NoneType;
-                  };
-
-              case AST.TOP_TYPE:
-                  return function(ast, env) {
-                      return TopType;
-                  };
-
-              case AST.BANG_TYPE:
-                  return function(ast, env) {
-                      return new BangType(check(ast.type, env));
-                  };
-
-              case AST.FUN_TYPE:
-                  return function(ast, env) {
-                      return new FunctionType(
-                          check(ast.arg, env),
-                          check(ast.exp, env)
-                          );
-                  };
-
-              case AST.CAP_TYPE:
-                  return function(ast, env) {
-                      var id = ast.id;
-                      var loc = env.getTypeByName(id);
-
-                      assert((loc !== undefined && loc.type === types.LocationVariable) ||
-                          ('Unknow Location Variable ' + id), ast);
-
-                      return new CapabilityType(loc.copy(env.getNameIndex(id)), check(ast.type, env));
-                  };
-
-              case AST.STACKED_TYPE:
-                  return function(ast, env) {
-                      return new StackedType(
-                          check(ast.left, env),
-                          check(ast.right, env)
-                          );
-                  };
-
-              case AST.RECORD_TYPE:
-                  return function(ast, env) {
-                      var rec = new RecordType();
-                      for (var i = 0; i < ast.exp.length; ++i) {
-                          var field = ast.exp[i];
-                          var id = field.id;
-                          var value = check(field.exp, env);
-                          assert(rec.add(id, value) ||
-                              ("Duplicated field '" + id + "' in '" + rec + "'"), field);
-                      }
-                      return rec;
-                  };
-
-              case AST.PRIMITIVE_TYPE:
-                  return function(ast, env) {
-                      // relying on the parser to limit primitive types to ints, etc.
-                      return new PrimitiveType(ast.text);
-                  };
-
-              default: // unexpected AST kinds
-                  return function(ast, env) {
-                      error("Not expecting " + ast.kind);
-                  };
-          }
-
-      }
-      */
-
 
     /*
     // inspector( ast, env, checkFunction )

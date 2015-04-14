@@ -85,8 +85,8 @@ module AST {
         match<T>(cases: any): T {
 
             // for debugging:
-            // if (!cases.hasOwnProperty(this.kind))
-            //    throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
+            if (!cases.hasOwnProperty(this.kind))
+                throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
 
             // not very safe, but convenient way to do pattern matching within typescript
             return cases[this.kind](<any>this);
@@ -173,8 +173,8 @@ module AST {
         export class Forall extends BaseAST {
 												constructor(
 																public id: string,
-																public bound: Type.Type,
 																public exp: Exp,
+																public bound: Type.Type,
 																info: any
 																) {
 																super(info);
@@ -235,8 +235,8 @@ module AST {
 								export class Exists extends BaseAST {
 												constructor(
 																public id: string,
-																public bound: Type,
 																public exp: Type,
+																public bound: Type,
 																info: any
 																) {
 																super(info);
@@ -246,8 +246,8 @@ module AST {
 								export class Forall extends BaseAST {
 												constructor(
 																public id: string,
-																public bound: Type,
 																public exp: Type,
+																public bound: Type,
 																info: any
 																) {
 																super(info);
@@ -286,7 +286,7 @@ module AST {
 
 								export class Sum extends BaseAST {
 												constructor(
-																public sums: Type[],
+																public sums: Tagged[],
 																info: any
 																) {
 																super(info);
@@ -387,7 +387,7 @@ module AST {
 
 								export class Record extends BaseAST {
 												constructor(
-																public exp: Type[],
+																public exp: Field[],
 																info: any
 																) {
 																super(info);
@@ -438,7 +438,7 @@ module AST {
 								export class Definition extends BaseAST {
 												constructor(
                 public name: string,
-                public args: Type,
+                public args: Type[],
                 info: any
                 ) {
 																super(info);
