@@ -244,16 +244,6 @@ var Setup;
                 }, 250);
             });
         })();
-        (function () {
-            if (worker_enabled) {
-                actionButton("Re-Start Worker: ", "reset", "If code does not terminate, you may need to manually reset the worker thread.", "RESET");
-                var button = $(_RESET_);
-                button.click(function (event) {
-                    comm.reset();
-                    editor.focus();
-                });
-            }
-        })();
         var triggers = 'Q';
         var changers = 'q';
         function refreshTypeListners() {
@@ -380,7 +370,7 @@ var Setup;
                 }
             };
         })();
-        var comm = new function () {
+        var cc = (function () {
             var send, resetWorker;
             Comm.MainThread.setReceiver(handle);
             if (worker_enabled) {
@@ -389,30 +379,41 @@ var Setup;
             else {
                 _b = Comm.MainThread.getSenderAndReset(null), send = _b[0], resetWorker = _b[1];
             }
-            this.eval = function () {
-                send('EVAL', editor.getSession().getValue());
-            };
-            this.checker = function (p) {
-                send('CHECKER', p);
-            };
-            this.reset = function () {
-                resetWorker();
-                this.eval();
+            return {
+                eval: function () {
+                    send('EVAL', editor.getSession().getValue());
+                },
+                checker: function (p) {
+                    send('CHECKER', p);
+                },
+                reset: function () {
+                    resetWorker();
+                    this.eval();
+                }
             };
             var _a, _b;
-        };
+        })();
+        if (worker_enabled) {
+            actionButton("Re-Start Worker: ", "reset", "If code does not terminate, you may need to manually reset the worker thread.", "RESET");
+            var button = $(_RESET_);
+            button.click(function (event) {
+                cc.reset();
+                editor.focus();
+            });
+        }
         var cursor_elem = $(_CURSOR_);
-        var onCursorChange = function () {
+        function onCursorChange() {
             try {
                 var pos = editor.getCursorPosition();
                 cursor_elem.html((pos.row + 1) + ":" + pos.column);
-                comm.checker(pos);
+                cc.checker(pos);
             }
             catch (e) {
             }
-        };
+        }
+        ;
         function onChange(e) {
-            comm.eval();
+            cc.eval();
         }
         ;
         editor.selection.on("changeCursor", onCursorChange);

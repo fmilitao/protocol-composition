@@ -349,21 +349,6 @@ module Setup {
 
         })();
 
-        (function() {
-            // reset worker button.
-            if (worker_enabled) {
-                actionButton("Re-Start Worker: ", "reset",
-                    "If code does not terminate, you may need to manually reset the worker thread.",
-                    "RESET");
-
-                var button = $(_RESET_);
-
-                button.click(function(event) {
-                    comm.reset();
-                    editor.focus();
-                });
-            }
-        })();
 
         //
         // Boxing Types
@@ -548,14 +533,10 @@ module Setup {
         // Communication Object
         //
 
-        //
-        // FIXME FIXME ===================================
-        //
-
-
-        var comm = new function() {
+        const cc = (function() {
 
             let send: Function, resetWorker: Function;
+
             Comm.MainThread.setReceiver(handle);
             if (worker_enabled) {
                 [send, resetWorker] = Comm.MainThread.getSenderAndReset(WORKER_JS);
@@ -563,33 +544,44 @@ module Setup {
                 [send, resetWorker] = Comm.MainThread.getSenderAndReset(null);
             }
 
-            this.eval = function() {
-                send('EVAL', editor.getSession().getValue());
+            return {
+                eval: function() {
+                    send('EVAL', editor.getSession().getValue());
+                },
+
+                checker: function(p) {
+                    send('CHECKER', p);
+                },
+
+                reset: function() {
+                    resetWorker();
+                    this.eval();
+                }
             };
 
-            this.checker = function(p) {
-                send('CHECKER', p);
-            };
+        })();
 
-            this.reset = function() {
-                resetWorker();
-                this.eval();
-            };
+        // reset worker button.
+        if (worker_enabled) {
+            actionButton("Re-Start Worker: ", "reset",
+                "If code does not terminate, you may need to manually reset the worker thread.",
+                "RESET");
 
-        };
-        // END communication object.
+            const button = $(_RESET_);
 
-        //
-        // FIXME FIXME ===================================
-        //
+            button.click(function(event) {
+                cc.reset();
+                editor.focus();
+            });
+        }
 
-        var cursor_elem = $(_CURSOR_);
+        const cursor_elem = $(_CURSOR_);
 
-        var onCursorChange = function() {
+        function onCursorChange() {
             try {
-                var pos = editor.getCursorPosition();
+                const pos = editor.getCursorPosition();
                 cursor_elem.html((pos.row + 1) + ":" + pos.column);
-                comm.checker(pos);
+                cc.checker(pos);
             } catch (e) {
                 // do nothing.
             }
@@ -598,14 +590,14 @@ module Setup {
         function onChange(e) {
             // simply re-do everything, ignore diff.
             // more efficient incremental parser left as future work...
-            comm.eval();
+            cc.eval();
         };
 
         editor.selection.on("changeCursor", onCursorChange);
         editor.on("change", onChange);
 
         // the initial run to parse the example text.
-        onChange(null); //FIXME!
+        onChange(null); //trigger dummy change
         // editor apparently automatically gets focused, even without this.
         editor.focus();
 
