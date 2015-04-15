@@ -484,7 +484,7 @@ var TypeChecker: any = (function(exports) {
 
 				const matchExp = {
 
-        // TypeDef should not be used like this
+        // TypeDef should not be used at this level
         TypeDef: x => assert(false, x),
 
         Program: ast => (c, _) => {

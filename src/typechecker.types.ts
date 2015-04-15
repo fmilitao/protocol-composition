@@ -78,19 +78,22 @@ var TypeChecker: any = (function(assertF) {
 
     newType('SumType',
         function SumType() {
-            var tags = new Map();
+            var tags = {};
             this.add = function(tag, inner) {
-                if (tags.has(tag))
+                if (tags.hasOwnProperty(tag))
                     return undefined; // already exists!
-                tags.set(tag, inner);
+                tags[tag] = inner;
                 return true;
             }
             // assumes no one will modify this map
             this.tags = function() {
-                return tags;
+                return Object.keys(tags);
             }
             this.inner = function(tag) {
-                return tags.get(tag);
+                return tags[tag];
+            }
+            this.length = function() {
+                return Object.keys(tags).length;
             }
         }
         );
@@ -146,23 +149,27 @@ var TypeChecker: any = (function(assertF) {
 
     newType('RecordType',
         function RecordType() {
-            var fields = new Map();
+            let fields = {};
             this.add = function(id, type) {
-                if (fields.has(id)) {
+                if (fields.hasOwnProperty(id)) {
                     return undefined;
                 }
-                fields.set(id, type);
+                fields[id] = type;
                 return true;
             }
             this.select = function(id) {
-                return fields.get(id);
+                return fields[id];
             }
             this.isEmpty = function() {
-                return fields.size === 0;
+                return Object.keys(fields).length === 0;
             }
             // note: assumes no one will attempt to change the map
             this.fields = function() {
                 return fields;
+            }
+
+            this.length = function() {
+                return Object.keys(fields).length;
             }
         }
         );
@@ -299,10 +306,11 @@ var TypeChecker: any = (function(assertF) {
 
                 case types.SumType:
                     return function(v) {
+                        var tags = this.tags();
                         var res = [];
-                        this.tags().forEach(function(value, key) {
-                            res.push(key + '#' + wrap(value, v));
-                        });
+                        for (var i in tags) {
+                            res.push(tags[i] + '#' + wrap(this.inner(tags[i]), v));
+                        }
                         return res.join('+');
                     };
 
@@ -365,9 +373,9 @@ var TypeChecker: any = (function(assertF) {
                 case types.RecordType:
                     return function(v) {
                         var res = [];
-                        this.fields().forEach(function(value, key) {
-                            res.push(key + ": " + wrap(value, v));
-                        });
+                        var fields = this.fields();
+                        for (var i in fields)
+                            res.push(i + ": " + wrap(fields[i], v));
                         return "[" + res.join() + "]";
                     };
 
@@ -511,30 +519,30 @@ var TypeChecker: any = (function(assertF) {
     };
 
     var TypeDefinition = function() {
-        var typedefs;
-        var typedefs_args;
+        let typedefs;
+        let typedefs_args;
 
         this.addType = function(name, array) {
-            if (typedefs_args.has(name))
+            if (typedefs_args.hasOwnProperty(name))
                 return false;
-            typedefs_args.set(name, array);
+            typedefs_args[name] = array;
             return true;
         };
         this.addDefinition = function(name, definition) {
-            if (typedefs.has(name))
+            if (typedefs.hasOwnProperty(name))
                 return false;
-            typedefs.set(name, definition);
+            typedefs[name] = definition;
             return true;
         };
         this.getType = function(name) {
-            return typedefs_args.get(name);
+            return typedefs_args[name];
         };
         this.getDefinition = function(name) {
-            return typedefs.get(name);
+            return typedefs[name];
         };
         this.reset = function() {
-            typedefs = new Map();
-            typedefs_args = new Map();
+            typedefs = {};
+            typedefs_args = {};
         };
 
         this.reset();

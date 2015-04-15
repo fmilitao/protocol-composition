@@ -81,14 +81,14 @@ var TypeChecker = (function (exports) {
                 return tmp;
             }
             case types.SumType: {
-                var ts = t.tags();
-                var as = a.tags();
-                if (ts.size !== as.size)
+                var ts_1 = t.tags();
+                var as_1 = a.tags();
+                if (ts_1.length !== as_1.length)
                     return false;
-                for (var _i = 0, _a = ts.keys(); _i < _a.length; _i++) {
-                    var k = _a[_i];
-                    if (!as.has(k) ||
-                        !aux(unifyAux(x, ts.get(k), as.get(k), trail)))
+                for (var i in ts_1) {
+                    var tt = t.inner(ts_1[i]);
+                    var at = a.inner(ts_1[i]);
+                    if (at === undefined || !aux(unifyAux(x, tt, at, trail)))
                         return false;
                 }
                 return tmp;
@@ -192,14 +192,14 @@ var TypeChecker = (function (exports) {
                 return tmp;
             }
             case types.RecordType: {
-                var ts = t.fields();
-                var as = a.fields();
-                if (ts.size !== as.size)
+                var ts_2 = t.fields();
+                var as_2 = a.fields();
+                if (t.length() !== a.length())
                     return false;
-                for (var _b = 0, _c = ts.keys(); _b < _c.length; _b++) {
-                    var k = _c[_b];
-                    if (!as.has(k) ||
-                        !aux(unifyAux(x, ts.get(k), as.get(k), trail)))
+                for (var i in ts_2) {
+                    var ti_1 = ts_2[i];
+                    var ai_1 = as_2[i];
+                    if (ai_1 === undefined || !aux(unifyAux(x, ti_1, ai_1, trail)))
                         return false;
                 }
                 return tmp;
@@ -228,9 +228,10 @@ var TypeChecker = (function (exports) {
                 return new GuaranteeType(shift(t.guarantee(), c, d), shift(t.rely(), c, d));
             case types.SumType: {
                 var sum = new SumType();
-                t.tags().forEach(function (value, key) {
-                    sum.add(key, shift(value, c, d));
-                });
+                var ts = t.tags();
+                for (var k in ts) {
+                    sum.add(ts[k], shift(t.inner(ts[k]), c, d));
+                }
                 return sum;
             }
             case types.AlternativeType:
@@ -256,9 +257,10 @@ var TypeChecker = (function (exports) {
                 return new CapabilityType(shift(t.location(), c, d), shift(t.value(), c, d));
             case types.RecordType: {
                 var r = new RecordType();
-                t.fields().forEach(function (value, key) {
-                    r.add(key, shift(value, c, d));
-                });
+                var fs_1 = t.fields();
+                for (var k in fs_1) {
+                    r.add(k, shift(fs_1[k], c, d));
+                }
                 return r;
             }
             case types.DefinitionType: {
@@ -348,14 +350,14 @@ var TypeChecker = (function (exports) {
                     equalsAux(t1.rely(), t2.rely(), trail);
             }
             case types.SumType: {
-                var t1s = t1.tags();
-                var t2s = t2.tags();
-                if (t1s.size !== t2s.size)
+                var t1s_1 = t1.tags();
+                var t2s_1 = t2.tags();
+                if (t1.length() !== t2.length())
                     return false;
-                for (var _i = 0, _a = t1s.keys(); _i < _a.length; _i++) {
-                    var k = _a[_i];
-                    if (!t2s.has(k) ||
-                        !equalsAux(t1s.get(k), t2s.get(k), trail))
+                for (var i_1 in t1s_1) {
+                    var tt = t1.inner(t1s_1[i_1]);
+                    var at = t2.inner(t1s_1[i_1]);
+                    if (at === undefined || !equalsAux(tt, at, trail))
                         return false;
                 }
                 return true;
@@ -369,14 +371,14 @@ var TypeChecker = (function (exports) {
                 return equalsAux(t1.location(), t2.location(), trail) &&
                     equalsAux(t1.value(), t2.value(), trail);
             case types.RecordType: {
-                var t1s = t1.fields();
-                var t2s = t2.fields();
-                if (t1s.size !== t2s.size)
+                var t1s_2 = t1.fields();
+                var t2s_2 = t2.fields();
+                if (t1.length() !== t2.length())
                     return false;
-                for (var _b = 0, _c = t2s.keys(); _b < _c.length; _b++) {
-                    var k = _c[_b];
-                    if (!t1s.has(k) ||
-                        !equalsAux(t1s.get(k), t2s.get(k), trail))
+                for (var i_2 in t2s_2) {
+                    var f1 = t1s_2[i_2];
+                    var f2 = t2s_2[i_2];
+                    if (f1 === undefined || !equalsAux(f1, f2, trail))
                         return false;
                 }
                 return true;
@@ -439,9 +441,10 @@ var TypeChecker = (function (exports) {
                 return new GuaranteeType(rec(t.guarantee()), rec(t.rely()));
             case types.SumType: {
                 var sum = new SumType();
-                t.tags().forEach(function (value, key) {
-                    sum.add(key, rec(value));
-                });
+                var ts = t.tags();
+                for (var k in ts) {
+                    sum.add(ts[k], rec(t.inner(ts[k])));
+                }
                 return sum;
             }
             case types.AlternativeType:
@@ -475,9 +478,10 @@ var TypeChecker = (function (exports) {
                 return new CapabilityType(rec(t.location()), rec(t.value()));
             case types.RecordType: {
                 var r = new RecordType();
-                t.fields().forEach(function (value, index) {
-                    r.add(index, rec(value));
-                });
+                var fs_2 = t.fields();
+                for (var k in fs_2) {
+                    r.add(k, rec(fs_2[k]));
+                }
                 return r;
             }
             case types.DefinitionType: {
@@ -541,9 +545,8 @@ var TypeChecker = (function (exports) {
             equals(t1, t2.inner())) {
             var t1fields = t1.fields();
             var allPure = true;
-            for (var _i = 0, _a = t1fields.keys(); _i < _a.length; _i++) {
-                var k = _a[_i];
-                if (t1fields.get(k).type !== types.BangType) {
+            for (var i_3 in t1fields) {
+                if (t1fields[i_3].type !== types.BangType) {
                     allPure = false;
                     break;
                 }
@@ -614,10 +617,9 @@ var TypeChecker = (function (exports) {
                     return false;
                 var t1fields = t1.fields();
                 var t2fields = t2.fields();
-                for (var _b = 0, _c = t2fields.keys(); _b < _c.length; _b++) {
-                    var k = _c[_b];
-                    if (!t1fields.has(k) ||
-                        !subtypeAux(t1fields.get(k), t2fields.get(k), trail)) {
+                for (var k in t2fields) {
+                    if (t1fields[k] === undefined ||
+                        !subtypeAux(t1fields[k], t2fields[k], trail)) {
                         return false;
                     }
                 }
@@ -703,12 +705,10 @@ var TypeChecker = (function (exports) {
                 return true;
             }
             case types.SumType: {
-                var i1s = t1.tags();
-                var i2s = t2.tags();
-                for (var _d = 0, _e = i1s.keys(); _d < _e.length; _d++) {
-                    var k = _e[_d];
-                    if (!i2s.has(k) ||
-                        !subtypeAux(i1s.get(k), i2s.get(k), trail))
+                var t1_tags = t1.tags();
+                for (var k in t1_tags) {
+                    if (t2.inner(t1_tags[k]) === undefined ||
+                        !subtypeAux(t1.inner(t1_tags[k]), t2.inner(t1_tags[k]), trail))
                         return false;
                 }
                 return true;
@@ -767,9 +767,8 @@ var TypeChecker = (function (exports) {
                     && isFreeAux(x, t.body(), trail);
             case types.RecordType: {
                 var fields = t.fields();
-                for (var _i = 0, _a = fields.keys(); _i < _a.length; _i++) {
-                    var k = _a[_i];
-                    if (!isFreeAux(x, fields.get(k), trail))
+                for (var k in fields) {
+                    if (!isFreeAux(x, fields[k], trail))
                         return false;
                 }
                 return true;
@@ -792,9 +791,8 @@ var TypeChecker = (function (exports) {
             }
             case types.SumType: {
                 var ts = t.tags();
-                for (var _b = 0, _c = ts.keys(); _b < _c.length; _b++) {
-                    var k = _c[_b];
-                    if (!isFreeAux(x, ts.get(k), trail))
+                for (var k in ts) {
+                    if (!isFreeAux(x, t.inner(ts[k]), trail))
                         return false;
                 }
                 return true;
@@ -857,9 +855,8 @@ var TypeChecker = (function (exports) {
             }
             case types.RecordType: {
                 var fields = t.fields();
-                for (var _i = 0, _a = fields.keys(); _i < _a.length; _i++) {
-                    var k = _a[_i];
-                    indexSetAux(fields.get(k), c, set);
+                for (var k in fields) {
+                    indexSetAux(fields[k], c, set);
                 }
                 return;
             }
@@ -885,9 +882,8 @@ var TypeChecker = (function (exports) {
             }
             case types.SumType: {
                 var ts = t.tags();
-                for (var _b = 0, _c = ts.keys(); _b < _c.length; _b++) {
-                    var k = _c[_b];
-                    indexSetAux(ts.get(k), c, set);
+                for (var k in ts) {
+                    indexSetAux(t.inner(ts[k]), c, set);
                 }
                 return;
             }
