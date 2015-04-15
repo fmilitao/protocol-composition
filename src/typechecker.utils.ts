@@ -253,7 +253,7 @@ module TypeChecker {
                 var ab = a.bound();
 
                 // either have inconsistent 'null'
-                if ((<number><any>(tb === null) ^ <number><any>(ab === null)) ||
+                if ( ((tb === null) !== (ab === null)) ||
                     // or not null, but have invalid matching
                     (tb === null && ab === null && !aux(unifyAux(x, tb, ab, trail))))
                     return false;

@@ -63,6 +63,12 @@ module TypeChecker {
 
     // Note: all constructors are labelled to make heap profiling easier.
 
+    // class FunctionType {
+    //
+    //   constructor(){}
+    //
+    // }
+
     newType('FunctionType',
         function FunctionType(argument, body) {
             this.argument = function() { return argument; }

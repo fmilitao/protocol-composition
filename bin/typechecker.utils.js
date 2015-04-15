@@ -163,7 +163,7 @@ var TypeChecker;
             case TypeChecker.types.ForallType: {
                 var tb = t.bound();
                 var ab = a.bound();
-                if (((tb === null) ^ (ab === null)) ||
+                if (((tb === null) !== (ab === null)) ||
                     (tb === null && ab === null && !aux(unifyAux(x, tb, ab, trail))))
                     return false;
                 var xi = TypeChecker.shift1(x, 0);
