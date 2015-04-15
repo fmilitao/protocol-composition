@@ -120,7 +120,7 @@ module AST {
 								export class TypeDef extends BaseAST {
             constructor(
                 public id: string,
-                public type: Exp,
+                public type: Type.Type,
                 public pars: string[],
                 info: any
                 ) {

@@ -433,10 +433,27 @@ module TypeChecker {
     };
 
 
-				const matchExp: AST.Exp.MatchExp<any> = {
+    type TypeEval = (c: EvalContext, env: Gamma) => Type;
+
+    interface EvalContext {
+        checkExp(ast: AST.Exp.Exp, env: Gamma): Type;
+        checkType(ast: AST.Type.Type, env: Gamma): Type;
+    };
+
+    interface MatchType extends AST.Type.MatchType<TypeEval> {
+        // this is an auxiliary metho to avoid duplicated code.
+        _aux_(ctr, ast: AST.Type.Exists|AST.Type.Forall): TypeEval;
+    };
+
+    interface MatchExp extends AST.Exp.MatchExp<TypeEval> {
+        // intentionally empty
+    };
+
+				const matchExp: MatchExp = {
 
         // TypeDef should not be used at this level
-        TypeDef: x  => assert(false, x),
+        // cast is necessary to please TypeScript
+        TypeDef: _  => <any>assert(false, _),
 
         Program: ast => (c, _): Type => {
 
@@ -581,12 +598,6 @@ module TypeChecker {
             return new ForallType(variable, type, bound);
         },
 				};
-
-    type TypeEval = (c: any, env: Gamma) => Type;
-    interface MatchType extends AST.Type.MatchType<TypeEval> {
-        // this is an auxiliary metho to avoid duplicated code.
-        _aux_(ctr, ast: AST.Type.Exists|AST.Type.Forall): TypeEval;
-    };
 
 				const matchType: MatchType = {
 
@@ -750,7 +761,7 @@ module TypeChecker {
 
         // should never occur at top level
         // cast is necessary to please TypeScript
-        Field: ast => <any>assert(false, ast),
+        Field: _ => <any>assert(false, _),
 
         Tuple: ast => (c, env): Type => {
             // Note that TUPLE cannot move to the auto-bang block
@@ -882,27 +893,27 @@ module TypeChecker {
     */
 
     // only exports checking function.
-    export function checker(ast: AST.Exp.Program, log): any {
+    export function checker(ast: AST.Exp.Program, log?): any {
 
         //type_info = []; // reset
 
         // timer start
-        let start = new Date().getTime();
-        let c = {
+        const start = new Date().getTime();
+        const c : EvalContext = {
 
             // for expressions
-            checkExp: (ast: AST.Exp.Exp, env) => {
-                return (ast.match<any>(matchExp))(c, env);
+            checkExp: (ast: AST.Exp.Exp, env : Gamma) => {
+                return (ast.match(matchExp))(c, env);
             },
 
             // for types
-            checkType: (ast: AST.Type.Type, env) => {
-                return (ast.match<any>(matchType))(c, env);
+            checkType: (ast: AST.Type.Type, env : Gamma) => {
+                return (ast.match(matchType))(c, env);
             },
         };
 
         try {
-            return c.checkExp(ast, c);
+            return c.checkExp(ast, null);
         } finally {
             if (log) {
                 log.diff = (new Date().getTime()) - start;
@@ -911,8 +922,6 @@ module TypeChecker {
         }
 
     };
-
-    //return exports;
 
 };
 

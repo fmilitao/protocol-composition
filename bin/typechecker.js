@@ -288,8 +288,11 @@ var TypeChecker;
         }
         return [s, a, b];
     };
+    ;
+    ;
+    ;
     var matchExp = {
-        TypeDef: function (x) { return TypeChecker.assert(false, x); },
+        TypeDef: function (_) { return TypeChecker.assert(false, _); },
         Program: function (ast) { return function (c, _) {
             // ignores old environment, this is a new program!
             var typedef = new TypeChecker.TypeDefinition();
@@ -383,7 +386,6 @@ var TypeChecker;
             return new TypeChecker.ForallType(variable, type, bound);
         }; },
     };
-    ;
     var matchType = {
         Substitution: function (ast) { return function (c, env) {
             var type = c.checkType(ast.type, env);
@@ -501,7 +503,7 @@ var TypeChecker;
             }
             return rec;
         }; },
-        Field: function (ast) { return TypeChecker.assert(false, ast); },
+        Field: function (_) { return TypeChecker.assert(false, _); },
         Tuple: function (ast) { return function (c, env) {
             var rec = new TypeChecker.TupleType();
             var bang = true;
@@ -570,7 +572,7 @@ var TypeChecker;
             },
         };
         try {
-            return c.checkExp(ast, c);
+            return c.checkExp(ast, null);
         }
         finally {
             if (log) {

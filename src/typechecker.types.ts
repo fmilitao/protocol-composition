@@ -88,7 +88,7 @@ module TypeChecker {
         DefinitionType(x: DefinitionType): T;
     };
 
-    class BaseType {
+    class BaseType implements Type {
 
         public type: string; // attached (statically) by 'unsafe_addNewType'
         public toString: (boolean) => string; // attached by 'setupToString'
@@ -119,7 +119,6 @@ module TypeChecker {
             this.body = () => body;
         }
     };
-    unsafe_addNewType(FunctionType);
 
     export class BangType extends BaseType {
         public inner: () => Type;
@@ -129,7 +128,6 @@ module TypeChecker {
             this.inner = () => inner;
         }
     };
-    unsafe_addNewType(BangType);
 
     export class SumType extends BaseType {
         public add: (tag: string, inner: Type) => boolean;
@@ -159,7 +157,6 @@ module TypeChecker {
             };
         }
     };
-    unsafe_addNewType(SumType);
 
     class _Aux_ extends BaseType {
         public add: (inner: Type) => boolean;
@@ -181,28 +178,24 @@ module TypeChecker {
             super();
         }
     };
-    unsafe_addNewType(StarType);
 
     export class AlternativeType extends _Aux_ {
         constructor() {
             super();
         }
     };
-    unsafe_addNewType(AlternativeType);
 
     export class IntersectionType extends _Aux_ {
         constructor() {
             super();
         }
     };
-    unsafe_addNewType(IntersectionType);
 
     export class TupleType extends _Aux_ {
         constructor() {
             super();
         }
     };
-    unsafe_addNewType(TupleType);
 
     export class ForallType extends BaseType {
         public id: () => string;
@@ -220,7 +213,6 @@ module TypeChecker {
             this.bound = function() { return bound; }
         }
     };
-    unsafe_addNewType(ForallType);
 
     export class ExistsType extends BaseType {
         public id: () => string;
@@ -238,7 +230,6 @@ module TypeChecker {
             this.bound = function() { return bound; }
         }
     };
-    unsafe_addNewType(ExistsType);
 
     export class RecordType extends BaseType {
         public add: (id: string, type: Type) => boolean;
@@ -274,7 +265,6 @@ module TypeChecker {
             };
         }
     };
-    unsafe_addNewType(RecordType);
 
     export class NoneType extends BaseType {
         constructor() {
@@ -282,7 +272,6 @@ module TypeChecker {
             // intentionally empty
         }
     };
-    unsafe_addNewType(NoneType);
 
     export class TopType extends BaseType {
         constructor() {
@@ -290,7 +279,6 @@ module TypeChecker {
             // intentionally empty
         }
     };
-    unsafe_addNewType(TopType);
 
     export class ReferenceType extends BaseType {
         public location: () => Type;
@@ -300,7 +288,6 @@ module TypeChecker {
             this.location = function() { return location; }
         }
     };
-    unsafe_addNewType(ReferenceType);
 
     export class StackedType extends BaseType {
         public left: () => Type;
@@ -312,7 +299,6 @@ module TypeChecker {
             this.right = function() { return right; }
         }
     };
-    unsafe_addNewType(StackedType);
 
     export class CapabilityType extends BaseType {
         public location: () => Type;
@@ -324,7 +310,6 @@ module TypeChecker {
             this.value = function() { return val; }
         }
     };
-    unsafe_addNewType(CapabilityType);
 
     export class LocationVariable extends BaseType {
         public index: () => number;
@@ -339,7 +324,6 @@ module TypeChecker {
             this.copy = function(j: number) { return new LocationVariable(name, j, bound); }
         }
     };
-    unsafe_addNewType(LocationVariable);
 
     export class TypeVariable extends BaseType {
         public index: () => number;
@@ -354,7 +338,6 @@ module TypeChecker {
             this.copy = function(j: number) { return new TypeVariable(name, j, bound); }
         }
     };
-    unsafe_addNewType(TypeVariable);
 
     export class PrimitiveType extends BaseType {
         public name: () => string;
@@ -363,7 +346,6 @@ module TypeChecker {
             this.name = function() { return name; }
         }
     };
-    unsafe_addNewType(PrimitiveType);
 
     export class RelyType extends BaseType {
         public rely: () => Type;
@@ -374,7 +356,6 @@ module TypeChecker {
             this.guarantee = function() { return guarantee; }
         }
     };
-    unsafe_addNewType(RelyType);
 
     export class GuaranteeType extends BaseType {
         public rely: () => Type;
@@ -385,7 +366,6 @@ module TypeChecker {
             this.guarantee = function() { return guarantee; }
         }
     };
-    unsafe_addNewType(GuaranteeType);
 
     export class DefinitionType extends BaseType {
         public definition: () => string;
@@ -410,6 +390,27 @@ module TypeChecker {
             }
         }
     };
+
+    unsafe_addNewType(FunctionType);
+    unsafe_addNewType(BangType);
+    unsafe_addNewType(SumType);
+    unsafe_addNewType(StarType);
+    unsafe_addNewType(AlternativeType);
+    unsafe_addNewType(IntersectionType);
+    unsafe_addNewType(TupleType);
+    unsafe_addNewType(ForallType);
+    unsafe_addNewType(ExistsType);
+    unsafe_addNewType(RecordType);
+    unsafe_addNewType(NoneType);
+    unsafe_addNewType(TopType);
+    unsafe_addNewType(ReferenceType);
+    unsafe_addNewType(StackedType);
+    unsafe_addNewType(CapabilityType);
+    unsafe_addNewType(LocationVariable);
+    unsafe_addNewType(TypeVariable);
+    unsafe_addNewType(PrimitiveType);
+    unsafe_addNewType(RelyType);
+    unsafe_addNewType(GuaranteeType);
     unsafe_addNewType(DefinitionType);
 
     // append 'toString' method to types

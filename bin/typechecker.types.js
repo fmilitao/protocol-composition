@@ -57,7 +57,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.FunctionType = FunctionType;
     ;
-    unsafe_addNewType(FunctionType);
     var BangType = (function (_super) {
         __extends(BangType, _super);
         function BangType(inner) {
@@ -68,7 +67,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.BangType = BangType;
     ;
-    unsafe_addNewType(BangType);
     var SumType = (function (_super) {
         __extends(SumType, _super);
         function SumType() {
@@ -94,7 +92,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.SumType = SumType;
     ;
-    unsafe_addNewType(SumType);
     var _Aux_ = (function (_super) {
         __extends(_Aux_, _super);
         function _Aux_() {
@@ -117,7 +114,6 @@ var TypeChecker;
     })(_Aux_);
     TypeChecker.StarType = StarType;
     ;
-    unsafe_addNewType(StarType);
     var AlternativeType = (function (_super) {
         __extends(AlternativeType, _super);
         function AlternativeType() {
@@ -127,7 +123,6 @@ var TypeChecker;
     })(_Aux_);
     TypeChecker.AlternativeType = AlternativeType;
     ;
-    unsafe_addNewType(AlternativeType);
     var IntersectionType = (function (_super) {
         __extends(IntersectionType, _super);
         function IntersectionType() {
@@ -137,7 +132,6 @@ var TypeChecker;
     })(_Aux_);
     TypeChecker.IntersectionType = IntersectionType;
     ;
-    unsafe_addNewType(IntersectionType);
     var TupleType = (function (_super) {
         __extends(TupleType, _super);
         function TupleType() {
@@ -147,7 +141,6 @@ var TypeChecker;
     })(_Aux_);
     TypeChecker.TupleType = TupleType;
     ;
-    unsafe_addNewType(TupleType);
     var ForallType = (function (_super) {
         __extends(ForallType, _super);
         function ForallType(id, inner, bound) {
@@ -160,7 +153,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.ForallType = ForallType;
     ;
-    unsafe_addNewType(ForallType);
     var ExistsType = (function (_super) {
         __extends(ExistsType, _super);
         function ExistsType(id, inner, bound) {
@@ -173,7 +165,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.ExistsType = ExistsType;
     ;
-    unsafe_addNewType(ExistsType);
     var RecordType = (function (_super) {
         __extends(RecordType, _super);
         function RecordType() {
@@ -203,7 +194,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.RecordType = RecordType;
     ;
-    unsafe_addNewType(RecordType);
     var NoneType = (function (_super) {
         __extends(NoneType, _super);
         function NoneType() {
@@ -213,7 +203,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.NoneType = NoneType;
     ;
-    unsafe_addNewType(NoneType);
     var TopType = (function (_super) {
         __extends(TopType, _super);
         function TopType() {
@@ -223,7 +212,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.TopType = TopType;
     ;
-    unsafe_addNewType(TopType);
     var ReferenceType = (function (_super) {
         __extends(ReferenceType, _super);
         function ReferenceType(location) {
@@ -234,7 +222,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.ReferenceType = ReferenceType;
     ;
-    unsafe_addNewType(ReferenceType);
     var StackedType = (function (_super) {
         __extends(StackedType, _super);
         function StackedType(left, right) {
@@ -246,7 +233,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.StackedType = StackedType;
     ;
-    unsafe_addNewType(StackedType);
     var CapabilityType = (function (_super) {
         __extends(CapabilityType, _super);
         function CapabilityType(loc, val) {
@@ -258,7 +244,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.CapabilityType = CapabilityType;
     ;
-    unsafe_addNewType(CapabilityType);
     var LocationVariable = (function (_super) {
         __extends(LocationVariable, _super);
         function LocationVariable(name, index, bound) {
@@ -272,7 +257,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.LocationVariable = LocationVariable;
     ;
-    unsafe_addNewType(LocationVariable);
     var TypeVariable = (function (_super) {
         __extends(TypeVariable, _super);
         function TypeVariable(name, index, bound) {
@@ -286,7 +270,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.TypeVariable = TypeVariable;
     ;
-    unsafe_addNewType(TypeVariable);
     var PrimitiveType = (function (_super) {
         __extends(PrimitiveType, _super);
         function PrimitiveType(name) {
@@ -297,7 +280,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.PrimitiveType = PrimitiveType;
     ;
-    unsafe_addNewType(PrimitiveType);
     var RelyType = (function (_super) {
         __extends(RelyType, _super);
         function RelyType(rely, guarantee) {
@@ -309,7 +291,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.RelyType = RelyType;
     ;
-    unsafe_addNewType(RelyType);
     var GuaranteeType = (function (_super) {
         __extends(GuaranteeType, _super);
         function GuaranteeType(guarantee, rely) {
@@ -321,7 +302,6 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.GuaranteeType = GuaranteeType;
     ;
-    unsafe_addNewType(GuaranteeType);
     var DefinitionType = (function (_super) {
         __extends(DefinitionType, _super);
         function DefinitionType(definition_name, arg, typedef) {
@@ -342,6 +322,26 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.DefinitionType = DefinitionType;
     ;
+    unsafe_addNewType(FunctionType);
+    unsafe_addNewType(BangType);
+    unsafe_addNewType(SumType);
+    unsafe_addNewType(StarType);
+    unsafe_addNewType(AlternativeType);
+    unsafe_addNewType(IntersectionType);
+    unsafe_addNewType(TupleType);
+    unsafe_addNewType(ForallType);
+    unsafe_addNewType(ExistsType);
+    unsafe_addNewType(RecordType);
+    unsafe_addNewType(NoneType);
+    unsafe_addNewType(TopType);
+    unsafe_addNewType(ReferenceType);
+    unsafe_addNewType(StackedType);
+    unsafe_addNewType(CapabilityType);
+    unsafe_addNewType(LocationVariable);
+    unsafe_addNewType(TypeVariable);
+    unsafe_addNewType(PrimitiveType);
+    unsafe_addNewType(RelyType);
+    unsafe_addNewType(GuaranteeType);
     unsafe_addNewType(DefinitionType);
     function wrap(t, v) {
         if (t.type === TypeChecker.types.ReferenceType ||
