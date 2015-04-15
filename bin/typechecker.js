@@ -5,9 +5,9 @@ var TypeChecker;
     var Unit = new TypeChecker.BangType(new TypeChecker.RecordType());
     var None = new TypeChecker.NoneType();
     var Top = new TypeChecker.TopType();
-    var isTypeVariableName = function (n) {
+    function isTypeVariableName(n) {
         return n[0] === n[0].toUpperCase();
-    };
+    }
     var unifyRely = function (id, step, state) {
         switch (step.type) {
             case TypeChecker.types.ExistsType:
@@ -297,18 +297,18 @@ var TypeChecker;
             if (ast.typedefs !== null) {
                 for (var i = 0; i < ast.typedefs.length; ++i) {
                     var it = ast.typedefs[i];
-                    var args = [];
+                    var args_1 = [];
                     var pars = it.pars;
                     if (pars !== null) {
-                        args = new Array(pars.length);
+                        args_1 = new Array(pars.length);
                         for (var j = 0; j < pars.length; ++j) {
                             var n = pars[j];
-                            args[j] = isTypeVariableName(n) ?
+                            args_1[j] = isTypeVariableName(n) ?
                                 new TypeChecker.TypeVariable(n, (pars.length - j - 1), null) :
                                 new TypeChecker.LocationVariable(n, (pars.length - j - 1));
                         }
                     }
-                    TypeChecker.assert(typedef.addType(it.id, args)
+                    TypeChecker.assert(typedef.addType(it.id, args_1)
                         || ('Duplicated typedef: ' + it.id), it);
                 }
                 for (var i = 0; i < ast.typedefs.length; ++i) {

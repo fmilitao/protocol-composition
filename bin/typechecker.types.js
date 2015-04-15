@@ -8,21 +8,25 @@ var __extends = this.__extends || function (d, b) {
 };
 var TypeChecker;
 (function (TypeChecker) {
-    TypeChecker.assert = function (msg, ast) {
+    function assert(msg, ast) {
         if (typeof (msg) === 'boolean' && msg)
             return;
         assertF('Type error', false, msg, ast);
-    };
-    TypeChecker.error = function (msg) {
+    }
+    TypeChecker.assert = assert;
+    ;
+    function error(msg) {
         if (typeof (msg) === 'boolean' && msg)
             return;
         assertF('Bug Alert', false, msg, undefined);
-    };
+    }
+    TypeChecker.error = error;
+    ;
     TypeChecker.types = {};
     TypeChecker.fct = {};
     function unsafe_addNewType(obj) {
         var name = obj.name;
-        TypeChecker.error((!TypeChecker.types.hasOwnProperty(name) && !TypeChecker.fct.hasOwnProperty(name))
+        error((!TypeChecker.types.hasOwnProperty(name) && !TypeChecker.fct.hasOwnProperty(name))
             || ('@unsafe_addNewType: already exists: ' + name));
         TypeChecker.types[name] = name;
         TypeChecker.fct[name] = obj;
@@ -475,13 +479,13 @@ var TypeChecker;
             case TypeChecker.types.TopType:
                 return function (v) { return 'top'; };
             default:
-                TypeChecker.error('@setupToString: Not expecting type: ' + type);
+                error('@setupToString: Not expecting type: ' + type);
         }
     }
     for (var i in TypeChecker.types) {
         var t = TypeChecker.types[i];
         var fun = setupToString(t);
-        TypeChecker.error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
+        error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
         TypeChecker.fct[t].prototype.toString = fun;
     }
     TypeChecker.Gamma = function (typedef, parent, id, type, bound) {
@@ -536,32 +540,35 @@ var TypeChecker;
                 parent.forEach(f, i + 1);
         };
     };
-    TypeChecker.TypeDefinition = function () {
-        var typedefs;
-        var typedefs_args;
-        this.addType = function (name, array) {
-            if (typedefs_args.hasOwnProperty(name))
+    var TypeDefinition = (function () {
+        function TypeDefinition() {
+            this.reset();
+        }
+        TypeDefinition.prototype.addType = function (name, args) {
+            if (this.typedefs_args.hasOwnProperty(name))
                 return false;
-            typedefs_args[name] = array;
+            this.typedefs_args[name] = args;
             return true;
         };
-        this.addDefinition = function (name, definition) {
-            if (typedefs.hasOwnProperty(name))
+        TypeDefinition.prototype.addDefinition = function (name, definition) {
+            if (this.typedefs.hasOwnProperty(name))
                 return false;
-            typedefs[name] = definition;
+            this.typedefs[name] = definition;
             return true;
         };
-        this.getType = function (name) {
-            return typedefs_args[name];
+        TypeDefinition.prototype.getType = function (name) {
+            return this.typedefs_args[name];
         };
-        this.getDefinition = function (name) {
-            return typedefs[name];
+        TypeDefinition.prototype.getDefinition = function (name) {
+            return this.typedefs[name];
         };
-        this.reset = function () {
-            typedefs = {};
-            typedefs_args = {};
+        TypeDefinition.prototype.reset = function () {
+            this.typedefs = {};
+            this.typedefs_args = {};
         };
-        this.reset();
-    };
+        return TypeDefinition;
+    })();
+    TypeChecker.TypeDefinition = TypeDefinition;
+    ;
 })(TypeChecker || (TypeChecker = {}));
 ;

@@ -21,22 +21,22 @@ module TypeChecker {
 	 */
 
     // yields true or string on error
-    export var assert = function(msg, ast) {
+    export function assert(msg: string|boolean, ast: AST.Exp.Exp|AST.Type.Type) {
         // if a boolean and true
         if (typeof (msg) === 'boolean' && msg)
             return;
         assertF('Type error', false, msg, ast);
-    }
+    };
 
     // these are program assertions and should never be seen by users
     // unless there is a major malfunction in the code (bug...)
-    export var error = function(msg) {
+    export function error(msg: string|boolean) {
         // if a boolean and true
         if (typeof (msg) === 'boolean' && msg)
             return;
         // else it should be a string with the type error
         assertF('Bug Alert', false, msg, undefined); // undefined blamed 'ast'
-    }
+    };
 
     //
     // TYPES
@@ -60,6 +60,8 @@ module TypeChecker {
 
     export interface Type {
         match<T>(m: MatchType<T>): T;
+        toString(n: boolean): string; //FIXME wtf is 'n' ??
+        type: string;
     };
 
     export interface MatchType<T> {
@@ -89,6 +91,7 @@ module TypeChecker {
     class BaseType {
 
         public type: string; // attached (statically) by 'unsafe_addNewType'
+        public toString: (boolean) => string; // attached by 'setupToString'
 
         match<T>(cases: any): T {
             // for debugging:
@@ -662,44 +665,44 @@ module TypeChecker {
 
     };
 
-    export var TypeDefinition = function() {
-        let typedefs;
-        let typedefs_args;
+    export class TypeDefinition {
 
-        this.addType = function(name, array) {
-            if (typedefs_args.hasOwnProperty(name))
-                return false;
-            typedefs_args[name] = array;
-            return true;
-        };
-        this.addDefinition = function(name, definition) {
-            if (typedefs.hasOwnProperty(name))
-                return false;
-            typedefs[name] = definition;
-            return true;
-        };
-        this.getType = function(name) {
-            return typedefs_args[name];
-        };
-        this.getDefinition = function(name) {
-            return typedefs[name];
-        };
-        this.reset = function() {
-            typedefs = {};
-            typedefs_args = {};
-        };
+        // map definition's name with its body
+        private typedefs: { [s: string]: Type };
 
-        this.reset();
+        // maps deinition's name with its arguments
+        private typedefs_args: { [s: string]: Type[] };
+
+        constructor() {
+            this.reset();
+        }
+
+        addType(name: string, args: Type[]) {
+            if (this.typedefs_args.hasOwnProperty(name))
+                return false;
+            this.typedefs_args[name] = args;
+            return true;
+        }
+
+        addDefinition(name: string, definition: Type) {
+            if (this.typedefs.hasOwnProperty(name))
+                return false;
+            this.typedefs[name] = definition;
+            return true;
+        }
+        getType(name: string): Type[] {
+            return this.typedefs_args[name];
+        }
+
+        getDefinition(name: string): Type {
+            return this.typedefs[name];
+        }
+
+        reset() {
+            this.typedefs = {};
+            this.typedefs_args = {};
+        }
+
     };
 
-    /*
-        exports.assert = assert;
-        exports.error = error;
-        exports.Gamma = Gamma;
-        exports.TypeDefinition = TypeDefinition;
-        exports.types = types;
-        exports.factory = fct;
-
-        return exports;
-    */
 };

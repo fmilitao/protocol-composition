@@ -121,9 +121,9 @@ module AST {
 
 								export class TypeDef extends BaseAST {
             constructor(
-                public id: Exp,
+                public id: string,
                 public type: Exp,
-                public pars: Exp[],
+                public pars: string[],
                 info: any
                 ) {
                 super(info);

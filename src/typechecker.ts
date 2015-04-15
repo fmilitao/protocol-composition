@@ -12,7 +12,7 @@ module TypeChecker {
     //
 
     // TypeVariables must start upper cased.
-    var isTypeVariableName = function(n) {
+    function isTypeVariableName(n : string) {
         return n[0] === n[0].toUpperCase();
     }
 
@@ -433,12 +433,12 @@ module TypeChecker {
     };
 
 
-				const matchExp = {
+				const matchExp : AST.Exp.MatchExp<any> = {
 
         // TypeDef should not be used at this level
-        TypeDef: x => assert(false, x),
+        TypeDef: x  => assert(false, x),
 
-        Program: ast => (c, _) => {
+        Program: ast => (c, _) : Type => {
 
             // ignores old environment, this is a new program!
 
@@ -451,9 +451,9 @@ module TypeChecker {
                 // 1st pass: extract all argument definitions, note that
                 // duplication is not checked at this stage
                 for (var i = 0; i < ast.typedefs.length; ++i) {
-                    var it = ast.typedefs[i];
-                    var args: any = [];
-                    var pars = it.pars;
+                    let it = ast.typedefs[i];
+                    let args: Type[] = [];
+                    let pars = it.pars;
 
                     // only do this if there are any actual definition parameters
                     if (pars !== null) {
@@ -582,7 +582,7 @@ module TypeChecker {
         },
 				};
 
-				const matchType = {
+				const matchType /*: AST.Type.MatchType<Type>*/ = {
 
         Substitution: ast => (c, env) => {
             const type = c.checkType(ast.type, env);
