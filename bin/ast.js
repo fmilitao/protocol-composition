@@ -62,9 +62,12 @@ var AST;
         return tmp;
     }
     ;
+    function unsafe_addKind(obj) {
+        obj.prototype['kind'] = obj.name;
+    }
+    ;
     var BaseAST = (function () {
         function BaseAST(info) {
-            this.kind = this.constructor.name;
             if (info) {
                 this.line = info.first_line - 1;
                 this.col = info.first_column;
@@ -156,6 +159,12 @@ var AST;
         })(BaseAST);
         Exp.Forall = Forall;
         ;
+        unsafe_addKind(TypeDef);
+        unsafe_addKind(Program);
+        unsafe_addKind(Share);
+        unsafe_addKind(Subtype);
+        unsafe_addKind(Equals);
+        unsafe_addKind(Forall);
     })(Exp = AST.Exp || (AST.Exp = {}));
     ;
     var Type;
@@ -404,6 +413,29 @@ var AST;
         })(BaseAST);
         Type.Definition = Definition;
         ;
+        unsafe_addKind(Substitution);
+        unsafe_addKind(Exists);
+        unsafe_addKind(Forall);
+        unsafe_addKind(Stacked);
+        unsafe_addKind(Rely);
+        unsafe_addKind(Guarantee);
+        unsafe_addKind(Sum);
+        unsafe_addKind(Star);
+        unsafe_addKind(Alternative);
+        unsafe_addKind(Intersection);
+        unsafe_addKind(Function);
+        unsafe_addKind(Capability);
+        unsafe_addKind(Name);
+        unsafe_addKind(Primitive);
+        unsafe_addKind(Reference);
+        unsafe_addKind(Bang);
+        unsafe_addKind(Record);
+        unsafe_addKind(Field);
+        unsafe_addKind(Tuple);
+        unsafe_addKind(Tagged);
+        unsafe_addKind(None);
+        unsafe_addKind(Top);
+        unsafe_addKind(Definition);
     })(Type = AST.Type || (AST.Type = {}));
     ;
 })(AST || (AST = {}));

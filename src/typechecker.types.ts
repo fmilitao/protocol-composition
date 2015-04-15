@@ -8,8 +8,6 @@
 
 module TypeChecker {
 
-    //var exports: any = {};
-
 	/*
 	 * WARNING - Usage Notes:
 	 * The following two function smake use of a side-effect when evaluating
@@ -61,13 +59,64 @@ module TypeChecker {
         return constructor;
     };
 
-    // Note: all constructors are labelled to make heap profiling easier.
+    //
+    // NEW TYPES ============
+    //
 
-    // class FunctionType {
+    // function unsafe_addNewType(obj) {
+    //     const name = obj.name; // should be the type's name
     //
-    //   constructor(){}
+    //     // duplication check
+    //     error((!types.hasOwnProperty(name) && !fct.hasOwnProperty(name))
+    //         || ('@unsafe_addNewType: already exists: ' + name));
     //
-    // }
+    //     types[name] = name;
+    //     fct[name] = obj;
+    //
+    //     obj.prototype['type'] = name;
+    //     //FIXME: also attach 'toString'
+    // };
+    //
+    // interface Type {
+    //     match<T>(m: MatchType<T>): T;
+    // };
+    //
+    // interface MatchType<T> {
+    //     FunctionType(x: FunctionType): T;
+    // };
+    //
+    // class BaseType {
+    //
+    //     public type: string; // attached (statically) by 'unsafe_addNewType'
+    //
+    //     match<T>(cases: any): T {
+    //         // for debugging:
+    //         if (!cases.hasOwnProperty(this.type))
+    //             throw new Error('Missing: ' + this.type + ' on ' + cases.constructor.name);
+    //
+    //         // not very safe, but convenient way to do pattern matching within typescript
+    //         return cases[this.type](<any>this);
+    //     }
+    // };
+    //
+    // // all types are immutable.
+    //
+    // class FunctionType extends BaseType {
+    //     public argument: () => Type;
+    //     public body: () => Type;
+    //
+    //     constructor(
+    //         argument: Type,
+    //         body: Type
+    //         ) {
+    //         super();
+    //
+    //         this.argument = () => argument;
+    //         this.body = () => body;
+    //     }
+    // };
+    // unsafe_addNewType(FunctionType);
+
 
     newType('FunctionType',
         function FunctionType(argument, body) {
@@ -275,7 +324,7 @@ module TypeChecker {
     (function() {
 
         // defines which types get wrapping parenthesis
-        var wrap = function(t, v) {
+        function wrap(t, v) {
             if (t.type === types.ReferenceType ||
                 t.type === types.FunctionType ||
                 t.type === types.StackedType ||
@@ -287,6 +336,7 @@ module TypeChecker {
             return t.toString(v);
         };
 
+        //FIXME: switch to visitor then move up
         var setupToString = function(type) {
             switch (type) {
 
@@ -554,14 +604,14 @@ module TypeChecker {
         this.reset();
     };
 
-/*
-    exports.assert = assert;
-    exports.error = error;
-    exports.Gamma = Gamma;
-    exports.TypeDefinition = TypeDefinition;
-    exports.types = types;
-    exports.factory = fct;
+    /*
+        exports.assert = assert;
+        exports.error = error;
+        exports.Gamma = Gamma;
+        exports.TypeDefinition = TypeDefinition;
+        exports.types = types;
+        exports.factory = fct;
 
-    return exports;
-*/
+        return exports;
+    */
 };

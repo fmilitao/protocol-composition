@@ -151,7 +151,7 @@ var TypeChecker;
         };
     });
     (function () {
-        var wrap = function (t, v) {
+        function wrap(t, v) {
             if (t.type === TypeChecker.types.ReferenceType ||
                 t.type === TypeChecker.types.FunctionType ||
                 t.type === TypeChecker.types.StackedType ||
@@ -161,7 +161,8 @@ var TypeChecker;
                 return '(' + t.toString(v) + ')';
             }
             return t.toString(v);
-        };
+        }
+        ;
         var setupToString = function (type) {
             switch (type) {
                 case TypeChecker.types.FunctionType:

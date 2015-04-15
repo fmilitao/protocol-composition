@@ -60,6 +60,10 @@ module AST {
         return tmp;
     };
 
+    function unsafe_addKind(obj) {
+        obj.prototype['kind'] = obj.name;
+    };
+
     // convenient but hacky class for adding a match to both Exp and Types
 				class BaseAST {
 
@@ -67,10 +71,10 @@ module AST {
         public col: number;
         public last_line: number;
         public last_col: number;
-        public kind: string;
+
+        public kind: string; // attached (statically) by 'unsafe_addKind'
 
         constructor(info?) {
-            this.kind = (<any>this.constructor).name;
 												// next was found through the link:
 												// http://www.gnu.org/software/bison/manual/html_node/Actions-and-Locations.html#Actions-and-Locations
             if (info) {
@@ -88,7 +92,8 @@ module AST {
             if (!cases.hasOwnProperty(this.kind))
                 throw new Error('Missing: ' + this.kind + ' on ' + cases.constructor.name);
 
-            // not very safe, but convenient way to do pattern matching within typescript
+            // unsafe, but convenient way to do pattern matching within typescript
+            // while avoiding copy pasting over all classes that need this.
             return cases[this.kind](<any>this);
         }
 
@@ -180,6 +185,14 @@ module AST {
 																super(info);
 												}
 								};
+
+        // adds static 'kind' information to each class
+        unsafe_addKind(TypeDef);
+        unsafe_addKind(Program);
+        unsafe_addKind(Share);
+        unsafe_addKind(Subtype);
+        unsafe_addKind(Equals);
+        unsafe_addKind(Forall);
 
 				};
 
@@ -444,6 +457,31 @@ module AST {
 																super(info);
 												}
 								};
+
+        // adds static 'kind' information to each class
+        unsafe_addKind(Substitution);
+        unsafe_addKind(Exists);
+        unsafe_addKind(Forall);
+        unsafe_addKind(Stacked);
+        unsafe_addKind(Rely);
+        unsafe_addKind(Guarantee);
+        unsafe_addKind(Sum);
+        unsafe_addKind(Star);
+        unsafe_addKind(Alternative);
+        unsafe_addKind(Intersection);
+        unsafe_addKind(Function);
+        unsafe_addKind(Capability);
+        unsafe_addKind(Name);
+        unsafe_addKind(Primitive);
+        unsafe_addKind(Reference);
+        unsafe_addKind(Bang);
+        unsafe_addKind(Record);
+        unsafe_addKind(Field);
+        unsafe_addKind(Tuple);
+        unsafe_addKind(Tagged);
+        unsafe_addKind(None);
+        unsafe_addKind(Top);
+        unsafe_addKind(Definition);
 
 				};
 
