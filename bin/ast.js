@@ -12,9 +12,7 @@ function ErrorWrapper(msg, kind, ast, debug, stack) {
     this.ast = ast;
     this.debug = debug;
     this.stack = stack || (new Error()).stack.toString();
-    this.toString = function () {
-        return this.kind + ': ' + this.message;
-    };
+    this.toString = function () { kind + ': ' + msg; };
 }
 ;
 function assertF(kind, f, msg, ast) {

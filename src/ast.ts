@@ -8,9 +8,7 @@ function ErrorWrapper(msg, kind, ast, debug, stack?) {
     this.ast = ast;
     this.debug = debug;
     this.stack = stack || (<any>(new Error())).stack.toString();
-    this.toString = function() {
-        return this.kind + ': ' + this.message;
-    }
+    this.toString = () => { kind + ': ' + msg; };
 };
 
 // convenient assert function to wrap errors
@@ -155,7 +153,7 @@ module AST {
 
 								export class Subtype extends BaseAST {
             constructor(
-                public value: Exp,
+                public value: boolean,
                 public a: Type.Type,
                 public b: Type.Type,
                 info: any
@@ -166,7 +164,7 @@ module AST {
 
 								export class Equals extends BaseAST {
             constructor(
-                public value: Exp,
+                public value: boolean,
                 public a: Type.Type,
                 public b: Type.Type,
                 info: any
@@ -458,7 +456,7 @@ module AST {
 												}
 								};
 
-        // adds static 'kind' information to each class
+        // attachs static 'kind' information to each class
         unsafe_addKind(Substitution);
         unsafe_addKind(Exists);
         unsafe_addKind(Forall);

@@ -12,7 +12,7 @@ module TypeChecker {
     //
 
     // TypeVariables must start upper cased.
-    function isTypeVariableName(n : string) {
+    function isTypeVariableName(n: string) {
         return n[0] === n[0].toUpperCase();
     }
 
@@ -433,12 +433,12 @@ module TypeChecker {
     };
 
 
-				const matchExp : AST.Exp.MatchExp<any> = {
+				const matchExp: AST.Exp.MatchExp<any> = {
 
         // TypeDef should not be used at this level
         TypeDef: x  => assert(false, x),
 
-        Program: ast => (c, _) : Type => {
+        Program: ast => (c, _): Type => {
 
             // ignores old environment, this is a new program!
 
@@ -582,7 +582,13 @@ module TypeChecker {
         },
 				};
 
-				const matchType /*: AST.Type.MatchType<Type>*/ = {
+    type TypeEval = (c: any, env: any) => Type;
+    interface MatchType extends AST.Type.MatchType<TypeEval> {
+        // this is an auxiliary metho to avoid duplicated code.
+        _aux_(ctr, ast: AST.Type.Exists|AST.Type.Forall): TypeEval;
+    };
+
+				const matchType: MatchType = {
 
         Substitution: ast => (c, env) => {
             const type = c.checkType(ast.type, env);
@@ -596,7 +602,7 @@ module TypeChecker {
         },
 
         // auxiliary function for common Forall/Exists code
-        _aux_: (ctr, ast: AST.Type.Exists|AST.Type.Forall) => (c, env) => {
+        _aux_: (ctr, ast) => (c, env) => {
             var id = ast.id;
             var variable;
             var bound;
@@ -616,7 +622,7 @@ module TypeChecker {
             var e = env.newScope(id, variable, bound);
             var type = c.checkType(ast.exp, e);
 
-            return new ctr(variable, type, bound);
+            return <Type>new ctr(variable, type, bound);
         },
 
         Exists: ast => matchType._aux_(ExistsType, ast),
@@ -743,7 +749,8 @@ module TypeChecker {
         },
 
         // should never occur at top level
-        Field: ast => assert(false, ast),
+        // cast is necessary to please TypeScript
+        Field: ast => <any>assert(false, ast),
 
         Tuple: ast => (c, env): Type => {
             // Note that TUPLE cannot move to the auto-bang block

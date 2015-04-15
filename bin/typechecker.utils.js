@@ -20,8 +20,8 @@ var TypeChecker;
             if (trail.has(key))
                 return true;
             trail.add(key);
-            t = deft ? TypeChecker.unfold(t) : t;
-            a = defa ? TypeChecker.unfold(a) : a;
+            t = deft ? unfold(t) : t;
+            a = defa ? unfold(a) : a;
             return unifyAux(x, t, a, trail);
         }
         if (t.type !== a.type)
@@ -38,7 +38,7 @@ var TypeChecker;
             }
             if (value === true)
                 return true;
-            return TypeChecker.equals(tmp, value);
+            return equals(tmp, value);
         };
         switch (t.type) {
             case TypeChecker.types.FunctionType: {
@@ -82,14 +82,14 @@ var TypeChecker;
                 for (var i = 0; i < ts.length; ++i) {
                     var found = false;
                     for (var j = 0; j < as.length; ++j) {
-                        if (TypeChecker.equals(ts[i], as[j])) {
+                        if (equals(ts[i], as[j])) {
                             as.splice(j, 1);
                             found = true;
                             break;
                         }
                     }
                     if (!found) {
-                        if (tt !== null && !TypeChecker.equals(tt, ts[i])) {
+                        if (tt !== null && !equals(tt, ts[i])) {
                             return false;
                         }
                         tt = ts[i];
@@ -109,7 +109,7 @@ var TypeChecker;
                     for (var i = 0; i < as.length; ++i) {
                         cs[i] = 1;
                         for (var j = i + 1; j < as.length; ++j) {
-                            if (TypeChecker.equals(as[i], as[j])) {
+                            if (equals(as[i], as[j])) {
                                 cs[i] += 1;
                                 as.splice(j, 1);
                                 --j;
@@ -145,7 +145,7 @@ var TypeChecker;
                 if (((tb === null) !== (ab === null)) ||
                     (tb === null && ab === null && !aux(unifyAux(x, tb, ab, trail))))
                     return false;
-                var xi = TypeChecker.shift1(x, 0);
+                var xi = shift1(x, 0);
                 var ti = t.inner();
                 var ai = a.inner();
                 if (!aux(unifyAux(xi, ti, ai, trail)))
@@ -192,21 +192,21 @@ var TypeChecker;
                 TypeChecker.error("@unifyAux: Not expecting " + t.type);
         }
     };
-    TypeChecker.shift = function (t, c, d) {
+    function shift(t, c, d) {
         switch (t.type) {
             case TypeChecker.types.FunctionType:
-                return new TypeChecker.FunctionType(TypeChecker.shift(t.argument(), c, d), TypeChecker.shift(t.body(), c, d));
+                return new TypeChecker.FunctionType(shift(t.argument(), c, d), shift(t.body(), c, d));
             case TypeChecker.types.BangType:
-                return new TypeChecker.BangType(TypeChecker.shift(t.inner(), c, d));
+                return new TypeChecker.BangType(shift(t.inner(), c, d));
             case TypeChecker.types.RelyType:
-                return new TypeChecker.RelyType(TypeChecker.shift(t.rely(), c, d), TypeChecker.shift(t.guarantee(), c, d));
+                return new TypeChecker.RelyType(shift(t.rely(), c, d), shift(t.guarantee(), c, d));
             case TypeChecker.types.GuaranteeType:
-                return new TypeChecker.GuaranteeType(TypeChecker.shift(t.guarantee(), c, d), TypeChecker.shift(t.rely(), c, d));
+                return new TypeChecker.GuaranteeType(shift(t.guarantee(), c, d), shift(t.rely(), c, d));
             case TypeChecker.types.SumType: {
                 var sum = new TypeChecker.SumType();
                 var ts = t.tags();
                 for (var k in ts) {
-                    sum.add(ts[k], TypeChecker.shift(t.inner(ts[k]), c, d));
+                    sum.add(ts[k], shift(t.inner(ts[k]), c, d));
                 }
                 return sum;
             }
@@ -217,25 +217,25 @@ var TypeChecker;
                 var star = new t.constructor();
                 var inners = t.inner();
                 for (var i = 0; i < inners.length; ++i) {
-                    star.add(TypeChecker.shift(inners[i], c, d));
+                    star.add(shift(inners[i], c, d));
                 }
                 return star;
             }
             case TypeChecker.types.ExistsType:
             case TypeChecker.types.ForallType: {
-                return new t.constructor(t.id(), TypeChecker.shift(t.inner(), c + 1, d), (t.bound() !== null ? TypeChecker.shift(t.bound(), c, d) : null));
+                return new t.constructor(t.id(), shift(t.inner(), c + 1, d), (t.bound() !== null ? shift(t.bound(), c, d) : null));
             }
             case TypeChecker.types.ReferenceType:
-                return new TypeChecker.ReferenceType(TypeChecker.shift(t.location(), c, d));
+                return new TypeChecker.ReferenceType(shift(t.location(), c, d));
             case TypeChecker.types.StackedType:
-                return new TypeChecker.StackedType(TypeChecker.shift(t.left(), c, d), TypeChecker.shift(t.right(), c, d));
+                return new TypeChecker.StackedType(shift(t.left(), c, d), shift(t.right(), c, d));
             case TypeChecker.types.CapabilityType:
-                return new TypeChecker.CapabilityType(TypeChecker.shift(t.location(), c, d), TypeChecker.shift(t.value(), c, d));
+                return new TypeChecker.CapabilityType(shift(t.location(), c, d), shift(t.value(), c, d));
             case TypeChecker.types.RecordType: {
                 var r = new TypeChecker.RecordType();
                 var fs_1 = t.fields();
                 for (var k in fs_1) {
-                    r.add(k, TypeChecker.shift(fs_1[k], c, d));
+                    r.add(k, shift(fs_1[k], c, d));
                 }
                 return r;
             }
@@ -243,7 +243,7 @@ var TypeChecker;
                 var fs = t.args();
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
-                    tmp[i] = TypeChecker.shift(fs[i], c, d);
+                    tmp[i] = shift(fs[i], c, d);
                 return new TypeChecker.DefinitionType(t.definition(), tmp, t.getTypeDef());
             }
             case TypeChecker.types.LocationVariable:
@@ -258,33 +258,41 @@ var TypeChecker;
             default:
                 TypeChecker.error("@shift: Not expecting " + t.type);
         }
-    };
-    TypeChecker.shift1 = function (t, c) {
-        return TypeChecker.shift(t, c, 1);
-    };
-    var keyF = function (a, b) {
-        var rebase = function (a) {
-            var s = TypeChecker.indexSet(a);
-            if (s.size > 0) {
-                var v = [];
-                s.forEach(function (val) { v.push(val); });
-                v.sort();
-                for (var i = 0; i < v.length; ++i) {
-                    if (v[i] !== i) {
-                        a = TypeChecker.shift(a, i, i - v[i]);
-                    }
+    }
+    TypeChecker.shift = shift;
+    ;
+    function shift1(t, c) {
+        return shift(t, c, 1);
+    }
+    TypeChecker.shift1 = shift1;
+    ;
+    function rebase(a) {
+        var s = indexSet(a);
+        if (s.size > 0) {
+            var v = [];
+            s.forEach(function (val) { return v.push(val); });
+            v.sort();
+            for (var i = 0; i < v.length; ++i) {
+                if (v[i] !== i) {
+                    a = shift(a, i, i - v[i]);
                 }
             }
-            return a;
-        };
+        }
+        return a;
+    }
+    ;
+    function keyF(a, b) {
         a = rebase(a);
         b = rebase(b);
         return a.toString(true) + b.toString(true);
-    };
-    TypeChecker.equals = function (t1, t2) {
+    }
+    ;
+    function equals(t1, t2) {
         return equalsAux(t1, t2, new Set());
-    };
-    var equalsAux = function (t1, t2, trail) {
+    }
+    TypeChecker.equals = equals;
+    ;
+    function equalsAux(t1, t2, trail) {
         if (t1 === t2)
             return true;
         var def1 = t1.type === TypeChecker.types.DefinitionType;
@@ -294,8 +302,8 @@ var TypeChecker;
             if (trail.has(key))
                 return true;
             trail.add(key);
-            t1 = def1 ? TypeChecker.unfold(t1) : t1;
-            t2 = def2 ? TypeChecker.unfold(t2) : t2;
+            t1 = def1 ? unfold(t1) : t1;
+            t2 = def2 ? unfold(t2) : t2;
             return equalsAux(t1, t2, trail);
         }
         if (t1.type !== t2.type)
@@ -399,8 +407,9 @@ var TypeChecker;
             default:
                 TypeChecker.error("@equals: Not expecting " + t2.type);
         }
-    };
-    var substitutionAux = function (t, from, to) {
+    }
+    ;
+    function substitutionAux(t, from, to) {
         var rec = function (type) {
             return substitutionAux(type, from, to);
         };
@@ -442,8 +451,8 @@ var TypeChecker;
                 if (nbound !== null) {
                     nbound = substitutionAux(nbound, from, to);
                 }
-                var _to = TypeChecker.shift1(to, 0);
-                var _from = TypeChecker.shift1(from, 0);
+                var _to = shift1(to, 0);
+                var _from = shift1(from, 0);
                 return new t.constructor(nvar, substitutionAux(ninner, _from, _to), nbound);
             }
             case TypeChecker.types.ReferenceType:
@@ -476,19 +485,24 @@ var TypeChecker;
             default:
                 TypeChecker.error("@substitutionAux: Not expecting " + t.type);
         }
-    };
-    TypeChecker.substitution = function (type, from, to) {
+    }
+    ;
+    function substitution(type, from, to) {
         if (from.type !== TypeChecker.types.LocationVariable &&
             from.type !== TypeChecker.types.TypeVariable) {
             TypeChecker.error("@substitution: can only substitute a Type/LocationVariable, got: " + from.type);
         }
         return substitutionAux(type, from, to);
-    };
-    TypeChecker.subtype = function (t1, t2) {
+    }
+    TypeChecker.substitution = substitution;
+    ;
+    function subtype(t1, t2) {
         return subtypeAux(t1, t2, new Set());
-    };
-    var subtypeAux = function (t1, t2, trail) {
-        if (t1 === t2 || TypeChecker.equals(t1, t2))
+    }
+    TypeChecker.subtype = subtype;
+    ;
+    function subtypeAux(t1, t2, trail) {
+        if (t1 === t2 || equals(t1, t2))
             return true;
         var def1 = t1.type === TypeChecker.types.DefinitionType;
         var def2 = t2.type === TypeChecker.types.DefinitionType;
@@ -497,15 +511,15 @@ var TypeChecker;
             if (trail.has(key))
                 return true;
             trail.add(key);
-            t1 = def1 ? TypeChecker.unfold(t1) : t1;
-            t2 = def2 ? TypeChecker.unfold(t2) : t2;
+            t1 = def1 ? unfold(t1) : t1;
+            t2 = def2 ? unfold(t2) : t2;
             return subtypeAux(t1, t2, trail);
         }
         if (t2.type === TypeChecker.types.TopType && t1.type !== TypeChecker.types.LocationVariable)
             return true;
         if (t1.type === TypeChecker.types.TypeVariable) {
             var bound = t1.bound();
-            if (bound !== null && TypeChecker.equals(bound, t2))
+            if (bound !== null && equals(bound, t2))
                 return true;
         }
         if (t1.type === TypeChecker.types.BangType && t2.type !== TypeChecker.types.BangType)
@@ -518,7 +532,7 @@ var TypeChecker;
         if (t1.type === TypeChecker.types.ReferenceType && t2.type === TypeChecker.types.BangType)
             return subtypeAux(t1, t2.inner(), trail);
         if (t1.type === TypeChecker.types.RecordType && t2.type === TypeChecker.types.BangType &&
-            TypeChecker.equals(t1, t2.inner())) {
+            equals(t1, t2.inner())) {
             var t1fields = t1.fields();
             var allPure = true;
             for (var i_3 in t1fields) {
@@ -549,7 +563,7 @@ var TypeChecker;
             return false;
         }
         if (t2.type === TypeChecker.types.ExistsType && t1.type !== TypeChecker.types.ExistsType) {
-            var t1_s = TypeChecker.shift1(t1, 0);
+            var t1_s = shift1(t1, 0);
             var u = TypeChecker.unify(t2.id(), t2.inner(), t1_s);
             if (u === false)
                 return false;
@@ -559,7 +573,7 @@ var TypeChecker;
             return b === null || subtypeAux(u, b, trail);
         }
         if (t1.type === TypeChecker.types.ForallType && t2.type !== TypeChecker.types.ForallType) {
-            var t2_s = TypeChecker.shift1(t2, 0);
+            var t2_s = shift1(t2, 0);
             var u = TypeChecker.unify(t1.id(), t1.inner(), t2_s);
             if (u === false)
                 return false;
@@ -696,7 +710,7 @@ var TypeChecker;
             case TypeChecker.types.ExistsType: {
                 if (t1.id().type !== t2.id().type)
                     return false;
-                if (!TypeChecker.equals(t1.bound(), t2.bound()))
+                if (!equals(t1.bound(), t2.bound()))
                     return false;
                 return subtypeAux(t1.inner(), t2.inner(), trail);
             }
@@ -706,21 +720,24 @@ var TypeChecker;
             default:
                 TypeChecker.error("@subtypeAux: Not expecting " + t1.type);
         }
-    };
-    TypeChecker.isFree = function (x, t) {
+    }
+    ;
+    function isFree(x, t) {
         if (x.type !== TypeChecker.types.LocationVariable &&
             x.type !== TypeChecker.types.TypeVariable) {
             TypeChecker.error("@isFree: can only check a Type/LocationVariable, got: " + x.type);
         }
         return isFreeAux(x, t, new Set());
-    };
-    var isFreeAux = function (x, t, trail) {
+    }
+    TypeChecker.isFree = isFree;
+    ;
+    function isFreeAux(x, t, trail) {
         if (t.type === TypeChecker.types.DefinitionType) {
             var key = t.toString(true);
             if (trail.has(key))
                 return true;
             trail.add(key);
-            return isFreeAux(x, TypeChecker.unfold(t), trail);
+            return isFreeAux(x, unfold(t), trail);
         }
         switch (t.type) {
             case TypeChecker.types.NoneType:
@@ -776,7 +793,7 @@ var TypeChecker;
             case TypeChecker.types.ForallType:
             case TypeChecker.types.ExistsType: {
                 return (t.bound() === null || isFreeAux(x, t.bound(), trail)) &&
-                    isFreeAux(TypeChecker.shift(x, 0, 1), t.inner(), trail);
+                    isFreeAux(shift(x, 0, 1), t.inner(), trail);
             }
             case TypeChecker.types.TypeVariable:
             case TypeChecker.types.LocationVariable:
@@ -784,31 +801,39 @@ var TypeChecker;
             default:
                 TypeChecker.error("@isFreeAux: Not expecting " + t.type);
         }
-    };
-    TypeChecker.unfold = function (t) {
+    }
+    ;
+    function unfold(t) {
         while (t.type === TypeChecker.types.DefinitionType) {
-            t = TypeChecker.unfoldDefinition(t);
+            t = unfoldDefinition(t);
         }
         return t;
-    };
-    TypeChecker.unfoldDefinition = function (d) {
-        if (d.type !== TypeChecker.types.DefinitionType)
-            return d;
-        var t = d.getDefinition();
-        var args = d.args();
-        var pars = d.getParams();
-        for (var i = (args.length - 1); i >= 0; --i) {
-            t = TypeChecker.substitution(t, pars[i], TypeChecker.shift(args[i], 0, pars.length));
+    }
+    TypeChecker.unfold = unfold;
+    ;
+    function unfoldDefinition(d) {
+        if (d instanceof TypeChecker.DefinitionType) {
+            var t = d.getDefinition();
+            var args = d.args();
+            var pars = d.getParams();
+            for (var i = (args.length - 1); i >= 0; --i) {
+                t = substitution(t, pars[i], shift(args[i], 0, pars.length));
+            }
+            t = shift(t, 0, -pars.length);
+            return t;
         }
-        t = TypeChecker.shift(t, 0, -pars.length);
-        return t;
-    };
-    TypeChecker.indexSet = function (t) {
+        return d;
+    }
+    TypeChecker.unfoldDefinition = unfoldDefinition;
+    ;
+    function indexSet(t) {
         var set = new Set();
         indexSetAux(t, 0, set);
         return set;
-    };
-    var indexSetAux = function (t, c, set) {
+    }
+    TypeChecker.indexSet = indexSet;
+    ;
+    function indexSetAux(t, c, set) {
         switch (t.type) {
             case TypeChecker.types.BangType: {
                 indexSetAux(t.inner(), c, set);
@@ -888,21 +913,22 @@ var TypeChecker;
             default:
                 return;
         }
-    };
-    TypeChecker.isProtocol = function (t, trail) {
+    }
+    ;
+    function isProtocol(t, trail) {
         switch (t.type) {
             case TypeChecker.types.NoneType:
                 return true;
             case TypeChecker.types.RelyType:
                 return true;
             case TypeChecker.types.ExistsType:
-                return TypeChecker.isProtocol(t.inner(), trail);
+                return isProtocol(t.inner(), trail);
             case TypeChecker.types.AlternativeType:
             case TypeChecker.types.IntersectionType:
             case TypeChecker.types.StarType: {
                 var ts = t.inner();
                 for (var i = 0; i < ts.length; ++i) {
-                    if (!TypeChecker.isProtocol(ts[i], trail))
+                    if (!isProtocol(ts[i], trail))
                         return false;
                 }
                 return true;
@@ -915,11 +941,13 @@ var TypeChecker;
                 if (trail.has(key))
                     return true;
                 trail.add(key);
-                return TypeChecker.isProtocol(TypeChecker.unfold(t), trail);
+                return isProtocol(unfold(t), trail);
             }
             default:
                 return false;
         }
-    };
+    }
+    TypeChecker.isProtocol = isProtocol;
+    ;
 })(TypeChecker || (TypeChecker = {}));
 ;

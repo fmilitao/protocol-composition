@@ -298,7 +298,7 @@ module TypeChecker {
     // t -> type
     // c -> cutoff index
     // d -> shift value
-    export var shift = function(t, c, d) {
+    export function shift(t, c : number, d : number) : Type {
 
         switch (t.type) {
 
@@ -391,36 +391,30 @@ module TypeChecker {
         }
     };
 
-    export var shift1 = function(t, c) {
+    export function shift1(t: Type, c: number): Type {
         return shift(t, c, 1);
     };
 
+    function rebase(a: Type): Type {
+        const s = indexSet(a);
+        if (s.size > 0) {
+            let v = [];
+            s.forEach(val => v.push(val));
+            v.sort();
 
-    var keyF = function(a, b) {
-
-        var rebase = function(a) {
-            var s = indexSet(a);
-            if (s.size > 0) {
-                var v = [];
-                s.forEach(function(val) { v.push(val); });
-                v.sort();
-
-                for (var i = 0; i < v.length; ++i) {
-                    if (v[i] !== i) {
-                        a = shift(a, i, i - v[i]);
-                    }
+            for (let i = 0; i < v.length; ++i) {
+                if (v[i] !== i) {
+                    a = shift(a, i, i - v[i]);
                 }
             }
-            return a;
-        };
+        }
+        return a;
+    };
 
-        //console.log('>>'+ a.toString(true) + b.toString(true) );
+    function keyF(a: Type, b: Type): string {
         a = rebase(a);
         b = rebase(b);
-        //console.log('<<'+ a.toString(true) + b.toString(true) );
-
         return a.toString(true) + b.toString(true);
-
     };
 
 
@@ -433,11 +427,11 @@ module TypeChecker {
 	 * @param {Type} b
 	 * @return {Boolean} if the types are equal up to renaming.
 	 */
-    export var equals = function(t1, t2) {
-        return equalsAux(t1, t2, new Set());
+    export function equals(t1 : Type, t2 : Type) : boolean {
+        return equalsAux(t1, t2, new Set<string>());
     };
 
-    var equalsAux = function(t1, t2, trail) {
+    function equalsAux(t1, t2, trail : Set<string>) : boolean {
 
         if (t1 === t2)
             return true;
@@ -590,7 +584,7 @@ module TypeChecker {
 	 * @param {Function} equals function to compare types
 	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
 	 */
-    var substitutionAux = function(t, from, to) {
+    function substitutionAux(t, from, to : Type) : Type{
 
         // for convenience...
         var rec = function(type) {
@@ -695,7 +689,7 @@ module TypeChecker {
 	 * equality test since we are no longer attempting to match complete types
 	 * and instead are just looking for TypeVariables or LocationVariables
 	 */
-    export var substitution = function(type, from, to) {
+    export function substitution(type : Type, from : Type, to : Type) : Type {
         if (from.type !== types.LocationVariable &&
             from.type !== types.TypeVariable) {
             error("@substitution: can only substitute a Type/LocationVariable, got: " + from.type);
@@ -710,11 +704,11 @@ module TypeChecker {
 	 * @param {Type} t2
 	 * @return {Boolean} true if t1 <: t2 (if t1 can be used as t2).
 	 */
-    export var subtype = function(t1, t2) {
-        return subtypeAux(t1, t2, new Set());
+    export function subtype(t1: Type, t2: Type): boolean {
+        return subtypeAux(t1, t2, new Set<string>());
     };
 
-    var subtypeAux = function(t1, t2, trail) {
+    function subtypeAux(t1, t2, trail: Set<string>): boolean {
         if (t1 === t2 || equals(t1, t2)) // A <: A
             return true;
 
@@ -1007,15 +1001,15 @@ module TypeChecker {
     };
 
 
-    export var isFree = function(x, t) {
+    export function isFree(x, t: Type): boolean {
         if (x.type !== types.LocationVariable &&
             x.type !== types.TypeVariable) {
             error("@isFree: can only check a Type/LocationVariable, got: " + x.type);
         }
-        return isFreeAux(x, t, new Set());
+        return isFreeAux(x, t, new Set<string>());
     };
 
-    var isFreeAux = function(x, t, trail) {
+    function isFreeAux(x, t, trail: Set<string>): boolean {
 
         if (t.type === types.DefinitionType) {
             var key = t.toString(true);
@@ -1104,37 +1098,39 @@ module TypeChecker {
     // unfolds DefinitionType until it reaches some useful type
     // NOTE: we previously checked for infinitely recursive definitions
     // therefore this function should always terminate.
-    export var unfold = function(t) {
+    export function unfold(t: Type): Type {
         while (t.type === types.DefinitionType) {
             t = unfoldDefinition(t);
         }
         return t;
     };
 
-    export var unfoldDefinition = function(d) {
-        if (d.type !== types.DefinitionType)
-            return d;
-        var t = d.getDefinition();
-        var args = d.args();
-        var pars = d.getParams();
-        // WARNING assumes same length in 'args' and in 'pars'
-        // type definitions will only replace Type or Location Variables, we
-        // can use the simpler kind of substitution.
-        for (var i = (args.length - 1); i >= 0; --i) {
-            t = substitution(t, pars[i], shift(args[i], 0, pars.length));
+    export function unfoldDefinition(d: Type): Type {
+        if (d instanceof DefinitionType) {
+            var t = d.getDefinition();
+            var args = d.args();
+            var pars = d.getParams();
+            // WARNING assumes same length in 'args' and in 'pars'
+            // type definitions will only replace Type or Location Variables, we
+            // can use the simpler kind of substitution.
+            for (var i = (args.length - 1); i >= 0; --i) {
+                t = substitution(t, pars[i], shift(args[i], 0, pars.length));
+            }
+            t = shift(t, 0, -pars.length);
+            return t;
         }
-        t = shift(t, 0, -pars.length);
-        return t;
+        // else, nothing to unfold.
+        return d;
     };
 
     //returns set with index levels from 0.
-    export var indexSet = function(t) {
-        var set = new Set();
+    export function indexSet(t: Type) {
+        const set = new Set<number>();
         indexSetAux(t, 0, set);
         return set;
     };
 
-    var indexSetAux = function(t, c, set) {
+    function indexSetAux(t, c: number, set: Set<number>) {
 
         switch (t.type) {
             case types.BangType: {
@@ -1212,15 +1208,14 @@ module TypeChecker {
                 }
                 return;
             }
-            //			case types.NoneType:
-            //			case types.PrimitiveType:
+            //	let remaining types intentionally use 'default'
             default:
                 return;
         }
     };
 
 
-    export var isProtocol = function(t, trail?) {
+    export function isProtocol(t, trail?: Set<string>): boolean {
         switch (t.type) {
             case types.NoneType:
                 return true;
@@ -1231,8 +1226,8 @@ module TypeChecker {
             case types.AlternativeType:
             case types.IntersectionType:
             case types.StarType: {
-                var ts = t.inner();
-                for (var i = 0; i < ts.length; ++i) {
+                const ts = t.inner();
+                for (let i = 0; i < ts.length; ++i) {
                     if (!isProtocol(ts[i], trail))
                         return false;
                 }
@@ -1243,7 +1238,7 @@ module TypeChecker {
                 if (trail === undefined) {
                     trail = new Set();
                 }
-                var key = t.toString(true);
+                const key = t.toString(true);
                 if (trail.has(key))
                     return true; // assume isProtocol elsewhere
                 trail.add(key);
@@ -1254,18 +1249,4 @@ module TypeChecker {
         }
     };
 
-    /*
-        exports.shift = shift;
-        exports.unify = unify;
-        exports.unfold = unfold;
-        exports.unfoldDefinition = unfoldDefinition;
-        exports.substitution = substitution;
-        exports.subtype = subtype;
-        exports.equals = equals;
-        exports.isFree = isFree;
-        exports.isProtocol = isProtocol;
-        exports.indexSet = indexSet;
-
-        return exports;
-    */
 };

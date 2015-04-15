@@ -383,6 +383,7 @@ var TypeChecker;
             return new TypeChecker.ForallType(variable, type, bound);
         }; },
     };
+    ;
     var matchType = {
         Substitution: function (ast) { return function (c, env) {
             var type = c.checkType(ast.type, env);
