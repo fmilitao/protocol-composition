@@ -352,7 +352,7 @@ module AST {
 
 								export class Capability extends BaseAST {
 												constructor(
-																public id: Type,
+																public id: string,
 																public type: Type,
 																info: any
 																) {

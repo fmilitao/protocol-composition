@@ -582,7 +582,7 @@ module TypeChecker {
         },
 				};
 
-    type TypeEval = (c: any, env: any) => Type;
+    type TypeEval = (c: any, env: Gamma) => Type;
     interface MatchType extends AST.Type.MatchType<TypeEval> {
         // this is an auxiliary metho to avoid duplicated code.
         _aux_(ctr, ast: AST.Type.Exists|AST.Type.Forall): TypeEval;
@@ -689,13 +689,13 @@ module TypeChecker {
         },
 
         Capability: ast => (c, env) => {
-            var id = ast.id;
-            var loc = env.getTypeByName(id);
+            let id = ast.id;
+            let loc = env.getTypeByName(id);
 
             assert((loc !== undefined && loc.type === types.LocationVariable) ||
                 ('Unknow Location Variable ' + id), ast);
 
-            return new CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
+            return new CapabilityType((<LocationVariable>loc).copy(env.getNameIndex(id)), c.checkType(ast.type, env));
         },
 
         Name: ast => (c, env) => {
@@ -710,7 +710,7 @@ module TypeChecker {
             if (tmp !== undefined &&
                 (tmp.type === types.TypeVariable ||
                     tmp.type === types.LocationVariable)) {
-                return tmp.copy(env.getNameIndex(label));
+                return (<LocationVariable|TypeVariable>tmp).copy(env.getNameIndex(label));
             }
 
             // look for type definitions with 0 arguments
@@ -728,7 +728,7 @@ module TypeChecker {
             assert((loc !== undefined && loc.type === types.LocationVariable) ||
                 ('Unknow Location Variable ' + id), ast);
 
-            return new ReferenceType(loc.copy(env.getNameIndex(id)));
+            return new ReferenceType((<LocationVariable>loc).copy(env.getNameIndex(id)));
         },
 
         Bang: ast => (c, env) => {

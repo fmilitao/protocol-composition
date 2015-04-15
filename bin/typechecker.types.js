@@ -488,58 +488,66 @@ var TypeChecker;
         error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
         TypeChecker.fct[t].prototype.toString = fun;
     }
-    TypeChecker.Gamma = function (typedef, parent, id, type, bound) {
-        // id, type, bound are left undefined when called with:
-        // new Gamma( typedef, null );
-        this.getTypeDef = function () {
-            return typedef;
+    var Gamma = (function () {
+        function Gamma(typedef, parent, id, type, bound) {
+            this.typedef = typedef;
+            this.parent = parent;
+            this.id = id;
+            this.type = type;
+            this.bound = bound;
+        }
+        Gamma.prototype.getTypeDef = function () {
+            return this.typedef;
         };
-        this.newScope = function (id, type, bound) {
-            return new TypeChecker.Gamma(typedef, this, id, type, bound);
+        Gamma.prototype.newScope = function (id, type, bound) {
+            return new Gamma(this.typedef, this, id, type, bound);
         };
-        this.endScope = function () {
-            return parent;
+        Gamma.prototype.endScope = function () {
+            return this.parent;
         };
-        this.getType = function (index) {
+        Gamma.prototype.getType = function (index) {
             if (index === 0)
-                return type;
-            if (parent === null || index < 0)
+                return this.type;
+            if (this.parent === null || index < 0)
                 return undefined;
-            return parent.getType(index - 1);
+            return this.parent.getType(index - 1);
         };
-        this.getBound = function (index) {
+        Gamma.prototype.getBound = function (index) {
             if (index === 0)
-                return bound;
-            if (parent === null || index < 0)
+                return this.bound;
+            if (this.parent === null || index < 0)
                 return undefined;
-            return parent.getBound(index - 1);
+            return this.parent.getBound(index - 1);
         };
-        this.getTypeByName = function (name) {
-            if (name === id)
-                return type;
-            if (parent === null)
+        Gamma.prototype.getTypeByName = function (name) {
+            if (name === this.id)
+                return this.type;
+            if (this.parent === null)
                 return undefined;
-            return parent.getTypeByName(name);
+            return this.parent.getTypeByName(name);
         };
-        this.getNameIndex = function (name) {
-            if (id === name) {
+        Gamma.prototype.getNameIndex = function (name) {
+            if (this.id === name) {
                 return 0;
             }
-            if (parent === null)
+            if (this.parent === null)
                 return -1;
-            var tmp = parent.getNameIndex(name);
+            var tmp = this.parent.getNameIndex(name);
             if (tmp === -1)
                 return tmp;
             return 1 + tmp;
         };
-        this.forEach = function (f, i) {
+        Gamma.prototype.forEach = function (f, i) {
             if (i === undefined)
                 i = 0;
-            f(i, id, type, bound);
-            if (parent !== null)
-                parent.forEach(f, i + 1);
+            f(i, this.id, this.type, this.bound);
+            if (this.parent !== null)
+                this.parent.forEach(f, i + 1);
         };
-    };
+        return Gamma;
+    })();
+    TypeChecker.Gamma = Gamma;
+    ;
     var TypeDefinition = (function () {
         function TypeDefinition() {
             this.reset();

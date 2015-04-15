@@ -599,68 +599,77 @@ module TypeChecker {
 	 * 	undefined - new element collides with a previously existing one;
 	 *  null/value - if all OK.
 	 */
-    export var Gamma = function(typedef, parent, id?, type?, bound?) {
+    export class Gamma {
+
+        constructor(
+            private typedef: TypeDefinition,
+            private parent: Gamma,
+            private id?: string,
+            private type?: Type,
+            private bound?: Type) {
+        }
         // id, type, bound are left undefined when called with:
         // new Gamma( typedef, null );
 
-        this.getTypeDef = function() {
-            return typedef;
+        getTypeDef(): TypeDefinition {
+            return this.typedef;
         }
 
         // scope methods
-        this.newScope = function(id, type, bound) {
-            return new Gamma(typedef, this, id, type, bound);
+        newScope(id: string, type: Type, bound: Type) {
+            return new Gamma(this.typedef, this, id, type, bound);
         }
-        this.endScope = function() {
-            return parent;
+
+        endScope() {
+            return this.parent;
         }
 
         // getters
-        this.getType = function(index) {
+        getType(index: number): Type {
             if (index === 0)
-                return type;
-            if (parent === null || index < 0)
+                return this.type;
+            if (this.parent === null || index < 0)
                 return undefined;
-            return parent.getType(index - 1);
+            return this.parent.getType(index - 1);
         }
-        this.getBound = function(index) {
+        getBound(index: number): Type {
             if (index === 0)
-                return bound;
-            if (parent === null || index < 0)
+                return this.bound;
+            if (this.parent === null || index < 0)
                 return undefined;
-            return parent.getBound(index - 1);
+            return this.parent.getBound(index - 1);
         }
-        this.getTypeByName = function(name) {
-            if (name === id)
-                return type;
-            if (parent === null)
+        getTypeByName(name: string): Type {
+            if (name === this.id)
+                return this.type;
+            if (this.parent === null)
                 return undefined;
-            return parent.getTypeByName(name);
+            return this.parent.getTypeByName(name);
         }
 
         // returns the depth of 'name' in the spaghetti stack.
         // return: starts at 0, -1 if not found.
-        this.getNameIndex = function(name) {
-            if (id === name) {
+        getNameIndex(name: string): number {
+            if (this.id === name) {
                 return 0;
             }
-            if (parent === null)
+            if (this.parent === null)
                 return -1; // not found
 
-            var tmp = parent.getNameIndex(name);
+            var tmp = this.parent.getNameIndex(name);
             if (tmp === -1)
                 return tmp;
             return 1 + tmp;
         }
 
-        this.forEach = function(f, i) {
+        forEach(f: (index: number, name: string, type: Type, bound: Type) => void, i?: number) {
             if (i === undefined)
                 i = 0;
 
-            f(i, id, type, bound);
+            f(i, this.id, this.type, this.bound);
 
-            if (parent !== null)
-                parent.forEach(f, i + 1);
+            if (this.parent !== null)
+                this.parent.forEach(f, i + 1);
         }
 
     };
