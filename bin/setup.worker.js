@@ -21,6 +21,14 @@ if (isWorker) {
 }
 var types = TypeChecker.types;
 var checker = TypeChecker.check;
+var parse = function (txt) {
+    try {
+        return parser.parse(txt);
+    }
+    catch (e) {
+        throw new ErrorWrapper(e.message, 'Parse Error', { line: parser.lexer.yylineno, col: 0 }, e, e.stack);
+    }
+};
 var send = Comm.WorkerThread.getSender();
 var receiver = new function () {
     var ast = null;
@@ -36,7 +44,7 @@ var receiver = new function () {
             typeinfo = {};
             send('clearAll', null);
             send('setStatus', 'Type checking...');
-            ast = (parser(data));
+            ast = parse(data);
             send('println', '<b>Type</b>: ' +
                 toHTML(checker(ast, typeinfo)));
             if (!isWorker) {

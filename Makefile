@@ -1,8 +1,4 @@
-all :
-	cp src/*.js bin/
-
-deploy :
-	cp src/*.js bin/
+me :
 	cd bin/ ; \
 	jison ../src/parser.jison ; \
 	cd -
