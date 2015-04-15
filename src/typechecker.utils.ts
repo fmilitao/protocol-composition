@@ -6,14 +6,15 @@
  *  TypeChecker : stuff in typechecker.types.js
  */
 
-var TypeChecker = (function(exports) {
+module TypeChecker {
 
     // define constants for convenience
-    const assert = exports.assert;
-    const error = exports.error;
 
-    const types = exports.types;
-    const fct = exports.factory;
+    // const assert = exports.assert;
+    // const error = exports.error;
+    //
+    // const types = exports.types;
+    // const fct = exports.factory;
 
     const FunctionType = fct.FunctionType;
     const BangType = fct.BangType;
@@ -38,7 +39,7 @@ var TypeChecker = (function(exports) {
     const GuaranteeType = fct.GuaranteeType;
 
     // unify 'x' in 't' to match 'a'
-    var unify = function(x, t, a) {
+    export var unify = function(x, t, a) {
         if (x.type !== types.LocationVariable &&
             x.type !== types.TypeVariable) {
             error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
@@ -327,7 +328,7 @@ var TypeChecker = (function(exports) {
     // t -> type
     // c -> cutoff index
     // d -> shift value
-    var shift = function(t, c, d) {
+    export var shift = function(t, c, d) {
 
         switch (t.type) {
 
@@ -420,7 +421,7 @@ var TypeChecker = (function(exports) {
         }
     };
 
-    var shift1 = function(t, c) {
+    export var shift1 = function(t, c) {
         return shift(t, c, 1);
     };
 
@@ -462,7 +463,7 @@ var TypeChecker = (function(exports) {
 	 * @param {Type} b
 	 * @return {Boolean} if the types are equal up to renaming.
 	 */
-    var equals = function(t1, t2) {
+    export var equals = function(t1, t2) {
         return equalsAux(t1, t2, new Set());
     };
 
@@ -724,7 +725,7 @@ var TypeChecker = (function(exports) {
 	 * equality test since we are no longer attempting to match complete types
 	 * and instead are just looking for TypeVariables or LocationVariables
 	 */
-    var substitution = function(type, from, to) {
+    export var substitution = function(type, from, to) {
         if (from.type !== types.LocationVariable &&
             from.type !== types.TypeVariable) {
             error("@substitution: can only substitute a Type/LocationVariable, got: " + from.type);
@@ -739,7 +740,7 @@ var TypeChecker = (function(exports) {
 	 * @param {Type} t2
 	 * @return {Boolean} true if t1 <: t2 (if t1 can be used as t2).
 	 */
-    var subtype = function(t1, t2) {
+    export var subtype = function(t1, t2) {
         return subtypeAux(t1, t2, new Set());
     };
 
@@ -1036,7 +1037,7 @@ var TypeChecker = (function(exports) {
     };
 
 
-    var isFree = function(x, t) {
+    export var isFree = function(x, t) {
         if (x.type !== types.LocationVariable &&
             x.type !== types.TypeVariable) {
             error("@isFree: can only check a Type/LocationVariable, got: " + x.type);
@@ -1133,14 +1134,14 @@ var TypeChecker = (function(exports) {
     // unfolds DefinitionType until it reaches some useful type
     // NOTE: we previously checked for infinitely recursive definitions
     // therefore this function should always terminate.
-    var unfold = function(t) {
+    export var unfold = function(t) {
         while (t.type === types.DefinitionType) {
             t = unfoldDefinition(t);
         }
         return t;
     };
 
-    var unfoldDefinition = function(d) {
+    export var unfoldDefinition = function(d) {
         if (d.type !== types.DefinitionType)
             return d;
         var t = d.getDefinition();
@@ -1157,7 +1158,7 @@ var TypeChecker = (function(exports) {
     };
 
     //returns set with index levels from 0.
-    var indexSet = function(t) {
+    export var indexSet = function(t) {
         var set = new Set();
         indexSetAux(t, 0, set);
         return set;
@@ -1249,7 +1250,7 @@ var TypeChecker = (function(exports) {
     };
 
 
-    var isProtocol = function(t, trail) {
+    export var isProtocol = function(t, trail?) {
         switch (t.type) {
             case types.NoneType:
                 return true;
@@ -1283,6 +1284,7 @@ var TypeChecker = (function(exports) {
         }
     };
 
+/*
     exports.shift = shift;
     exports.unify = unify;
     exports.unfold = unfold;
@@ -1295,5 +1297,5 @@ var TypeChecker = (function(exports) {
     exports.indexSet = indexSet;
 
     return exports;
-
-})(TypeChecker); // required globals
+*/
+};

@@ -9,14 +9,14 @@
  *  TypeChecker : stuff in typechecker.*.js
  */
 
-var TypeChecker: any = (function(exports) {
+module TypeChecker {
 
     // define constants for convenience
-    const assert = exports.assert;
-    const error = exports.error;
-
-    const types = exports.types;
-    const fct = exports.factory;
+    // const assert = exports.assert;
+    // const error = exports.error;
+    //
+    // const types = exports.types;
+    // const fct = exports.factory;
 
     const FunctionType = fct.FunctionType;
     const BangType = fct.BangType;
@@ -42,19 +42,19 @@ var TypeChecker: any = (function(exports) {
     const NoneType = new fct.NoneType();
     const TopType = new fct.TopType();
 
-    const Gamma = exports.Gamma;
-    const TypeDefinition = exports.TypeDefinition;
-
-    const shift = exports.shift;
-    const unify = exports.unify;
-    const unfold = exports.unfold;
-    const unfoldDefinition = exports.unfoldDefinition;
-    const substitution = exports.substitution;
-    const subtype = exports.subtype;
-    const equals = exports.equals;
-    const isFree = exports.isFree;
-    const isProtocol = exports.isProtocol;
-    const indexSet = exports.indexSet;
+    // const Gamma = exports.Gamma;
+    // const TypeDefinition = exports.TypeDefinition;
+    //
+    // const shift = exports.shift;
+    // const unify = exports.unify;
+    // const unfold = exports.unfold;
+    // const unfoldDefinition = exports.unfoldDefinition;
+    // const substitution = exports.substitution;
+    // const subtype = exports.subtype;
+    // const equals = exports.equals;
+    // const isFree = exports.isFree;
+    // const isProtocol = exports.isProtocol;
+    // const indexSet = exports.indexSet;
 
     //
     // Auxiliary Definitions
@@ -924,7 +924,7 @@ var TypeChecker: any = (function(exports) {
     */
 
     // only exports checking function.
-    exports.check = function(ast: AST.Exp.Program, log) {
+    export function checker(ast: AST.Exp.Program, log) : any {
 
         //type_info = []; // reset
 
@@ -934,12 +934,12 @@ var TypeChecker: any = (function(exports) {
 
             // for expressions
             checkExp: (ast: AST.Exp.Exp, env) => {
-                return (ast.match(matchExp))(c, env);
+                return (ast.match<any>(matchExp))(c, env);
             },
 
             // for types
             checkType: (ast: AST.Type.Type, env) => {
-                return (ast.match(matchType))(c, env);
+                return (ast.match<any>(matchType))(c, env);
             },
         };
 
@@ -954,9 +954,9 @@ var TypeChecker: any = (function(exports) {
 
     };
 
-    return exports;
+    //return exports;
 
-})(TypeChecker); // required globals
+};
 
 
 

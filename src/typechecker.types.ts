@@ -6,9 +6,9 @@
  *  assertf : for error handling/flagging.
  */
 
-var TypeChecker: any = (function(assertF) {
+module TypeChecker {
 
-    var exports: any = {};
+    //var exports: any = {};
 
 	/*
 	 * WARNING - Usage Notes:
@@ -23,7 +23,7 @@ var TypeChecker: any = (function(assertF) {
 	 */
 
     // yields true or string on error
-    var assert = function(msg, ast) {
+    export var assert = function(msg, ast) {
         // if a boolean and true
         if (typeof (msg) === 'boolean' && msg)
             return;
@@ -32,7 +32,7 @@ var TypeChecker: any = (function(assertF) {
 
     // these are program assertions and should never be seen by users
     // unless there is a major malfunction in the code (bug...)
-    var error = function(msg) {
+    export var error = function(msg) {
         // if a boolean and true
         if (typeof (msg) === 'boolean' && msg)
             return;
@@ -44,8 +44,8 @@ var TypeChecker: any = (function(assertF) {
     // TYPES
     //
 
-    var types: any = {}; // types enumeration, useful for case analysis
-    var fct: any = {}; // types factory
+    export var types: any = {}; // types enumeration, useful for case analysis
+    export var fct: any = {}; // types factory
 
     var newType = function(type, constructor) {
         error((!types.hasOwnProperty(type) && !fct.hasOwnProperty(type))
@@ -452,7 +452,7 @@ var TypeChecker: any = (function(assertF) {
 	 * 	undefined - new element collides with a previously existing one;
 	 *  null/value - if all OK.
 	 */
-    var Gamma = function(typedef, parent, id, type, bound) {
+    export var Gamma = function(typedef, parent, id?, type?, bound?) {
         // id, type, bound are left undefined when called with:
         // new Gamma( typedef, null );
 
@@ -518,7 +518,7 @@ var TypeChecker: any = (function(assertF) {
 
     };
 
-    var TypeDefinition = function() {
+    export var TypeDefinition = function() {
         let typedefs;
         let typedefs_args;
 
@@ -548,6 +548,7 @@ var TypeChecker: any = (function(assertF) {
         this.reset();
     };
 
+/*
     exports.assert = assert;
     exports.error = error;
     exports.Gamma = Gamma;
@@ -556,5 +557,5 @@ var TypeChecker: any = (function(assertF) {
     exports.factory = fct;
 
     return exports;
-
-})(assertF); // required globals
+*/
+};

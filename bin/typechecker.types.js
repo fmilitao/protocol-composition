@@ -1,25 +1,25 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
-var TypeChecker = (function (assertF) {
-    var exports = {};
-    var assert = function (msg, ast) {
+var TypeChecker;
+(function (TypeChecker) {
+    TypeChecker.assert = function (msg, ast) {
         if (typeof (msg) === 'boolean' && msg)
             return;
         assertF('Type error', false, msg, ast);
     };
-    var error = function (msg) {
+    TypeChecker.error = function (msg) {
         if (typeof (msg) === 'boolean' && msg)
             return;
         assertF('Bug Alert', false, msg, undefined);
     };
-    var types = {};
-    var fct = {};
+    TypeChecker.types = {};
+    TypeChecker.fct = {};
     var newType = function (type, constructor) {
-        error((!types.hasOwnProperty(type) && !fct.hasOwnProperty(type))
+        TypeChecker.error((!TypeChecker.types.hasOwnProperty(type) && !TypeChecker.fct.hasOwnProperty(type))
             || ('@newType: already exists: ' + type));
         constructor.prototype.type = type;
-        types[type] = type;
-        fct[type] = constructor;
+        TypeChecker.types[type] = type;
+        TypeChecker.fct[type] = constructor;
         return constructor;
     };
     newType('FunctionType', function FunctionType(argument, body) {
@@ -152,35 +152,35 @@ var TypeChecker = (function (assertF) {
     });
     (function () {
         var wrap = function (t, v) {
-            if (t.type === types.ReferenceType ||
-                t.type === types.FunctionType ||
-                t.type === types.StackedType ||
-                t.type === types.StarType ||
-                t.type === types.AlternativeType ||
-                t.type === types.SumType) {
+            if (t.type === TypeChecker.types.ReferenceType ||
+                t.type === TypeChecker.types.FunctionType ||
+                t.type === TypeChecker.types.StackedType ||
+                t.type === TypeChecker.types.StarType ||
+                t.type === TypeChecker.types.AlternativeType ||
+                t.type === TypeChecker.types.SumType) {
                 return '(' + t.toString(v) + ')';
             }
             return t.toString(v);
         };
         var setupToString = function (type) {
             switch (type) {
-                case types.FunctionType:
+                case TypeChecker.types.FunctionType:
                     return function (v) {
                         return wrap(this.argument(), v) + " -o " + wrap(this.body(), v);
                     };
-                case types.BangType:
+                case TypeChecker.types.BangType:
                     return function (v) {
                         return "!" + wrap(this.inner(), v);
                     };
-                case types.RelyType:
+                case TypeChecker.types.RelyType:
                     return function (v) {
                         return wrap(this.rely(), v) + ' => ' + wrap(this.guarantee(), v);
                     };
-                case types.GuaranteeType:
+                case TypeChecker.types.GuaranteeType:
                     return function (v) {
                         return wrap(this.guarantee(), v) + ' ; ' + wrap(this.rely(), v);
                     };
-                case types.SumType:
+                case TypeChecker.types.SumType:
                     return function (v) {
                         var tags = this.tags();
                         var res = [];
@@ -189,7 +189,7 @@ var TypeChecker = (function (assertF) {
                         }
                         return res.join('+');
                     };
-                case types.StarType:
+                case TypeChecker.types.StarType:
                     return function (v) {
                         var inners = this.inner();
                         var res = [];
@@ -197,7 +197,7 @@ var TypeChecker = (function (assertF) {
                             res.push(wrap(inners[i], v));
                         return res.join(' * ');
                     };
-                case types.AlternativeType:
+                case TypeChecker.types.AlternativeType:
                     return function (v) {
                         var inners = this.inner();
                         var res = [];
@@ -205,7 +205,7 @@ var TypeChecker = (function (assertF) {
                             res.push(wrap(inners[i], v));
                         return res.join(' (+) ');
                     };
-                case types.IntersectionType:
+                case TypeChecker.types.IntersectionType:
                     return function (v) {
                         var inners = this.inner();
                         var res = [];
@@ -213,31 +213,31 @@ var TypeChecker = (function (assertF) {
                             res.push(wrap(inners[i], v));
                         return res.join(' & ');
                     };
-                case types.ExistsType:
+                case TypeChecker.types.ExistsType:
                     return function (v) {
                         return 'exists' + (v ? '' : ' ' + this.id().name())
                             + (!this.bound() ? '' : '<:' + wrap(this.bound(), v))
                             + '.' + wrap(this.inner(), v);
                     };
-                case types.ForallType:
+                case TypeChecker.types.ForallType:
                     return function (v) {
                         return 'forall' + (v ? '' : ' ' + this.id().name())
                             + (!this.bound() ? '' : '<:' + wrap(this.bound(), v))
                             + '.' + wrap(this.inner(), v);
                     };
-                case types.ReferenceType:
+                case TypeChecker.types.ReferenceType:
                     return function (v) {
                         return "ref " + wrap(this.location(), v);
                     };
-                case types.CapabilityType:
+                case TypeChecker.types.CapabilityType:
                     return function (v) {
                         return 'rw ' + wrap(this.location(), v) + ' ' + wrap(this.value(), v);
                     };
-                case types.StackedType:
+                case TypeChecker.types.StackedType:
                     return function (v) {
                         return wrap(this.left(), v) + ' :: ' + wrap(this.right(), v);
                     };
-                case types.RecordType:
+                case TypeChecker.types.RecordType:
                     return function (v) {
                         var res = [];
                         var fields = this.fields();
@@ -245,7 +245,7 @@ var TypeChecker = (function (assertF) {
                             res.push(i + ": " + wrap(fields[i], v));
                         return "[" + res.join() + "]";
                     };
-                case types.TupleType:
+                case TypeChecker.types.TupleType:
                     return function (v) {
                         var res = [];
                         var fields = this.inner();
@@ -253,7 +253,7 @@ var TypeChecker = (function (assertF) {
                             res.push(wrap(fields[i], v));
                         return "[" + res.join() + "]";
                     };
-                case types.DefinitionType:
+                case TypeChecker.types.DefinitionType:
                     return function (v) {
                         if (this.args().length > 0) {
                             var args = this.args();
@@ -265,13 +265,13 @@ var TypeChecker = (function (assertF) {
                         }
                         return wrap(this.definition(), v);
                     };
-                case types.LocationVariable:
-                case types.TypeVariable:
+                case TypeChecker.types.LocationVariable:
+                case TypeChecker.types.TypeVariable:
                     return function (v) {
                         if (!v)
                             return this.name() + '^' + this.index();
                         var str = '';
-                        if (this.type === types.TypeVariable) {
+                        if (this.type === TypeChecker.types.TypeVariable) {
                             var b = this.bound();
                             if (b !== null) {
                                 str = '$' + b.toString(v);
@@ -279,31 +279,31 @@ var TypeChecker = (function (assertF) {
                         }
                         return this.index() + str;
                     };
-                case types.PrimitiveType:
+                case TypeChecker.types.PrimitiveType:
                     return function (v) { return this.name(); };
-                case types.NoneType:
+                case TypeChecker.types.NoneType:
                     return function (v) { return 'none'; };
-                case types.TopType:
+                case TypeChecker.types.TopType:
                     return function (v) { return 'top'; };
                 default:
-                    error('@setupToString: Not expecting type: ' + type);
+                    TypeChecker.error('@setupToString: Not expecting type: ' + type);
             }
         };
-        for (var i in types) {
-            var t = types[i];
+        for (var i in TypeChecker.types) {
+            var t = TypeChecker.types[i];
             var fun = setupToString(t);
-            error(!fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
-            fct[t].prototype.toString = fun;
+            TypeChecker.error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
+            TypeChecker.fct[t].prototype.toString = fun;
         }
     })();
-    var Gamma = function (typedef, parent, id, type, bound) {
+    TypeChecker.Gamma = function (typedef, parent, id, type, bound) {
         // id, type, bound are left undefined when called with:
         // new Gamma( typedef, null );
         this.getTypeDef = function () {
             return typedef;
         };
         this.newScope = function (id, type, bound) {
-            return new Gamma(typedef, this, id, type, bound);
+            return new TypeChecker.Gamma(typedef, this, id, type, bound);
         };
         this.endScope = function () {
             return parent;
@@ -348,7 +348,7 @@ var TypeChecker = (function (assertF) {
                 parent.forEach(f, i + 1);
         };
     };
-    var TypeDefinition = function () {
+    TypeChecker.TypeDefinition = function () {
         var typedefs;
         var typedefs_args;
         this.addType = function (name, array) {
@@ -375,11 +375,5 @@ var TypeChecker = (function (assertF) {
         };
         this.reset();
     };
-    exports.assert = assert;
-    exports.error = error;
-    exports.Gamma = Gamma;
-    exports.TypeDefinition = TypeDefinition;
-    exports.types = types;
-    exports.factory = fct;
-    return exports;
-})(assertF);
+})(TypeChecker || (TypeChecker = {}));
+;

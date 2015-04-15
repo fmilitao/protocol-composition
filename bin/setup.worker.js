@@ -20,7 +20,7 @@ if (isWorker) {
     importScripts.apply(null, IMPORTS);
 }
 var types = TypeChecker.types;
-var checker = TypeChecker.check;
+var checker = TypeChecker.checker;
 var parse = function (txt) {
     try {
         return parser.parse(txt);
