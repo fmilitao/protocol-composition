@@ -1,5 +1,11 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
 var TypeChecker;
 (function (TypeChecker) {
     TypeChecker.assert = function (msg, ast) {
@@ -14,289 +20,470 @@ var TypeChecker;
     };
     TypeChecker.types = {};
     TypeChecker.fct = {};
-    var newType = function (type, constructor) {
-        TypeChecker.error((!TypeChecker.types.hasOwnProperty(type) && !TypeChecker.fct.hasOwnProperty(type))
-            || ('@newType: already exists: ' + type));
-        constructor.prototype.type = type;
-        TypeChecker.types[type] = type;
-        TypeChecker.fct[type] = constructor;
-        return constructor;
-    };
-    newType('FunctionType', function FunctionType(argument, body) {
-        this.argument = function () { return argument; };
-        this.body = function () { return body; };
-    });
-    newType('BangType', function BangType(inner) {
-        this.inner = function () { return inner; };
-    });
-    newType('SumType', function SumType() {
-        var tags = {};
-        this.add = function (tag, inner) {
-            if (tags.hasOwnProperty(tag))
-                return undefined;
-            tags[tag] = inner;
-            return true;
-        };
-        this.tags = function () {
-            return Object.keys(tags);
-        };
-        this.inner = function (tag) {
-            return tags[tag];
-        };
-        this.length = function () {
-            return Object.keys(tags).length;
-        };
-    });
-    var _Init = function (obj) {
-        var v = [];
-        obj.add = function (inner) {
-            v.push(inner);
-            return true;
-        };
-        obj.inner = function () { return v; };
-    };
-    newType('StarType', function StarType() {
-        _Init(this);
-    });
-    newType('AlternativeType', function AlternativeType() {
-        _Init(this);
-    });
-    newType('IntersectionType', function IntersectionType() {
-        _Init(this);
-    });
-    newType('TupleType', function TupleType() {
-        _Init(this);
-    });
-    newType('ForallType', function ForallType(id, inner, bound) {
-        this.id = function () { return id; };
-        this.inner = function () { return inner; };
-        this.bound = function () { return bound; };
-    });
-    newType('ExistsType', function ExistsType(id, inner, bound) {
-        this.id = function () { return id; };
-        this.inner = function () { return inner; };
-        this.bound = function () { return bound; };
-    });
-    newType('RecordType', function RecordType() {
-        var fields = {};
-        this.add = function (id, type) {
-            if (fields.hasOwnProperty(id)) {
-                return undefined;
-            }
-            fields[id] = type;
-            return true;
-        };
-        this.select = function (id) {
-            return fields[id];
-        };
-        this.isEmpty = function () {
-            return Object.keys(fields).length === 0;
-        };
-        this.fields = function () {
-            return fields;
-        };
-        this.length = function () {
-            return Object.keys(fields).length;
-        };
-    });
-    newType('NoneType', function NoneType() {
-    });
-    newType('TopType', function TopType() {
-    });
-    newType('ReferenceType', function ReferenceType(location) {
-        this.location = function () { return location; };
-    });
-    newType('StackedType', function StackedType(left, right) {
-        this.left = function () { return left; };
-        this.right = function () { return right; };
-    });
-    newType('CapabilityType', function CapabilityType(loc, val) {
-        this.location = function () { return loc; };
-        this.value = function () { return val; };
-    });
-    var _Variable = function (obj, name, index, bound) {
-        obj.index = function () { return index; };
-        obj.name = function () { return name; };
-        obj.bound = function () { return bound; };
-        obj.copy = function (j) { return new obj.constructor(name, j, bound); };
-    };
-    newType('LocationVariable', function LocationVariable(name, index) {
-        _Variable(this, name, index, null);
-    });
-    newType('TypeVariable', function TypeVariable(name, index, bound) {
-        _Variable(this, name, index, bound);
-    });
-    newType('PrimitiveType', function PrimitiveType(name) {
-        this.name = function () { return name; };
-    });
-    newType('RelyType', function RelyType(rely, guarantee) {
-        this.rely = function () { return rely; };
-        this.guarantee = function () { return guarantee; };
-    });
-    newType('GuaranteeType', function GuaranteeType(guarantee, rely) {
-        this.rely = function () { return rely; };
-        this.guarantee = function () { return guarantee; };
-    });
-    newType('DefinitionType', function DefinitionType(definition_name, arg, typedef) {
-        this.definition = function () { return definition_name; };
-        this.args = function () { return arg; };
-        this.getDefinition = function () {
-            return typedef.getDefinition(definition_name);
-        };
-        this.getParams = function () {
-            return typedef.getType(definition_name);
-        };
-        this.getTypeDef = function () {
-            return typedef;
-        };
-    });
-    (function () {
-        function wrap(t, v) {
-            if (t.type === TypeChecker.types.ReferenceType ||
-                t.type === TypeChecker.types.FunctionType ||
-                t.type === TypeChecker.types.StackedType ||
-                t.type === TypeChecker.types.StarType ||
-                t.type === TypeChecker.types.AlternativeType ||
-                t.type === TypeChecker.types.SumType) {
-                return '(' + t.toString(v) + ')';
-            }
-            return t.toString(v);
+    function unsafe_addNewType(obj) {
+        var name = obj.name;
+        TypeChecker.error((!TypeChecker.types.hasOwnProperty(name) && !TypeChecker.fct.hasOwnProperty(name))
+            || ('@unsafe_addNewType: already exists: ' + name));
+        TypeChecker.types[name] = name;
+        TypeChecker.fct[name] = obj;
+        obj.prototype['type'] = name;
+    }
+    ;
+    ;
+    ;
+    var BaseType = (function () {
+        function BaseType() {
         }
-        ;
-        var setupToString = function (type) {
-            switch (type) {
-                case TypeChecker.types.FunctionType:
-                    return function (v) {
-                        return wrap(this.argument(), v) + " -o " + wrap(this.body(), v);
-                    };
-                case TypeChecker.types.BangType:
-                    return function (v) {
-                        return "!" + wrap(this.inner(), v);
-                    };
-                case TypeChecker.types.RelyType:
-                    return function (v) {
-                        return wrap(this.rely(), v) + ' => ' + wrap(this.guarantee(), v);
-                    };
-                case TypeChecker.types.GuaranteeType:
-                    return function (v) {
-                        return wrap(this.guarantee(), v) + ' ; ' + wrap(this.rely(), v);
-                    };
-                case TypeChecker.types.SumType:
-                    return function (v) {
-                        var tags = this.tags();
-                        var res = [];
-                        for (var i in tags) {
-                            res.push(tags[i] + '#' + wrap(this.inner(tags[i]), v));
-                        }
-                        return res.join('+');
-                    };
-                case TypeChecker.types.StarType:
-                    return function (v) {
-                        var inners = this.inner();
-                        var res = [];
-                        for (var i = 0; i < inners.length; ++i)
-                            res.push(wrap(inners[i], v));
-                        return res.join(' * ');
-                    };
-                case TypeChecker.types.AlternativeType:
-                    return function (v) {
-                        var inners = this.inner();
-                        var res = [];
-                        for (var i = 0; i < inners.length; ++i)
-                            res.push(wrap(inners[i], v));
-                        return res.join(' (+) ');
-                    };
-                case TypeChecker.types.IntersectionType:
-                    return function (v) {
-                        var inners = this.inner();
-                        var res = [];
-                        for (var i = 0; i < inners.length; ++i)
-                            res.push(wrap(inners[i], v));
-                        return res.join(' & ');
-                    };
-                case TypeChecker.types.ExistsType:
-                    return function (v) {
-                        return 'exists' + (v ? '' : ' ' + this.id().name())
-                            + (!this.bound() ? '' : '<:' + wrap(this.bound(), v))
-                            + '.' + wrap(this.inner(), v);
-                    };
-                case TypeChecker.types.ForallType:
-                    return function (v) {
-                        return 'forall' + (v ? '' : ' ' + this.id().name())
-                            + (!this.bound() ? '' : '<:' + wrap(this.bound(), v))
-                            + '.' + wrap(this.inner(), v);
-                    };
-                case TypeChecker.types.ReferenceType:
-                    return function (v) {
-                        return "ref " + wrap(this.location(), v);
-                    };
-                case TypeChecker.types.CapabilityType:
-                    return function (v) {
-                        return 'rw ' + wrap(this.location(), v) + ' ' + wrap(this.value(), v);
-                    };
-                case TypeChecker.types.StackedType:
-                    return function (v) {
-                        return wrap(this.left(), v) + ' :: ' + wrap(this.right(), v);
-                    };
-                case TypeChecker.types.RecordType:
-                    return function (v) {
-                        var res = [];
-                        var fields = this.fields();
-                        for (var i in fields)
-                            res.push(i + ": " + wrap(fields[i], v));
-                        return "[" + res.join() + "]";
-                    };
-                case TypeChecker.types.TupleType:
-                    return function (v) {
-                        var res = [];
-                        var fields = this.inner();
-                        for (var i in fields)
-                            res.push(wrap(fields[i], v));
-                        return "[" + res.join() + "]";
-                    };
-                case TypeChecker.types.DefinitionType:
-                    return function (v) {
-                        if (this.args().length > 0) {
-                            var args = this.args();
-                            var tmp = [];
-                            for (var i = 0; i < args.length; ++i) {
-                                tmp.push(wrap(args[i], v));
-                            }
-                            return wrap(this.definition(), v) + '[' + tmp.join() + ']';
-                        }
-                        return wrap(this.definition(), v);
-                    };
-                case TypeChecker.types.LocationVariable:
-                case TypeChecker.types.TypeVariable:
-                    return function (v) {
-                        if (!v)
-                            return this.name() + '^' + this.index();
-                        var str = '';
-                        if (this.type === TypeChecker.types.TypeVariable) {
-                            var b = this.bound();
-                            if (b !== null) {
-                                str = '$' + b.toString(v);
-                            }
-                        }
-                        return this.index() + str;
-                    };
-                case TypeChecker.types.PrimitiveType:
-                    return function (v) { return this.name(); };
-                case TypeChecker.types.NoneType:
-                    return function (v) { return 'none'; };
-                case TypeChecker.types.TopType:
-                    return function (v) { return 'top'; };
-                default:
-                    TypeChecker.error('@setupToString: Not expecting type: ' + type);
-            }
+        BaseType.prototype.match = function (cases) {
+            if (!cases.hasOwnProperty(this.type))
+                throw new Error('Missing: ' + this.type + ' on ' + cases.constructor.name);
+            return cases[this.type](this);
         };
-        for (var i in TypeChecker.types) {
-            var t = TypeChecker.types[i];
-            var fun = setupToString(t);
-            TypeChecker.error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
-            TypeChecker.fct[t].prototype.toString = fun;
-        }
+        return BaseType;
     })();
+    ;
+    var FunctionType = (function (_super) {
+        __extends(FunctionType, _super);
+        function FunctionType(argument, body) {
+            _super.call(this);
+            this.argument = function () { return argument; };
+            this.body = function () { return body; };
+        }
+        return FunctionType;
+    })(BaseType);
+    TypeChecker.FunctionType = FunctionType;
+    ;
+    unsafe_addNewType(FunctionType);
+    var BangType = (function (_super) {
+        __extends(BangType, _super);
+        function BangType(inner) {
+            _super.call(this);
+            this.inner = function () { return inner; };
+        }
+        return BangType;
+    })(BaseType);
+    TypeChecker.BangType = BangType;
+    ;
+    unsafe_addNewType(BangType);
+    var SumType = (function (_super) {
+        __extends(SumType, _super);
+        function SumType() {
+            _super.call(this);
+            var tags = {};
+            this.add = function (tag, inner) {
+                if (tags.hasOwnProperty(tag))
+                    return false;
+                tags[tag] = inner;
+                return true;
+            };
+            this.tags = function () {
+                return Object.keys(tags);
+            };
+            this.inner = function (tag) {
+                return tags[tag];
+            };
+            this.length = function () {
+                return Object.keys(tags).length;
+            };
+        }
+        return SumType;
+    })(BaseType);
+    TypeChecker.SumType = SumType;
+    ;
+    unsafe_addNewType(SumType);
+    var _Aux_ = (function (_super) {
+        __extends(_Aux_, _super);
+        function _Aux_() {
+            _super.call(this);
+            var v = [];
+            this.add = function (inner) {
+                v.push(inner);
+                return true;
+            };
+            this.inner = function () { return v; };
+        }
+        return _Aux_;
+    })(BaseType);
+    var StarType = (function (_super) {
+        __extends(StarType, _super);
+        function StarType() {
+            _super.call(this);
+        }
+        return StarType;
+    })(_Aux_);
+    TypeChecker.StarType = StarType;
+    ;
+    unsafe_addNewType(StarType);
+    var AlternativeType = (function (_super) {
+        __extends(AlternativeType, _super);
+        function AlternativeType() {
+            _super.call(this);
+        }
+        return AlternativeType;
+    })(_Aux_);
+    TypeChecker.AlternativeType = AlternativeType;
+    ;
+    unsafe_addNewType(AlternativeType);
+    var IntersectionType = (function (_super) {
+        __extends(IntersectionType, _super);
+        function IntersectionType() {
+            _super.call(this);
+        }
+        return IntersectionType;
+    })(_Aux_);
+    TypeChecker.IntersectionType = IntersectionType;
+    ;
+    unsafe_addNewType(IntersectionType);
+    var TupleType = (function (_super) {
+        __extends(TupleType, _super);
+        function TupleType() {
+            _super.call(this);
+        }
+        return TupleType;
+    })(_Aux_);
+    TypeChecker.TupleType = TupleType;
+    ;
+    unsafe_addNewType(TupleType);
+    var ForallType = (function (_super) {
+        __extends(ForallType, _super);
+        function ForallType(id, inner, bound) {
+            _super.call(this);
+            this.id = function () { return id; };
+            this.inner = function () { return inner; };
+            this.bound = function () { return bound; };
+        }
+        return ForallType;
+    })(BaseType);
+    TypeChecker.ForallType = ForallType;
+    ;
+    unsafe_addNewType(ForallType);
+    var ExistsType = (function (_super) {
+        __extends(ExistsType, _super);
+        function ExistsType(id, inner, bound) {
+            _super.call(this);
+            this.id = function () { return id; };
+            this.inner = function () { return inner; };
+            this.bound = function () { return bound; };
+        }
+        return ExistsType;
+    })(BaseType);
+    TypeChecker.ExistsType = ExistsType;
+    ;
+    unsafe_addNewType(ExistsType);
+    var RecordType = (function (_super) {
+        __extends(RecordType, _super);
+        function RecordType() {
+            _super.call(this);
+            var fields = {};
+            this.add = function (id, type) {
+                if (fields.hasOwnProperty(id)) {
+                    return false;
+                }
+                fields[id] = type;
+                return true;
+            };
+            this.select = function (id) {
+                return fields[id];
+            };
+            this.isEmpty = function () {
+                return Object.keys(fields).length === 0;
+            };
+            this.fields = function () {
+                return fields;
+            };
+            this.length = function () {
+                return Object.keys(fields).length;
+            };
+        }
+        return RecordType;
+    })(BaseType);
+    TypeChecker.RecordType = RecordType;
+    ;
+    unsafe_addNewType(RecordType);
+    var NoneType = (function (_super) {
+        __extends(NoneType, _super);
+        function NoneType() {
+            _super.call(this);
+        }
+        return NoneType;
+    })(BaseType);
+    TypeChecker.NoneType = NoneType;
+    ;
+    unsafe_addNewType(NoneType);
+    var TopType = (function (_super) {
+        __extends(TopType, _super);
+        function TopType() {
+            _super.call(this);
+        }
+        return TopType;
+    })(BaseType);
+    TypeChecker.TopType = TopType;
+    ;
+    unsafe_addNewType(TopType);
+    var ReferenceType = (function (_super) {
+        __extends(ReferenceType, _super);
+        function ReferenceType(location) {
+            _super.call(this);
+            this.location = function () { return location; };
+        }
+        return ReferenceType;
+    })(BaseType);
+    TypeChecker.ReferenceType = ReferenceType;
+    ;
+    unsafe_addNewType(ReferenceType);
+    var StackedType = (function (_super) {
+        __extends(StackedType, _super);
+        function StackedType(left, right) {
+            _super.call(this);
+            this.left = function () { return left; };
+            this.right = function () { return right; };
+        }
+        return StackedType;
+    })(BaseType);
+    TypeChecker.StackedType = StackedType;
+    ;
+    unsafe_addNewType(StackedType);
+    var CapabilityType = (function (_super) {
+        __extends(CapabilityType, _super);
+        function CapabilityType(loc, val) {
+            _super.call(this);
+            this.location = function () { return loc; };
+            this.value = function () { return val; };
+        }
+        return CapabilityType;
+    })(BaseType);
+    TypeChecker.CapabilityType = CapabilityType;
+    ;
+    unsafe_addNewType(CapabilityType);
+    var LocationVariable = (function (_super) {
+        __extends(LocationVariable, _super);
+        function LocationVariable(name, index, bound) {
+            _super.call(this);
+            this.index = function () { return index; };
+            this.name = function () { return name; };
+            this.bound = function () { return bound; };
+            this.copy = function (j) { return new LocationVariable(name, j, bound); };
+        }
+        return LocationVariable;
+    })(BaseType);
+    TypeChecker.LocationVariable = LocationVariable;
+    ;
+    unsafe_addNewType(LocationVariable);
+    var TypeVariable = (function (_super) {
+        __extends(TypeVariable, _super);
+        function TypeVariable(name, index, bound) {
+            _super.call(this);
+            this.index = function () { return index; };
+            this.name = function () { return name; };
+            this.bound = function () { return bound; };
+            this.copy = function (j) { return new TypeVariable(name, j, bound); };
+        }
+        return TypeVariable;
+    })(BaseType);
+    TypeChecker.TypeVariable = TypeVariable;
+    ;
+    unsafe_addNewType(TypeVariable);
+    var PrimitiveType = (function (_super) {
+        __extends(PrimitiveType, _super);
+        function PrimitiveType(name) {
+            _super.call(this);
+            this.name = function () { return name; };
+        }
+        return PrimitiveType;
+    })(BaseType);
+    TypeChecker.PrimitiveType = PrimitiveType;
+    ;
+    unsafe_addNewType(PrimitiveType);
+    var RelyType = (function (_super) {
+        __extends(RelyType, _super);
+        function RelyType(rely, guarantee) {
+            _super.call(this);
+            this.rely = function () { return rely; };
+            this.guarantee = function () { return guarantee; };
+        }
+        return RelyType;
+    })(BaseType);
+    TypeChecker.RelyType = RelyType;
+    ;
+    unsafe_addNewType(RelyType);
+    var GuaranteeType = (function (_super) {
+        __extends(GuaranteeType, _super);
+        function GuaranteeType(guarantee, rely) {
+            _super.call(this);
+            this.rely = function () { return rely; };
+            this.guarantee = function () { return guarantee; };
+        }
+        return GuaranteeType;
+    })(BaseType);
+    TypeChecker.GuaranteeType = GuaranteeType;
+    ;
+    unsafe_addNewType(GuaranteeType);
+    var DefinitionType = (function (_super) {
+        __extends(DefinitionType, _super);
+        function DefinitionType(definition_name, arg, typedef) {
+            _super.call(this);
+            this.definition = function () { return definition_name; };
+            this.args = function () { return arg; };
+            this.getDefinition = function () {
+                return typedef.getDefinition(definition_name);
+            };
+            this.getParams = function () {
+                return typedef.getType(definition_name);
+            };
+            this.getTypeDef = function () {
+                return typedef;
+            };
+        }
+        return DefinitionType;
+    })(BaseType);
+    TypeChecker.DefinitionType = DefinitionType;
+    ;
+    unsafe_addNewType(DefinitionType);
+    function wrap(t, v) {
+        if (t.type === TypeChecker.types.ReferenceType ||
+            t.type === TypeChecker.types.FunctionType ||
+            t.type === TypeChecker.types.StackedType ||
+            t.type === TypeChecker.types.StarType ||
+            t.type === TypeChecker.types.AlternativeType ||
+            t.type === TypeChecker.types.SumType) {
+            return '(' + t.toString(v) + ')';
+        }
+        return t.toString(v);
+    }
+    ;
+    function setupToString(type) {
+        switch (type) {
+            case TypeChecker.types.FunctionType:
+                return function (v) {
+                    return wrap(this.argument(), v) + " -o " + wrap(this.body(), v);
+                };
+            case TypeChecker.types.BangType:
+                return function (v) {
+                    return "!" + wrap(this.inner(), v);
+                };
+            case TypeChecker.types.RelyType:
+                return function (v) {
+                    return wrap(this.rely(), v) + ' => ' + wrap(this.guarantee(), v);
+                };
+            case TypeChecker.types.GuaranteeType:
+                return function (v) {
+                    return wrap(this.guarantee(), v) + ' ; ' + wrap(this.rely(), v);
+                };
+            case TypeChecker.types.SumType:
+                return function (v) {
+                    var tags = this.tags();
+                    var res = [];
+                    for (var i in tags) {
+                        res.push(tags[i] + '#' + wrap(this.inner(tags[i]), v));
+                    }
+                    return res.join('+');
+                };
+            case TypeChecker.types.StarType:
+                return function (v) {
+                    var inners = this.inner();
+                    var res = [];
+                    for (var i = 0; i < inners.length; ++i)
+                        res.push(wrap(inners[i], v));
+                    return res.join(' * ');
+                };
+            case TypeChecker.types.AlternativeType:
+                return function (v) {
+                    var inners = this.inner();
+                    var res = [];
+                    for (var i = 0; i < inners.length; ++i)
+                        res.push(wrap(inners[i], v));
+                    return res.join(' (+) ');
+                };
+            case TypeChecker.types.IntersectionType:
+                return function (v) {
+                    var inners = this.inner();
+                    var res = [];
+                    for (var i = 0; i < inners.length; ++i)
+                        res.push(wrap(inners[i], v));
+                    return res.join(' & ');
+                };
+            case TypeChecker.types.ExistsType:
+                return function (v) {
+                    return 'exists' + (v ? '' : ' ' + this.id().name())
+                        + (!this.bound() ? '' : '<:' + wrap(this.bound(), v))
+                        + '.' + wrap(this.inner(), v);
+                };
+            case TypeChecker.types.ForallType:
+                return function (v) {
+                    return 'forall' + (v ? '' : ' ' + this.id().name())
+                        + (!this.bound() ? '' : '<:' + wrap(this.bound(), v))
+                        + '.' + wrap(this.inner(), v);
+                };
+            case TypeChecker.types.ReferenceType:
+                return function (v) {
+                    return "ref " + wrap(this.location(), v);
+                };
+            case TypeChecker.types.CapabilityType:
+                return function (v) {
+                    return 'rw ' + wrap(this.location(), v) + ' ' + wrap(this.value(), v);
+                };
+            case TypeChecker.types.StackedType:
+                return function (v) {
+                    return wrap(this.left(), v) + ' :: ' + wrap(this.right(), v);
+                };
+            case TypeChecker.types.RecordType:
+                return function (v) {
+                    var res = [];
+                    var fields = this.fields();
+                    for (var i in fields)
+                        res.push(i + ": " + wrap(fields[i], v));
+                    return "[" + res.join() + "]";
+                };
+            case TypeChecker.types.TupleType:
+                return function (v) {
+                    var res = [];
+                    var fields = this.inner();
+                    for (var i in fields)
+                        res.push(wrap(fields[i], v));
+                    return "[" + res.join() + "]";
+                };
+            case TypeChecker.types.DefinitionType:
+                return function (v) {
+                    if (this.args().length > 0) {
+                        var args = this.args();
+                        var tmp = [];
+                        for (var i = 0; i < args.length; ++i) {
+                            tmp.push(wrap(args[i], v));
+                        }
+                        return wrap(this.definition(), v) + '[' + tmp.join() + ']';
+                    }
+                    return wrap(this.definition(), v);
+                };
+            case TypeChecker.types.LocationVariable:
+            case TypeChecker.types.TypeVariable:
+                return function (v) {
+                    if (!v)
+                        return this.name() + '^' + this.index();
+                    var str = '';
+                    if (this.type === TypeChecker.types.TypeVariable) {
+                        var b = this.bound();
+                        if (b !== null) {
+                            str = '$' + b.toString(v);
+                        }
+                    }
+                    return this.index() + str;
+                };
+            case TypeChecker.types.PrimitiveType:
+                return function (v) { return this.name(); };
+            case TypeChecker.types.NoneType:
+                return function (v) { return 'none'; };
+            case TypeChecker.types.TopType:
+                return function (v) { return 'top'; };
+            default:
+                TypeChecker.error('@setupToString: Not expecting type: ' + type);
+        }
+    }
+    for (var i in TypeChecker.types) {
+        var t = TypeChecker.types[i];
+        var fun = setupToString(t);
+        TypeChecker.error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
+        TypeChecker.fct[t].prototype.toString = fun;
+    }
     TypeChecker.Gamma = function (typedef, parent, id, type, bound) {
         // id, type, bound are left undefined when called with:
         // new Gamma( typedef, null );

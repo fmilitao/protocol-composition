@@ -2,27 +2,6 @@
 // GPL v3 Licensed http://www.gnu.org/licenses/
 var TypeChecker;
 (function (TypeChecker) {
-    var FunctionType = TypeChecker.fct.FunctionType;
-    var BangType = TypeChecker.fct.BangType;
-    var SumType = TypeChecker.fct.SumType;
-    var StarType = TypeChecker.fct.StarType;
-    var AlternativeType = TypeChecker.fct.AlternativeType;
-    var IntersectionType = TypeChecker.fct.IntersectionType;
-    var ForallType = TypeChecker.fct.ForallType;
-    var ExistsType = TypeChecker.fct.ExistsType;
-    var RecordType = TypeChecker.fct.RecordType;
-    var NoneType = new TypeChecker.fct.NoneType();
-    var TopType = new TypeChecker.fct.TopType();
-    var TupleType = TypeChecker.fct.TupleType;
-    var ReferenceType = TypeChecker.fct.ReferenceType;
-    var StackedType = TypeChecker.fct.StackedType;
-    var CapabilityType = TypeChecker.fct.CapabilityType;
-    var LocationVariable = TypeChecker.fct.LocationVariable;
-    var TypeVariable = TypeChecker.fct.TypeVariable;
-    var PrimitiveType = TypeChecker.fct.PrimitiveType;
-    var RelyType = TypeChecker.fct.RelyType;
-    var DefinitionType = TypeChecker.fct.DefinitionType;
-    var GuaranteeType = TypeChecker.fct.GuaranteeType;
     TypeChecker.unify = function (x, t, a) {
         if (x.type !== TypeChecker.types.LocationVariable &&
             x.type !== TypeChecker.types.TypeVariable) {
@@ -216,15 +195,15 @@ var TypeChecker;
     TypeChecker.shift = function (t, c, d) {
         switch (t.type) {
             case TypeChecker.types.FunctionType:
-                return new FunctionType(TypeChecker.shift(t.argument(), c, d), TypeChecker.shift(t.body(), c, d));
+                return new TypeChecker.FunctionType(TypeChecker.shift(t.argument(), c, d), TypeChecker.shift(t.body(), c, d));
             case TypeChecker.types.BangType:
-                return new BangType(TypeChecker.shift(t.inner(), c, d));
+                return new TypeChecker.BangType(TypeChecker.shift(t.inner(), c, d));
             case TypeChecker.types.RelyType:
-                return new RelyType(TypeChecker.shift(t.rely(), c, d), TypeChecker.shift(t.guarantee(), c, d));
+                return new TypeChecker.RelyType(TypeChecker.shift(t.rely(), c, d), TypeChecker.shift(t.guarantee(), c, d));
             case TypeChecker.types.GuaranteeType:
-                return new GuaranteeType(TypeChecker.shift(t.guarantee(), c, d), TypeChecker.shift(t.rely(), c, d));
+                return new TypeChecker.GuaranteeType(TypeChecker.shift(t.guarantee(), c, d), TypeChecker.shift(t.rely(), c, d));
             case TypeChecker.types.SumType: {
-                var sum = new SumType();
+                var sum = new TypeChecker.SumType();
                 var ts = t.tags();
                 for (var k in ts) {
                     sum.add(ts[k], TypeChecker.shift(t.inner(ts[k]), c, d));
@@ -247,13 +226,13 @@ var TypeChecker;
                 return new t.constructor(t.id(), TypeChecker.shift(t.inner(), c + 1, d), (t.bound() !== null ? TypeChecker.shift(t.bound(), c, d) : null));
             }
             case TypeChecker.types.ReferenceType:
-                return new ReferenceType(TypeChecker.shift(t.location(), c, d));
+                return new TypeChecker.ReferenceType(TypeChecker.shift(t.location(), c, d));
             case TypeChecker.types.StackedType:
-                return new StackedType(TypeChecker.shift(t.left(), c, d), TypeChecker.shift(t.right(), c, d));
+                return new TypeChecker.StackedType(TypeChecker.shift(t.left(), c, d), TypeChecker.shift(t.right(), c, d));
             case TypeChecker.types.CapabilityType:
-                return new CapabilityType(TypeChecker.shift(t.location(), c, d), TypeChecker.shift(t.value(), c, d));
+                return new TypeChecker.CapabilityType(TypeChecker.shift(t.location(), c, d), TypeChecker.shift(t.value(), c, d));
             case TypeChecker.types.RecordType: {
-                var r = new RecordType();
+                var r = new TypeChecker.RecordType();
                 var fs_1 = t.fields();
                 for (var k in fs_1) {
                     r.add(k, TypeChecker.shift(fs_1[k], c, d));
@@ -265,7 +244,7 @@ var TypeChecker;
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
                     tmp[i] = TypeChecker.shift(fs[i], c, d);
-                return new DefinitionType(t.definition(), tmp, t.getTypeDef());
+                return new TypeChecker.DefinitionType(t.definition(), tmp, t.getTypeDef());
             }
             case TypeChecker.types.LocationVariable:
             case TypeChecker.types.TypeVariable:
@@ -429,15 +408,15 @@ var TypeChecker;
             return to;
         switch (t.type) {
             case TypeChecker.types.FunctionType:
-                return new FunctionType(rec(t.argument()), rec(t.body()));
+                return new TypeChecker.FunctionType(rec(t.argument()), rec(t.body()));
             case TypeChecker.types.BangType:
-                return new BangType(rec(t.inner()));
+                return new TypeChecker.BangType(rec(t.inner()));
             case TypeChecker.types.RelyType:
-                return new RelyType(rec(t.rely()), rec(t.guarantee()));
+                return new TypeChecker.RelyType(rec(t.rely()), rec(t.guarantee()));
             case TypeChecker.types.GuaranteeType:
-                return new GuaranteeType(rec(t.guarantee()), rec(t.rely()));
+                return new TypeChecker.GuaranteeType(rec(t.guarantee()), rec(t.rely()));
             case TypeChecker.types.SumType: {
-                var sum = new SumType();
+                var sum = new TypeChecker.SumType();
                 var ts = t.tags();
                 for (var k in ts) {
                     sum.add(ts[k], rec(t.inner(ts[k])));
@@ -468,13 +447,13 @@ var TypeChecker;
                 return new t.constructor(nvar, substitutionAux(ninner, _from, _to), nbound);
             }
             case TypeChecker.types.ReferenceType:
-                return new ReferenceType(rec(t.location()));
+                return new TypeChecker.ReferenceType(rec(t.location()));
             case TypeChecker.types.StackedType:
-                return new StackedType(rec(t.left()), rec(t.right()));
+                return new TypeChecker.StackedType(rec(t.left()), rec(t.right()));
             case TypeChecker.types.CapabilityType:
-                return new CapabilityType(rec(t.location()), rec(t.value()));
+                return new TypeChecker.CapabilityType(rec(t.location()), rec(t.value()));
             case TypeChecker.types.RecordType: {
-                var r = new RecordType();
+                var r = new TypeChecker.RecordType();
                 var fs_2 = t.fields();
                 for (var k in fs_2) {
                     r.add(k, rec(fs_2[k]));
@@ -486,7 +465,7 @@ var TypeChecker;
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
                     tmp[i] = rec(fs[i]);
-                return new DefinitionType(t.definition(), tmp, t.getTypeDef());
+                return new TypeChecker.DefinitionType(t.definition(), tmp, t.getTypeDef());
             }
             case TypeChecker.types.LocationVariable:
             case TypeChecker.types.TypeVariable:

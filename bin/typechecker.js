@@ -2,28 +2,9 @@
 // GPL v3 Licensed http://www.gnu.org/licenses/
 var TypeChecker;
 (function (TypeChecker) {
-    var FunctionType = TypeChecker.fct.FunctionType;
-    var BangType = TypeChecker.fct.BangType;
-    var SumType = TypeChecker.fct.SumType;
-    var StarType = TypeChecker.fct.StarType;
-    var AlternativeType = TypeChecker.fct.AlternativeType;
-    var IntersectionType = TypeChecker.fct.IntersectionType;
-    var ForallType = TypeChecker.fct.ForallType;
-    var ExistsType = TypeChecker.fct.ExistsType;
-    var RecordType = TypeChecker.fct.RecordType;
-    var TupleType = TypeChecker.fct.TupleType;
-    var ReferenceType = TypeChecker.fct.ReferenceType;
-    var StackedType = TypeChecker.fct.StackedType;
-    var CapabilityType = TypeChecker.fct.CapabilityType;
-    var LocationVariable = TypeChecker.fct.LocationVariable;
-    var TypeVariable = TypeChecker.fct.TypeVariable;
-    var PrimitiveType = TypeChecker.fct.PrimitiveType;
-    var RelyType = TypeChecker.fct.RelyType;
-    var DefinitionType = TypeChecker.fct.DefinitionType;
-    var GuaranteeType = TypeChecker.fct.GuaranteeType;
-    var UnitType = new BangType(new RecordType());
-    var NoneType = new TypeChecker.fct.NoneType();
-    var TopType = new TypeChecker.fct.TopType();
+    var Unit = new TypeChecker.BangType(new TypeChecker.RecordType());
+    var None = new TypeChecker.NoneType();
+    var Top = new TypeChecker.TopType();
     var isTypeVariableName = function (n) {
         return n[0] === n[0].toUpperCase();
     };
@@ -210,8 +191,8 @@ var TypeChecker;
                 var gp = p.guarantee();
                 if (gs.id().type !== gp.id().type)
                     return null;
-                s = new RelyType(TypeChecker.shift(s.rely(), 0, 1), gs.inner());
-                p = new RelyType(TypeChecker.shift(p.rely(), 0, 1), gs.inner());
+                s = new TypeChecker.RelyType(TypeChecker.shift(s.rely(), 0, 1), gs.inner());
+                p = new TypeChecker.RelyType(TypeChecker.shift(p.rely(), 0, 1), gs.inner());
                 q = TypeChecker.shift(q, 0, 1);
                 return step(s, p, q, isLeft);
             }
@@ -230,16 +211,16 @@ var TypeChecker;
                     t = TypeChecker.substitution(t, i, x);
                 }
                 t = TypeChecker.shift(t, 0, -1);
-                return step(new RelyType(s.rely(), t), p, q, isLeft);
+                return step(new TypeChecker.RelyType(s.rely(), t), p, q, isLeft);
             }
             if (s.type === TypeChecker.types.RelyType && p.type === TypeChecker.types.RelyType && TypeChecker.subtype(s.rely(), p.rely())) {
                 var gs = s.guarantee();
                 var gp = p.guarantee();
                 if (gs.type !== TypeChecker.types.GuaranteeType) {
-                    gs = new GuaranteeType(gs, NoneType);
+                    gs = new TypeChecker.GuaranteeType(gs, None);
                 }
                 if (gp.type !== TypeChecker.types.GuaranteeType) {
-                    gp = new GuaranteeType(gp, NoneType);
+                    gp = new TypeChecker.GuaranteeType(gp, None);
                 }
                 if (TypeChecker.subtype(gp.guarantee(), gs.guarantee())) {
                     return [R(gs.rely(), gp.rely())];
@@ -249,7 +230,7 @@ var TypeChecker;
         }
         else {
             if (TypeChecker.equals(s, p)) {
-                return [R(NoneType, NoneType)];
+                return [R(None, None)];
             }
             if (p.type === TypeChecker.types.ExistsType) {
                 var i = p.id();
@@ -264,7 +245,7 @@ var TypeChecker;
                 return step(s, t, q, isLeft);
             }
             if (p.type === TypeChecker.types.RelyType && p.guarantee().type === TypeChecker.types.ForallType) {
-                p = new RelyType(TypeChecker.shift(p.rely(), 0, 1), p.guarantee().inner());
+                p = new TypeChecker.RelyType(TypeChecker.shift(p.rely(), 0, 1), p.guarantee().inner());
                 q = TypeChecker.shift(q, 0, 1);
                 s = TypeChecker.shift(s, 0, 1);
                 return step(s, p, q, isLeft);
@@ -275,7 +256,7 @@ var TypeChecker;
                     return [R(b.guarantee(), b.rely())];
                 }
                 else {
-                    return [R(b, NoneType)];
+                    return [R(b, None)];
                 }
             }
             return null;
@@ -323,8 +304,8 @@ var TypeChecker;
                         for (var j = 0; j < pars.length; ++j) {
                             var n = pars[j];
                             args[j] = isTypeVariableName(n) ?
-                                new TypeVariable(n, (pars.length - j - 1), null) :
-                                new LocationVariable(n, (pars.length - j - 1));
+                                new TypeChecker.TypeVariable(n, (pars.length - j - 1), null) :
+                                new TypeChecker.LocationVariable(n, (pars.length - j - 1));
                         }
                     }
                     TypeChecker.assert(typedef.addType(it.id, args)
@@ -358,7 +339,7 @@ var TypeChecker;
                 var exp = _a[_i];
                 c.checkExp(exp, env);
             }
-            return NoneType;
+            return None;
         }; },
         Share: function (ast) { return function (c, env) {
             var cap = c.checkType(ast.type, env);
@@ -389,17 +370,17 @@ var TypeChecker;
             var bound;
             if (isTypeVariableName(id)) {
                 bound = !ast.bound ?
-                    TopType :
+                    Top :
                     c.checkType(ast.bound, new TypeChecker.Gamma(env.getTypeDef(), null));
-                variable = new TypeVariable(id, 0, bound);
+                variable = new TypeChecker.TypeVariable(id, 0, bound);
             }
             else {
-                variable = new LocationVariable(id, 0);
+                variable = new TypeChecker.LocationVariable(id, 0);
                 bound = null;
             }
             var e = env.newScope(id, variable, bound);
             var type = c.checkExp(ast.exp, e);
-            return new ForallType(variable, type, bound);
+            return new TypeChecker.ForallType(variable, type, bound);
         }; },
     };
     var matchType = {
@@ -417,35 +398,35 @@ var TypeChecker;
             var bound;
             if (isTypeVariableName(id)) {
                 bound = !ast.bound ?
-                    TopType :
+                    Top :
                     c.checkType(ast.bound, new TypeChecker.Gamma(env.getTypeDef(), null));
-                variable = new TypeVariable(id, 0, bound);
+                variable = new TypeChecker.TypeVariable(id, 0, bound);
             }
             else {
-                variable = new LocationVariable(id, 0);
+                variable = new TypeChecker.LocationVariable(id, 0);
                 bound = null;
             }
             var e = env.newScope(id, variable, bound);
             var type = c.checkType(ast.exp, e);
             return new ctr(variable, type, bound);
         }; },
-        Exists: function (ast) { return matchType._aux_(ExistsType, ast); },
-        Forall: function (ast) { return matchType._aux_(ForallType, ast); },
+        Exists: function (ast) { return matchType._aux_(TypeChecker.ExistsType, ast); },
+        Forall: function (ast) { return matchType._aux_(TypeChecker.ForallType, ast); },
         Stacked: function (ast) { return function (c, env) {
-            return new StackedType(c.checkType(ast.left, env), c.checkType(ast.right, env));
+            return new TypeChecker.StackedType(c.checkType(ast.left, env), c.checkType(ast.right, env));
         }; },
         Rely: function (ast) { return function (c, env) {
             var rely = c.checkType(ast.left, env);
             var guarantee = c.checkType(ast.right, env);
-            return new RelyType(rely, guarantee);
+            return new TypeChecker.RelyType(rely, guarantee);
         }; },
         Guarantee: function (ast) { return function (c, env) {
             var guarantee = c.checkType(ast.left, env);
             var rely = c.checkType(ast.right, env);
-            return new GuaranteeType(guarantee, rely);
+            return new TypeChecker.GuaranteeType(guarantee, rely);
         }; },
         Sum: function (ast) { return function (c, env) {
-            var sum = new SumType();
+            var sum = new TypeChecker.SumType();
             for (var i = 0; i < ast.sums.length; ++i) {
                 var tag = ast.sums[i].tag;
                 TypeChecker.assert(sum.add(tag, c.checkType(ast.sums[i].exp, env)) ||
@@ -454,35 +435,35 @@ var TypeChecker;
             return sum;
         }; },
         Star: function (ast) { return function (c, env) {
-            var star = new StarType();
+            var star = new TypeChecker.StarType();
             for (var i = 0; i < ast.types.length; ++i) {
                 star.add(c.checkType(ast.types[i], env));
             }
             return star;
         }; },
         Alternative: function (ast) { return function (c, env) {
-            var alt = new AlternativeType();
+            var alt = new TypeChecker.AlternativeType();
             for (var i = 0; i < ast.types.length; ++i) {
                 alt.add(c.checkType(ast.types[i], env));
             }
             return alt;
         }; },
         Intersection: function (ast) { return function (c, env) {
-            var alt = new IntersectionType();
+            var alt = new TypeChecker.IntersectionType();
             for (var i = 0; i < ast.types.length; ++i) {
                 alt.add(c.checkType(ast.types[i], env));
             }
             return alt;
         }; },
         Function: function (ast) { return function (c, env) {
-            return new FunctionType(c.checkType(ast.arg, env), c.checkType(ast.exp, env));
+            return new TypeChecker.FunctionType(c.checkType(ast.arg, env), c.checkType(ast.exp, env));
         }; },
         Capability: function (ast) { return function (c, env) {
             var id = ast.id;
             var loc = env.getTypeByName(id);
             TypeChecker.assert((loc !== undefined && loc.type === TypeChecker.types.LocationVariable) ||
                 ('Unknow Location Variable ' + id), ast);
-            return new CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
+            return new TypeChecker.CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
         }; },
         Name: function (ast) { return function (c, env) {
             var label = ast.text;
@@ -495,7 +476,7 @@ var TypeChecker;
             }
             var lookup_args = typedef.getType(label);
             if (lookup_args !== undefined && lookup_args.length === 0)
-                return new DefinitionType(label, [], typedef);
+                return new TypeChecker.DefinitionType(label, [], typedef);
             TypeChecker.assert('Unknown type ' + label, ast);
         }; },
         Reference: function (ast) { return function (c, env) {
@@ -503,13 +484,13 @@ var TypeChecker;
             var loc = env.getTypeByName(id);
             TypeChecker.assert((loc !== undefined && loc.type === TypeChecker.types.LocationVariable) ||
                 ('Unknow Location Variable ' + id), ast);
-            return new ReferenceType(loc.copy(env.getNameIndex(id)));
+            return new TypeChecker.ReferenceType(loc.copy(env.getNameIndex(id)));
         }; },
         Bang: function (ast) { return function (c, env) {
-            return new BangType(c.checkType(ast.type, env));
+            return new TypeChecker.BangType(c.checkType(ast.type, env));
         }; },
         Record: function (ast) { return function (c, env) {
-            var rec = new RecordType();
+            var rec = new TypeChecker.RecordType();
             for (var i = 0; i < ast.exp.length; ++i) {
                 var field = ast.exp[i];
                 var id = field.id;
@@ -521,7 +502,7 @@ var TypeChecker;
         }; },
         Field: function (ast) { return TypeChecker.assert(false, ast); },
         Tuple: function (ast) { return function (c, env) {
-            var rec = new TupleType();
+            var rec = new TypeChecker.TupleType();
             var bang = true;
             for (var i = 0; i < ast.exp.length; ++i) {
                 var value = c.checkType(ast.exp[i], env);
@@ -530,21 +511,21 @@ var TypeChecker;
                     bang = false;
             }
             if (bang)
-                rec = new BangType(rec);
+                return new TypeChecker.BangType(rec);
             return rec;
         }; },
         Tagged: function (ast) { return function (c, env) {
-            var sum = new SumType();
+            var sum = new TypeChecker.SumType();
             var tag = ast.tag;
             var exp = c.checkType(ast.exp, env);
             sum.add(tag, exp);
             if (exp.type === TypeChecker.types.BangType) {
-                sum = new BangType(sum);
+                return new TypeChecker.BangType(sum);
             }
             return sum;
         }; },
         Top: function (ast) { return function (c, env) {
-            return TopType;
+            return Top;
         }; },
         Definition: function (ast) { return function (c, env) {
             var typedef = env.getTypeDef();
@@ -567,13 +548,13 @@ var TypeChecker;
                 }
                 arguments[i] = tmp;
             }
-            return new DefinitionType(id, arguments, typedef);
+            return new TypeChecker.DefinitionType(id, arguments, typedef);
         }; },
         Primitive: function (ast) { return function (c, env) {
-            return new PrimitiveType(ast.text);
+            return new TypeChecker.PrimitiveType(ast.text);
         }; },
         None: function (ast) { return function (c, env) {
-            return NoneType;
+            return None;
         }; },
     };
     function checker(ast, log) {

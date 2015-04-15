@@ -1,60 +1,11 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
-/**
- * INCLUDE parser.js
- * INCLUDE typechecker.types.js
- * INCLUDE typechecker.utils.js
- * 	AST : AST.kinds, for all AST case analysis needs.
- *  TypeChecker : stuff in typechecker.*.js
- */
-
 module TypeChecker {
 
-    // define constants for convenience
-    // const assert = exports.assert;
-    // const error = exports.error;
-    //
-    // const types = exports.types;
-    // const fct = exports.factory;
-
-    const FunctionType = fct.FunctionType;
-    const BangType = fct.BangType;
-    const SumType = fct.SumType;
-    const StarType = fct.StarType;
-    const AlternativeType = fct.AlternativeType;
-    const IntersectionType = fct.IntersectionType;
-    const ForallType = fct.ForallType;
-    const ExistsType = fct.ExistsType;
-    const RecordType = fct.RecordType;
-    const TupleType = fct.TupleType;
-    const ReferenceType = fct.ReferenceType;
-    const StackedType = fct.StackedType;
-    const CapabilityType = fct.CapabilityType;
-    const LocationVariable = fct.LocationVariable;
-    const TypeVariable = fct.TypeVariable;
-    const PrimitiveType = fct.PrimitiveType;
-    const RelyType = fct.RelyType;
-    const DefinitionType = fct.DefinitionType;
-    const GuaranteeType = fct.GuaranteeType;
-
-    const UnitType = new BangType(new RecordType());
-    const NoneType = new fct.NoneType();
-    const TopType = new fct.TopType();
-
-    // const Gamma = exports.Gamma;
-    // const TypeDefinition = exports.TypeDefinition;
-    //
-    // const shift = exports.shift;
-    // const unify = exports.unify;
-    // const unfold = exports.unfold;
-    // const unfoldDefinition = exports.unfoldDefinition;
-    // const substitution = exports.substitution;
-    // const subtype = exports.subtype;
-    // const equals = exports.equals;
-    // const isFree = exports.isFree;
-    // const isProtocol = exports.isProtocol;
-    // const indexSet = exports.indexSet;
+    const Unit = new BangType(new RecordType());
+    const None = new NoneType();
+    const Top = new TopType();
 
     //
     // Auxiliary Definitions
@@ -375,10 +326,10 @@ module TypeChecker {
 
                 // account for omitted guarantees (i.e.: 'G' == 'G ; none')
                 if (gs.type !== types.GuaranteeType) {
-                    gs = new GuaranteeType(gs, NoneType);
+                    gs = new GuaranteeType(gs, None);
                 }
                 if (gp.type !== types.GuaranteeType) {
-                    gp = new GuaranteeType(gp, NoneType);
+                    gp = new GuaranteeType(gp, None);
                 }
 
                 // guarantee state must match
@@ -394,7 +345,7 @@ module TypeChecker {
 
             // by (ss:Recovery)
             if (equals(s, p)) {
-                return [R(NoneType, NoneType)];
+                return [R(None, None)];
             }
 
             // by (ss:OpenType) and by (ss:OpenLoc)
@@ -443,7 +394,7 @@ module TypeChecker {
                 } else {
                     // assume case is that of omitted '; none' and that 'b' is the new state.
                     // assume that type was previously checked to be well-formed.
-                    return [R(b, NoneType)];
+                    return [R(b, None)];
                 }
             }
 
@@ -566,7 +517,7 @@ module TypeChecker {
             }
 
             // FIXME: bogus return...
-            return NoneType;
+            return None;
         },
 
         Share: ast => (c, env) => {
@@ -614,7 +565,7 @@ module TypeChecker {
 
             if (isTypeVariableName(id)) {
                 bound = !ast.bound ?
-                    TopType : // no bound, default is 'top'
+                    Top : // no bound, default is 'top'
                     // else check with empty environment (due to decidability issues)
                     c.checkType(ast.bound, new Gamma(env.getTypeDef(), null));
                 variable = new TypeVariable(id, 0, bound);
@@ -652,7 +603,7 @@ module TypeChecker {
 
             if (isTypeVariableName(id)) {
                 bound = !ast.bound ?
-                    TopType : // no bound, default is 'top'
+                    Top : // no bound, default is 'top'
                     // else check with empty environment (due to decidability issues)
                     c.checkType(ast.bound, new Gamma(env.getTypeDef(), null));
                 variable = new TypeVariable(id, 0, bound);
@@ -794,7 +745,7 @@ module TypeChecker {
         // should never occur at top level
         Field: ast => assert(false, ast),
 
-        Tuple: ast => (c, env) => {
+        Tuple: ast => (c, env): Type => {
             // Note that TUPLE cannot move to the auto-bang block
             // because it may contain pure values that are not in the
             // typing environment and therefore, its type is only bang
@@ -811,24 +762,24 @@ module TypeChecker {
             }
 
             if (bang)
-                rec = new BangType(rec);
+                return new BangType(rec);
 
             return rec;
         },
 
-        Tagged: ast => (c, env) => {
+        Tagged: ast => (c, env): Type => {
             var sum = new SumType();
             var tag = ast.tag;
             var exp = c.checkType(ast.exp, env);
             sum.add(tag, exp);
             if (exp.type === types.BangType) {
-                sum = new BangType(sum);
+                return new BangType(sum);
             }
             return sum;
         },
 
         Top: ast => (c, env) => {
-            return TopType;
+            return Top;
         },
 
 
@@ -871,7 +822,7 @@ module TypeChecker {
 
         None: ast => (c, env) => {
             // uses singleton NoneType, there is only one.
-												return NoneType;
+												return None;
 								},
 				};
 
@@ -924,7 +875,7 @@ module TypeChecker {
     */
 
     // only exports checking function.
-    export function checker(ast: AST.Exp.Program, log) : any {
+    export function checker(ast: AST.Exp.Program, log): any {
 
         //type_info = []; // reset
 

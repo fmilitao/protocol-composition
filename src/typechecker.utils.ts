@@ -8,36 +8,6 @@
 
 module TypeChecker {
 
-    // define constants for convenience
-
-    // const assert = exports.assert;
-    // const error = exports.error;
-    //
-    // const types = exports.types;
-    // const fct = exports.factory;
-
-    const FunctionType = fct.FunctionType;
-    const BangType = fct.BangType;
-    const SumType = fct.SumType;
-    const StarType = fct.StarType;
-    const AlternativeType = fct.AlternativeType;
-    const IntersectionType = fct.IntersectionType;
-    const ForallType = fct.ForallType;
-    const ExistsType = fct.ExistsType;
-    const RecordType = fct.RecordType;
-    const NoneType = new fct.NoneType();
-    const TopType = new fct.TopType();
-    const TupleType = fct.TupleType;
-    const ReferenceType = fct.ReferenceType;
-    const StackedType = fct.StackedType;
-    const CapabilityType = fct.CapabilityType;
-    const LocationVariable = fct.LocationVariable;
-    const TypeVariable = fct.TypeVariable;
-    const PrimitiveType = fct.PrimitiveType;
-    const RelyType = fct.RelyType;
-    const DefinitionType = fct.DefinitionType;
-    const GuaranteeType = fct.GuaranteeType;
-
     // unify 'x' in 't' to match 'a'
     export var unify = function(x, t, a) {
         if (x.type !== types.LocationVariable &&
@@ -131,10 +101,10 @@ module TypeChecker {
             }
 
             case types.SumType: {
-                let ts : string[] = t.tags();
-                let as : string[] = a.tags();
+                let ts: string[] = t.tags();
+                let as: string[] = a.tags();
 
-                if (ts.length !== as.length )
+                if (ts.length !== as.length)
                     return false;
 
                 for (let i in ts) {
@@ -253,7 +223,7 @@ module TypeChecker {
                 var ab = a.bound();
 
                 // either have inconsistent 'null'
-                if ( ((tb === null) !== (ab === null)) ||
+                if (((tb === null) !== (ab === null)) ||
                     // or not null, but have invalid matching
                     (tb === null && ab === null && !aux(unifyAux(x, tb, ab, trail))))
                     return false;
@@ -549,7 +519,7 @@ module TypeChecker {
                 let t1s = t1.fields();
                 let t2s = t2.fields();
 
-                if (t1.length() !== t2.length() )
+                if (t1.length() !== t2.length())
                     return false;
 
                 for (let i in t2s) {
@@ -1006,7 +976,7 @@ module TypeChecker {
                 var t1_tags = t1.tags();
                 for (var k in t1_tags) {
                     if (t2.inner(t1_tags[k]) === undefined || // if tag is missing, or
-                        !subtypeAux( t1.inner(t1_tags[k]), t2.inner(t1_tags[k]), trail))
+                        !subtypeAux(t1.inner(t1_tags[k]), t2.inner(t1_tags[k]), trail))
                         return false;
                 }
                 return true;
@@ -1284,18 +1254,18 @@ module TypeChecker {
         }
     };
 
-/*
-    exports.shift = shift;
-    exports.unify = unify;
-    exports.unfold = unfold;
-    exports.unfoldDefinition = unfoldDefinition;
-    exports.substitution = substitution;
-    exports.subtype = subtype;
-    exports.equals = equals;
-    exports.isFree = isFree;
-    exports.isProtocol = isProtocol;
-    exports.indexSet = indexSet;
+    /*
+        exports.shift = shift;
+        exports.unify = unify;
+        exports.unfold = unfold;
+        exports.unfoldDefinition = unfoldDefinition;
+        exports.substitution = substitution;
+        exports.subtype = subtype;
+        exports.equals = equals;
+        exports.isFree = isFree;
+        exports.isProtocol = isProtocol;
+        exports.indexSet = indexSet;
 
-    return exports;
-*/
+        return exports;
+    */
 };
