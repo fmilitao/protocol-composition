@@ -18,6 +18,14 @@ var Setup;
     var _TYPEINFO_ = '#' + TYPEINFO;
     var _TYPING_ = '#' + TYPING;
     var _RESET_ = '#reset';
+    var IMPORTS = [
+        'lib/jison.js',
+        'bin/setup.comm.js',
+        'bin/ast.js',
+        'bin/parser.js',
+        'bin/typechecker.types.js',
+        'bin/typechecker.utils.js',
+        'bin/typechecker.js'];
     var WORKER_JS = 'bin/setup.worker.js';
     var DEBUG_MSG = true;
     var worker_enabled = true;
@@ -51,17 +59,8 @@ var Setup;
         }
     }
     if (!worker_enabled) {
-        function importScript(file) {
-            document.write('<script src="' + file + '"><\/script>');
-        }
-        ;
         console.log('importing scripts to run locally...');
-        importScript('lib/jison.js');
-        importScript('bin/ast.js');
-        importScript('bin/parser.js');
-        importScript('bin/typechecker.types.js');
-        importScript('bin/typechecker.utils.js');
-        importScript('bin/typechecker.js');
+        importScript.apply(null, IMPORTS);
         importScript(WORKER_JS);
         console.log('done.');
     }

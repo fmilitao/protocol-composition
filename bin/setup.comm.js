@@ -1,3 +1,16 @@
+if (typeof (importScripts) === 'undefined') {
+    function importScript() {
+        var files = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            files[_i - 0] = arguments[_i];
+        }
+        for (var _a = 0; _a < files.length; _a++) {
+            var file = files[_a];
+            document.write('<script src="' + file + '"><\/script>');
+        }
+    }
+    ;
+}
 var Comm;
 (function (Comm) {
     var worker_receiver = null;

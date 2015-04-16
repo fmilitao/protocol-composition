@@ -1,7 +1,13 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
-var IMPORTS = ['../lib/jison.js', 'setup.comm.js', 'ast.js', 'parser.js',
-    'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
+var IMPORTS = [
+    '../lib/jison.js',
+    'setup.comm.js',
+    'ast.js',
+    'parser.js',
+    'typechecker.types.js',
+    'typechecker.utils.js',
+    'typechecker.js'];
 var isWorker = typeof (window) === 'undefined';
 if (isWorker) {
     var console = function () {

@@ -5,8 +5,14 @@
 // Worker thread
 //
 
-const IMPORTS = ['../lib/jison.js', 'setup.comm.js', 'ast.js', 'parser.js',
-    'typechecker.types.js', 'typechecker.utils.js', 'typechecker.js'];
+const IMPORTS = [
+    '../lib/jison.js',
+    'setup.comm.js',
+    'ast.js',
+    'parser.js',
+    'typechecker.types.js',
+    'typechecker.utils.js',
+    'typechecker.js'];
 
 const isWorker = typeof (window) === 'undefined';
 

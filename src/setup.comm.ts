@@ -1,4 +1,16 @@
 
+if (typeof (importScripts) === 'undefined') {
+    // defines importScript function for local loading
+    function importScript(...files: string[]) {
+        for (let file of files) {
+            document.write('<script src="' + file + '"><\/script>');
+        }
+    };
+}
+
+//
+// Communication Module
+//
 module Comm {
 
     let worker_receiver = null;

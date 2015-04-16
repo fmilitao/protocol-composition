@@ -23,6 +23,14 @@ module Setup {
     const _TYPING_ = '#' + TYPING;
     const _RESET_ = '#reset';
 
+    const IMPORTS = [
+        'lib/jison.js',
+        'bin/setup.comm.js',
+        'bin/ast.js',
+        'bin/parser.js',
+        'bin/typechecker.types.js',
+        'bin/typechecker.utils.js',
+        'bin/typechecker.js'];
     const WORKER_JS = 'bin/setup.worker.js';
 
     let DEBUG_MSG = true;
@@ -65,18 +73,8 @@ module Setup {
     //
 
     if (!worker_enabled) {
-        // import all scripts for debugging
-        function importScript(file: string) {
-            document.write('<script src="' + file + '"><\/script>');
-        };
-
         console.log('importing scripts to run locally...');
-        importScript('lib/jison.js'); // FIXME: make this conditional on parser.js
-        importScript('bin/ast.js');
-        importScript('bin/parser.js');
-        importScript('bin/typechecker.types.js');
-        importScript('bin/typechecker.utils.js');
-        importScript('bin/typechecker.js');
+        importScript.apply(null,IMPORTS);
         importScript(WORKER_JS);
         console.log('done.');
     }

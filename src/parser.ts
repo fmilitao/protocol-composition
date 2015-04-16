@@ -17,7 +17,7 @@ module Jison {
         // synchronous fetch of grammar file (this doesn't work locally due to
         // permissions on fetching from javascript, must be run in a server)
         var r = new XMLHttpRequest();
-        r.open("GET", file, false); // async fetch
+        r.open("GET", file, false); // sync fetch
         r.send(null);
         if (r.status !== 200) {
             // some error HTTP code other than OK
