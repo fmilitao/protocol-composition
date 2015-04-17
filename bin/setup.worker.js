@@ -39,48 +39,50 @@ var WebWorker;
     }
     ;
     var send = Comm.WorkerThread.getSender();
-    WebWorker.receiver = new function () {
+    WebWorker.receiver = (function () {
         var ast = null;
         var typeinfo = null;
-        var handleError = function (e) {
+        function handleError(e) {
             if (e.stack)
                 console.error(e.stack.toString());
             send('errorHandler', JSON.stringify(e));
-        };
-        this.eval = function (data) {
-            try {
-                ast = null;
-                typeinfo = {};
-                send('clearAll', null);
-                send('setStatus', 'Type checking...');
-                ast = parse(data);
-                send('println', '<b>Type</b>: ' +
-                    toHTML(checker(ast, typeinfo)));
-                if (!isWorker) {
-                    console.debug('checked in: ' + typeinfo.diff + ' ms');
+        }
+        ;
+        return {
+            eval: function (data) {
+                try {
+                    ast = null;
+                    typeinfo = {};
+                    send('clearAll', null);
+                    send('setStatus', 'Type checking...');
+                    ast = parse(data);
+                    send('println', '<b>Type</b>: ' +
+                        toHTML(checker(ast, typeinfo)));
+                    if (!isWorker) {
+                        console.debug('checked in: ' + typeinfo.diff + ' ms');
+                    }
+                    send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
+                    send('updateAnnotations', null);
                 }
-                send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
-                send('updateAnnotations', null);
-            }
-            catch (e) {
-                send('setStatus', 'Error!');
-                handleError(e);
-            }
-        };
-        this.checker = function (pos) {
-            try {
-                if (ast === null || typeinfo === null)
-                    return;
-                else {
-                    send('clearTyping', null);
+                catch (e) {
+                    send('setStatus', 'Error!');
+                    handleError(e);
                 }
-                send('printTyping', info(typeinfo, pos).toString());
-            }
-            catch (e) {
-                handleError(e);
-            }
-        };
-    };
+            },
+            checker: function (pos) {
+                try {
+                    if (ast === null || typeinfo === null)
+                        return;
+                    else {
+                        send('clearTyping', null);
+                    }
+                    send('printTyping', info(typeinfo, pos).toString());
+                }
+                catch (e) {
+                    handleError(e);
+                }
+            } };
+    })();
     if (!isWorker) {
         Comm.WorkerThread.setReceiver(WebWorker.receiver);
     }

@@ -17,6 +17,7 @@ var Comm;
     var main_receiver = null;
     var WorkerThread;
     (function (WorkerThread) {
+        ;
         function setReceiver(w) {
             worker_receiver = w;
         }
@@ -55,6 +56,7 @@ var Comm;
     ;
     var MainThread;
     (function (MainThread) {
+        ;
         function setReceiver(m) {
             main_receiver = m;
         }

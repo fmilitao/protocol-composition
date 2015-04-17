@@ -18,7 +18,12 @@ module Comm {
 
     export module WorkerThread {
 
-        export function setReceiver(w) {
+        export interface Receiver {
+            eval: (string) => void;
+            checker: (any) => void;
+        };
+
+        export function setReceiver(w: Receiver) {
             worker_receiver = w;
         };
 
@@ -53,6 +58,11 @@ module Comm {
     };
 
     export module MainThread {
+
+        export interface Receiver { // TODO enable overloading!!
+            send( data: string, ...args: any[]);
+            send( data: 'setStatus', msg: string);
+        };
 
         export function setReceiver(m) {
             main_receiver = m;

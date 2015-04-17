@@ -71,21 +71,22 @@ module WebWorker {
     // Receiver object
     //
 
-    export var receiver = new function() {
+    export var receiver : Comm.WorkerThread.Receiver = (function() {
 
         // local state between calls
         // to avoid reparsing, the 'ast' is made available
         // to the other listener functions through this var.
-        var ast: AST.Exp.Program = null;
-        var typeinfo = null;
+        let ast: AST.Exp.Program = null;
+        let typeinfo = null;
 
-        var handleError = function(e) {
+        function handleError(e) {
             if (e.stack)
                 (<any>console).error(e.stack.toString());
             send('errorHandler', JSON.stringify(e));
         };
 
-        this.eval = function(data) {
+        return {
+          eval : function(data : string) {
             try {
                 ast = null;
                 typeinfo = {};
@@ -110,9 +111,9 @@ module WebWorker {
                 send('setStatus', 'Error!');
                 handleError(e);
             }
-        };
+        },
 
-        this.checker = function(pos) {
+        checker : function(pos) {
             try {
                 // only if parsed correctly
                 if (ast === null || typeinfo === null)
@@ -126,9 +127,9 @@ module WebWorker {
             } catch (e) {
                 handleError(e);
             }
-        };
+        } };
 
-    };
+    })();
 
     if (!isWorker) {
         Comm.WorkerThread.setReceiver(receiver);
