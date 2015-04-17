@@ -32,7 +32,7 @@ module Comm {
                     const m = e.data;
                     try {
                         // this is the 'receiver' var from below
-                        receiver[m.kind](m.data);
+                        WebWorker.receiver[m.kind](m.data);
                     } catch (e) {
                         console.error(e);
                     }

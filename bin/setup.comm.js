@@ -24,19 +24,19 @@ var Comm;
         ;
         function getSender() {
             if (isWorker) {
-                var send_1 = function (k, msg) {
+                var send = function (k, msg) {
                     self.postMessage({ kind: k, data: msg });
                 };
                 self.addEventListener('message', function (e) {
                     var m = e.data;
                     try {
-                        receiver[m.kind](m.data);
+                        WebWorker.receiver[m.kind](m.data);
                     }
                     catch (e) {
                         console.error(e);
                     }
                 }, false);
-                return send_1;
+                return send;
             }
             else {
                 return function (kind, data) {
@@ -63,7 +63,7 @@ var Comm;
         function getSenderAndReset(WORKER_JS) {
             if (WORKER_JS !== null) {
                 var worker = null;
-                var send_2;
+                var send;
                 function resetWorker() {
                     if (worker !== null) {
                         worker.terminate();
@@ -78,13 +78,13 @@ var Comm;
                             console.error(er);
                         }
                     }, false);
-                    send_2 = function (k, msg) {
+                    send = function (k, msg) {
                         worker.postMessage({ kind: k, data: msg });
                     };
                 }
                 ;
                 resetWorker();
-                return [send_2, resetWorker];
+                return [send, resetWorker];
             }
             else {
                 return [

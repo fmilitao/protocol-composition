@@ -544,11 +544,11 @@ module Setup {
 
             return {
                 eval: function() {
-                    send('EVAL', editor.getSession().getValue());
+                    send('eval', editor.getSession().getValue());
                 },
 
                 checker: function(p) {
-                    send('CHECKER', p);
+                    send('checker', p);
                 },
 
                 reset: function() {
