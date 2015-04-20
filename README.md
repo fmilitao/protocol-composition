@@ -4,30 +4,24 @@
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
-NOTE: We currently do not enforce all well-formedness conditions on types. If a type is not well-formed the algorithm may not terminate.
+*NOTE*: We currently do not enforce all well-formedness conditions on types. If a type is not well-formed the algorithm may not terminate.
 
 (Work in progress... not done.)
 
-#FIXMES#
 
-* missing failure tests on conformance on 'test2.txt'
+##FIXMES##
 
-* FIX on keyF that creates key to table cycles in the types, needs to consider environment due to bounded quantification.
-
+- missing failure tests on conformance on 'test2.txt'
 
 - define error constants/enum instead of having constants spread out through the code.
-
-- use 'const' keyword for constants. Note that some browsers may not support this. However, our target is Google Chrome which does support 'const'. See: http://kangax.github.io/compat-table/es6/
-
-- JS tips: http://bonsaiden.github.io/JavaScript-Garden/
-
-- cool transitions: https://github.com/IanLunn/Hover
 
 
 ##Extra Credits##
 
 - Types and Programming Languages, Chapter 6 (for De Bruijn stuff).
 - Subtyping Recursive Types, for recursion checks.
+- includes snapshots of Jison (parser generator), ACE Editor, jQuery, and some typescript definition files.
+- gear icon from: http://findicons.com/icon/84346/gear?id=429415
 
 
 ## Useful Notes ##
@@ -42,3 +36,6 @@ NOTE: We currently do not enforce all well-formedness conditions on types. If a 
   * [Chrome Debugging](https://developers.google.com/chrome-developer-tools/docs/javascript-debugging)
   * [LINK](https://developers.google.com/chrome-developer-tools/docs/heap-profiling) [LINK](https://developers.google.com/speed/articles/optimizing-javascript) profiling and optimization.
   * http://stackoverflow.com/questions/1964839/jquery-please-wait-loading-animation
+  * ES6 compatibility: http://kangax.github.io/compat-table/es6/
+  * JS tips: http://bonsaiden.github.io/JavaScript-Garden/
+  * cool transitions: https://github.com/IanLunn/Hover
