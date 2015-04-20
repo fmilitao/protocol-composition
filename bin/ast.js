@@ -373,10 +373,10 @@ var AST;
         ;
         var Tagged = (function (_super) {
             __extends(Tagged, _super);
-            function Tagged(tag, exp, info) {
+            function Tagged(tag, type, info) {
                 _super.call(this, info);
                 this.tag = tag;
-                this.exp = exp;
+                this.type = type;
             }
             return Tagged;
         })(BaseAST);

@@ -441,8 +441,7 @@ module TypeChecker {
     };
 
     interface MatchType extends AST.Type.MatchType<TypeEval> {
-        // this is an auxiliary metho to avoid duplicated code.
-        _aux_(ctr, ast: AST.Type.Exists|AST.Type.Forall): TypeEval;
+        // intentionally empty
     };
 
     interface MatchExp extends AST.Exp.MatchExp<TypeEval> {
@@ -450,10 +449,6 @@ module TypeChecker {
     };
 
 				const matchExp: MatchExp = {
-
-        // TypeDef should not be used at this level
-        // cast is necessary to please TypeScript
-        TypeDef: _  => <any>assert(false, _),
 
         Program: ast => (c, _): Type => {
 
@@ -613,10 +608,10 @@ module TypeChecker {
         },
 
         // auxiliary function for common Forall/Exists code
-        _aux_: (ctr, ast) => (c, env) => {
-            var id = ast.id;
-            var variable;
-            var bound;
+        _aux_: (ctr, ast : AST.Type.Exists|AST.Type.Forall) : TypeEval => (c, env) => {
+            const id = ast.id;
+            let variable: TypeVariable|LocationVariable;
+            let bound: Type;
 
             if (isTypeVariableName(id)) {
                 bound = !ast.bound ?
@@ -630,14 +625,14 @@ module TypeChecker {
                 bound = null;
             }
 
-            var e = env.newScope(id, variable, bound);
-            var type = c.checkType(ast.exp, e);
+            const e = env.newScope(id, variable, bound);
+            const type = c.checkType(ast.exp, e);
 
             return <Type>new ctr(variable, type, bound);
         },
 
-        Exists: ast => matchType._aux_(ExistsType, ast),
-        Forall: ast => matchType._aux_(ForallType, ast),
+        Exists: function(ast){ return this._aux_(ExistsType, ast); },
+        Forall: function(ast){ return this._aux_(ForallType, ast); },
 
         Stacked: ast => (c, env) => {
             return new StackedType(
@@ -647,47 +642,46 @@ module TypeChecker {
         },
 
         Rely: ast => (c, env) => {
-            var rely = c.checkType(ast.left, env);
-            var guarantee = c.checkType(ast.right, env);
+            const rely = c.checkType(ast.left, env);
+            const guarantee = c.checkType(ast.right, env);
             return new RelyType(rely, guarantee);
         },
 
         Guarantee: ast => (c, env) => {
-            var guarantee = c.checkType(ast.left, env);
-            var rely = c.checkType(ast.right, env);
+            const guarantee = c.checkType(ast.left, env);
+            const rely = c.checkType(ast.right, env);
             return new GuaranteeType(guarantee, rely);
         },
 
         Sum: ast => (c, env) => {
             const sum = new SumType();
-            for (var i = 0; i < ast.sums.length; ++i) {
-                const tag = ast.sums[i].tag;
-                assert(sum.add(tag, c.checkType(ast.sums[i].exp, env)) ||
-                    "Duplicated tag: " + tag, ast.sums[i]);
+            for (let t of ast.sums) {
+                assert(sum.add(t.tag, c.checkType(t.type, env)) ||
+                    "Duplicated tag: " + t.tag, t);
             }
             return sum;
         },
 
         Star: ast => (c, env) => {
             const star = new StarType();
-            for (var i = 0; i < ast.types.length; ++i) {
-                star.add(c.checkType(ast.types[i], env));
+            for (let t of ast.types) {
+                star.add(c.checkType(t, env));
             }
             return star;
         },
 
         Alternative: ast => (c, env) => {
             const alt = new AlternativeType();
-            for (var i = 0; i < ast.types.length; ++i) {
-                alt.add(c.checkType(ast.types[i], env));
+            for (let t of ast.types) {
+                alt.add(c.checkType(t, env));
             }
             return alt;
         },
 
         Intersection: ast => (c, env) => {
             const alt = new IntersectionType();
-            for (var i = 0; i < ast.types.length; ++i) {
-                alt.add(c.checkType(ast.types[i], env));
+            for (let t of ast.types) {
+                alt.add(c.checkType(t, env));
             }
             return alt;
         },
@@ -746,7 +740,6 @@ module TypeChecker {
             return new BangType(c.checkType(ast.type, env));
         },
 
-
         Record: ast => (c, env) => {
             var rec = new RecordType();
             for (var i = 0; i < ast.exp.length; ++i) {
@@ -758,10 +751,6 @@ module TypeChecker {
             }
             return rec;
         },
-
-        // should never occur at top level
-        // cast is necessary to please TypeScript
-        Field: _ => <any>assert(false, _),
 
         Tuple: ast => (c, env): Type => {
             // Note that TUPLE cannot move to the auto-bang block
@@ -788,7 +777,7 @@ module TypeChecker {
         Tagged: ast => (c, env): Type => {
             var sum = new SumType();
             var tag = ast.tag;
-            var exp = c.checkType(ast.exp, env);
+            var exp = c.checkType(ast.type, env);
             sum.add(tag, exp);
             if (exp.type === types.BangType) {
                 return new BangType(sum);
@@ -799,7 +788,6 @@ module TypeChecker {
         Top: ast => (c, env) => {
             return Top;
         },
-
 
         Definition: ast => (c, env) => {
             var typedef = env.getTypeDef();
@@ -845,30 +833,6 @@ module TypeChecker {
 				};
 
     /*
-    // inspector( ast, env, checkFunction )
-    var buildChecker = function(inspector) {
-        var map: any = new Map();
-        var aux = function(ast, env) {
-            if (!map.has(ast.kind))
-                error('Error @buildChecker Not expecting ' + ast.kind);
-            return map.get(ast.kind)(ast, env);
-        };
-
-        var tmp = aux;
-        if (inspector) {
-            tmp = function(ast, env) {
-                return inspector(ast, env, aux);
-            };
-        }
-
-        for (var i in AST) {
-            error(!map.has(i) || ('Error @buildChecker, duplication: ' + i));
-            // find function to call on this kind of AST node
-            map.set(i, setupAST(i, tmp));
-        }
-
-        return tmp;
-    };
 
     // this moved here just to avoid re building checker on each 'check'
     // all these variable could be local variables of 'exports.check'
@@ -895,19 +859,38 @@ module TypeChecker {
     // only exports checking function.
     export function checker(ast: AST.Exp.Program, log?): any {
 
-        //type_info = []; // reset
+        const type_info: any = []; // reset
 
         // timer start
         const start = new Date().getTime();
-        const c : EvalContext = {
+        const c: EvalContext = {
+
+            aux: function(ast, env) { //TODO!!!
+                /*
+                   var info: any = { ast: ast, env: env };
+                   type_info.push(info);
+
+                   var res = c(ast, env);
+                   info.res = res;
+
+                   // this is a very hackish way to extract conformance table without
+                   // breaking the inner return type signature!
+                   if (ast.kind === AST.SHARE) {
+                       // unit
+                       return UnitType;
+                   }
+
+                   return res;
+                   */
+            },
 
             // for expressions
-            checkExp: (ast: AST.Exp.Exp, env : Gamma) => {
+            checkExp: function(ast: AST.Exp.Exp, env: Gamma){
                 return (ast.match(matchExp))(c, env);
             },
 
             // for types
-            checkType: (ast: AST.Type.Type, env : Gamma) => {
+            checkType: function(ast: AST.Type.Type, env: Gamma){
                 return (ast.match(matchType))(c, env);
             },
         };
@@ -917,144 +900,10 @@ module TypeChecker {
         } finally {
             if (log) {
                 log.diff = (new Date().getTime()) - start;
-                //log.info = type_info;
+                log.info = type_info;
             }
         }
 
     };
 
 };
-
-
-
-	// well-formed checks are currently work-in-progress.
-
-	/*
-	var locSet = function( t ){
-
-		if( isProtocol(t) )
-			return new Set(); // empty set
-
-		switch( t.type ){
-			case types.NoneType:
-				return new Set(); // empty set
-
-			case types.RelyType:
-				return locSet( t.rely() );
-
-			case types.GuaranteeType:
-				return locSet( t.guarantee() );
-
-			case types.AlternativeType:
-			case types.IntersectionType:
-			case types.StarType: {
-				var ts = t.inner();
-				var tmp = new Set();
-
-				for( var i=0; i<ts.length; ++i ){
-					locSet( ts[i] ).forEach(
-						function(x){
-							tmp.add(x);
-						});
-				}
-
-				return tmp;
-			}
-
-			case types.ExistsType:
-			case types.ForallType:{
-				var tmp = locSet( t.inner() )
-				var id = t.id().name();
-
-				if( !isTypeVariableName( id ) ){
-					// then is location variable
-					// and we must remove it, if present, from the set
-
-					tmp.delete( id );
-				}
-
-				return tmp;
-			}
-
-			case types.CapabilityType:
-				return locSet( t.location() );
-
-			case types.LocationVariable:
-				return new Set( [t.name()]) ;
-
-			case types.DefinitionType:
-				return locSet( unfold(t) );
-
-			default:
-				error( '@locSet: invalid type, got: '+t.type+' '+t );
-		}
-	}
-	*/
-
-	/*
-	var wfProtocol = function( t ){
-		if( !isProtocol(t) )
-			return false;
-
-		switch( t.type ){
-			case types.NoneType:
-				return true; // empty set
-
-			case types.RelyType: {
-				var r = locSet( t.rely() );
-				var g = locSet( t.guarantee() );
-
-				if( r.size !== g.size )
-					return false;
-
-				var tmp = true;
-				r.forEach(function(v){
-					if( !g.has(v) )
-						tmp = false;
-				});
-				// some missing element
-				if( !tmp )
-					return false;
-
-				return true;
-			}
-
-			case types.GuaranteeType:
-				return wfProtocol( t.guarantee() ) && wfProtocol( t.rely() );
-
-			case types.AlternativeType: {
-				// needs to check there is a different rely
-				// all must be valid protocols
-				// how to express this with existentials?
-				// this check should be in the step, not here.
-				return true;
-			}
-
-			case types.IntersectionType: {
-				// all must be valid protocols
-				var ts = t.inner();
-
-				for( var i=0; i<ts.length; ++i ){
-					if( !wfProtocol( ts[i] ) )
-						return false;
-				}
-
-				return true;
-			}
-
-			case types.StarType:
-			case types.ExistsType:
-			case types.ForallType:{
-				// needs to consider: P * exists q.(A), etc.
-				return true;
-			}
-
-			case types.DefinitionType:
-				return wfProtocol( unfold(t) );
-
-			default:
-				error( '@wfProtocol: invalid type, got: '+t.type );
-		}
-		return true;
-	}
-	*/

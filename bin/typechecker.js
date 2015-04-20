@@ -292,7 +292,6 @@ var TypeChecker;
     ;
     ;
     var matchExp = {
-        TypeDef: function (_) { return TypeChecker.assert(false, _); },
         Program: function (ast) { return function (c, _) {
             // ignores old environment, this is a new program!
             var typedef = new TypeChecker.TypeDefinition();
@@ -413,8 +412,8 @@ var TypeChecker;
             var type = c.checkType(ast.exp, e);
             return new ctr(variable, type, bound);
         }; },
-        Exists: function (ast) { return matchType._aux_(TypeChecker.ExistsType, ast); },
-        Forall: function (ast) { return matchType._aux_(TypeChecker.ForallType, ast); },
+        Exists: function (ast) { return this._aux_(TypeChecker.ExistsType, ast); },
+        Forall: function (ast) { return this._aux_(TypeChecker.ForallType, ast); },
         Stacked: function (ast) { return function (c, env) {
             return new TypeChecker.StackedType(c.checkType(ast.left, env), c.checkType(ast.right, env));
         }; },
@@ -430,31 +429,34 @@ var TypeChecker;
         }; },
         Sum: function (ast) { return function (c, env) {
             var sum = new TypeChecker.SumType();
-            for (var i = 0; i < ast.sums.length; ++i) {
-                var tag = ast.sums[i].tag;
-                TypeChecker.assert(sum.add(tag, c.checkType(ast.sums[i].exp, env)) ||
-                    "Duplicated tag: " + tag, ast.sums[i]);
+            for (var _i = 0, _a = ast.sums; _i < _a.length; _i++) {
+                var t = _a[_i];
+                TypeChecker.assert(sum.add(t.tag, c.checkType(t.type, env)) ||
+                    "Duplicated tag: " + t.tag, t);
             }
             return sum;
         }; },
         Star: function (ast) { return function (c, env) {
             var star = new TypeChecker.StarType();
-            for (var i = 0; i < ast.types.length; ++i) {
-                star.add(c.checkType(ast.types[i], env));
+            for (var _i = 0, _a = ast.types; _i < _a.length; _i++) {
+                var t = _a[_i];
+                star.add(c.checkType(t, env));
             }
             return star;
         }; },
         Alternative: function (ast) { return function (c, env) {
             var alt = new TypeChecker.AlternativeType();
-            for (var i = 0; i < ast.types.length; ++i) {
-                alt.add(c.checkType(ast.types[i], env));
+            for (var _i = 0, _a = ast.types; _i < _a.length; _i++) {
+                var t = _a[_i];
+                alt.add(c.checkType(t, env));
             }
             return alt;
         }; },
         Intersection: function (ast) { return function (c, env) {
             var alt = new TypeChecker.IntersectionType();
-            for (var i = 0; i < ast.types.length; ++i) {
-                alt.add(c.checkType(ast.types[i], env));
+            for (var _i = 0, _a = ast.types; _i < _a.length; _i++) {
+                var t = _a[_i];
+                alt.add(c.checkType(t, env));
             }
             return alt;
         }; },
@@ -503,7 +505,6 @@ var TypeChecker;
             }
             return rec;
         }; },
-        Field: function (_) { return TypeChecker.assert(false, _); },
         Tuple: function (ast) { return function (c, env) {
             var rec = new TypeChecker.TupleType();
             var bang = true;
@@ -520,7 +521,7 @@ var TypeChecker;
         Tagged: function (ast) { return function (c, env) {
             var sum = new TypeChecker.SumType();
             var tag = ast.tag;
-            var exp = c.checkType(ast.exp, env);
+            var exp = c.checkType(ast.type, env);
             sum.add(tag, exp);
             if (exp.type === TypeChecker.types.BangType) {
                 return new TypeChecker.BangType(sum);
@@ -561,9 +562,11 @@ var TypeChecker;
         }; },
     };
     function checker(ast, log) {
-        //type_info = []; // reset
+        var type_info = [];
         var start = new Date().getTime();
         var c = {
+            aux: function (ast, env) {
+            },
             checkExp: function (ast, env) {
                 return (ast.match(matchExp))(c, env);
             },
@@ -577,6 +580,7 @@ var TypeChecker;
         finally {
             if (log) {
                 log.diff = (new Date().getTime()) - start;
+                log.info = type_info;
             }
         }
     }

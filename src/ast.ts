@@ -109,7 +109,9 @@ module AST {
         };
 
         export interface MatchExp<T> {
-												TypeDef(x: TypeDef): T;
+            // intentionally ommit TypeDef since it should not appear in a
+            // case analysis (i.e. it is only to be used inside Program)
+												//TypeDef(x: TypeDef): T;
 												Program(x: Program): T;
 												Share(x: Share): T;
 												Subtype(x: Subtype): T;
@@ -223,13 +225,15 @@ module AST {
             Reference(x: Reference): T;
             Bang(x: Bang): T;
             Record(x: Record): T;
-            Field(x: Field): T;
             Tuple(x: Tuple): T;
             Tagged(x: Tagged);
             None(x: None): T;
             Top(x: Top): T;
             Definition(x: Definition): T;
 
+            // intentionally omit Field since it should not appear
+            // at the level of Type case analysis.
+            // Field(x: Field): T;
         };
 
         export class Substitution extends BaseAST {
@@ -427,7 +431,7 @@ module AST {
 								export class Tagged extends BaseAST {
 												constructor(
 																public tag: string,
-																public exp: Type,
+																public type: Type,
 																info: any
 																) {
 																super(info);
