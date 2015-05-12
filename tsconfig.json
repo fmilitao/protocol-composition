@@ -18,6 +18,7 @@
         "./lib/def/chrome.d.ts",
         "./lib/def/jison.d.ts",
         "./lib/def/jquery.d.ts",
+        "./lib/def/lib.es6.d.ts",
         "./src/ast.ts",
         "./src/parser.ts",
         "./src/setup.comm.ts",

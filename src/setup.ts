@@ -501,7 +501,8 @@ module Setup {
                             text: res.reason,
                             type: "error",
                             lint: "error"
-                        }]);
+                        } // TODO add other errors.
+                        ]);
 
                         // marker stores the last hightlight mark or null if none exists
                         if (marker !== null) {
@@ -601,6 +602,5 @@ module Setup {
 
     }
 };
-
 
 $(document).ready(Setup.onReady);

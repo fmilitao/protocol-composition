@@ -289,8 +289,6 @@ var TypeChecker;
         return [s, a, b];
     };
     ;
-    ;
-    ;
     var matchExp = {
         Program: function (ast) { return function (c, _) {
             // ignores old environment, this is a new program!
@@ -324,17 +322,6 @@ var TypeChecker;
                     }
                     TypeChecker.assert(typedef.addDefinition(type.id, c.checkType(type.type, tmp_env))
                         || ('Duplicated typedef: ' + type.id), type);
-                }
-                for (var i = 0; i < ast.typedefs.length; ++i) {
-                    var type = ast.typedefs[i];
-                    var x = typedef.getDefinition(type.id);
-                    var set = new Set();
-                    while (x.type === TypeChecker.types.DefinitionType) {
-                        set.add(x.toString(false));
-                        x = TypeChecker.unfoldDefinition(x);
-                        TypeChecker.assert(!set.has(x.toString(false))
-                            || ('Infinite typedef (i.e. bottom type): ' + type.id), type);
-                    }
                 }
             }
             for (var _i = 0, _a = ast.exp; _i < _a.length; _i++) {

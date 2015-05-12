@@ -351,7 +351,8 @@ var Setup;
                                 text: res.reason,
                                 type: "error",
                                 lint: "error"
-                            }]);
+                            }
+                        ]);
                         if (marker !== null) {
                             session.removeMarker(marker);
                         }

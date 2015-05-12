@@ -1,3 +1,10 @@
+/// <reference path='../lib/def/lib.es6.d.ts'/>
+var __extends = this.__extends || function (d, b) {
+    for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
+    function __() { this.constructor = d; }
+    __.prototype = b.prototype;
+    d.prototype = new __();
+};
 if (typeof (importScripts) === 'undefined') {
     function importScript() {
         var files = [];
@@ -13,10 +20,52 @@ if (typeof (importScripts) === 'undefined') {
 }
 var Comm;
 (function (Comm) {
+    var Proxy = (function () {
+        function Proxy(s) {
+            this.s = s;
+        }
+        Proxy.prototype.dispatch = function (m) {
+            var args = [];
+            for (var _i = 1; _i < arguments.length; _i++) {
+                args[_i - 1] = arguments[_i];
+            }
+            this.s(m, args);
+        };
+        return Proxy;
+    })();
+    ;
     var worker_receiver = null;
     var main_receiver = null;
     var WorkerThread;
     (function (WorkerThread) {
+        var SenderObject = (function (_super) {
+            __extends(SenderObject, _super);
+            function SenderObject() {
+                _super.apply(this, arguments);
+            }
+            SenderObject.prototype.errorHandler = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            SenderObject.prototype.clearAll = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            SenderObject.prototype.setStatus = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            SenderObject.prototype.println = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            SenderObject.prototype.updateAnnotations = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            SenderObject.prototype.clearTyping = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            SenderObject.prototype.printTyping = function () {
+                _super.prototype.dispatch.call(this, arguments.callee.name);
+            };
+            return SenderObject;
+        })(Proxy);
         ;
         function setReceiver(w) {
             worker_receiver = w;
@@ -56,7 +105,6 @@ var Comm;
     ;
     var MainThread;
     (function (MainThread) {
-        ;
         function setReceiver(m) {
             main_receiver = m;
         }

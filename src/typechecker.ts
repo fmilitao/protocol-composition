@@ -440,13 +440,8 @@ module TypeChecker {
         checkType(ast: AST.Type.Type, env: Gamma): Type;
     };
 
-    interface MatchType extends AST.Type.MatchType<TypeEval> {
-        // intentionally empty
-    };
-
-    interface MatchExp extends AST.Exp.MatchExp<TypeEval> {
-        // intentionally empty
-    };
+    type MatchType = AST.Type.MatchType<TypeEval>;
+    type MatchExp = AST.Exp.MatchExp<TypeEval>;
 
 				const matchExp: MatchExp = {
 
@@ -505,6 +500,7 @@ module TypeChecker {
                         || ('Duplicated typedef: ' + type.id), type);
                 }
 
+                /*
                 // 3rd pass: check for bottom types.
                 for (var i = 0; i < ast.typedefs.length; ++i) {
                     var type = ast.typedefs[i];
@@ -518,8 +514,7 @@ module TypeChecker {
                         assert(!set.has(x.toString(false))
                             || ('Infinite typedef (i.e. bottom type): ' + type.id), type);
                     }
-
-                }
+                } */
 
             }
 

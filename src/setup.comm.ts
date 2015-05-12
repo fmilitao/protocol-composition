@@ -1,4 +1,7 @@
 
+/// <reference path='../lib/def/lib.es6.d.ts'/>
+
+
 if (typeof (importScripts) === 'undefined') {
     // defines importScript function for local loading
     function importScript(...files: string[]) {
@@ -13,10 +16,51 @@ if (typeof (importScripts) === 'undefined') {
 //
 module Comm {
 
+    class Proxy {
+
+        constructor(
+            // proxy function that sends message
+            public s: (string, ...any) => void
+            ) {
+        }
+
+        dispatch(m: string, ...args: any[]) {
+            this.s(m, args);
+        }
+
+        // arguments.callee.name
+    };
+
     let worker_receiver = null;
     let main_receiver = null;
 
     export module WorkerThread {
+
+      // FIXME ... implements
+        class SenderObject extends Proxy {
+
+            errorHandler() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+            clearAll() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+            setStatus() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+            println() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+            updateAnnotations() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+            clearTyping() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+            printTyping() {
+                super.dispatch((<any>arguments).callee.name);
+            }
+        }
 
         export interface Receiver {
             eval: (string) => void;
@@ -58,11 +102,6 @@ module Comm {
     };
 
     export module MainThread {
-
-        export interface Receiver { // TODO enable overloading!!
-            send( data: string, ...args: any[]);
-            send( data: 'setStatus', msg: string);
-        };
 
         export function setReceiver(m) {
             main_receiver = m;

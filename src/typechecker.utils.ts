@@ -9,7 +9,7 @@
 module TypeChecker {
 
     // unify 'x' in 't' to match 'a'
-    export var unify = function(x, t, a) {
+    export function unify(x, t, a) {
         if (x.type !== types.LocationVariable &&
             x.type !== types.TypeVariable) {
             error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
@@ -22,7 +22,7 @@ module TypeChecker {
     // returns 'false' is types are incompatible,
     // returns 'type' if match is found,
     // returns 'true' if match not found but types are equal.
-    var unifyAux = function(x, t, a, trail) {
+    function unifyAux(x, t, a, trail) {
 
         // base case: variable 'x' is found in 't'
         if (x.type === t.type && x.index() === t.index() && (
@@ -298,7 +298,7 @@ module TypeChecker {
     // t -> type
     // c -> cutoff index
     // d -> shift value
-    export function shift(t, c : number, d : number) : Type {
+    export function shift(t, c: number, d: number): Type {
 
         switch (t.type) {
 
@@ -427,11 +427,11 @@ module TypeChecker {
 	 * @param {Type} b
 	 * @return {Boolean} if the types are equal up to renaming.
 	 */
-    export function equals(t1 : Type, t2 : Type) : boolean {
+    export function equals(t1: Type, t2: Type): boolean {
         return equalsAux(t1, t2, new Set<string>());
     };
 
-    function equalsAux(t1, t2, trail : Set<string>) : boolean {
+    function equalsAux(t1, t2, trail: Set<string>): boolean {
 
         if (t1 === t2)
             return true;
@@ -584,7 +584,7 @@ module TypeChecker {
 	 * @param {Function} equals function to compare types
 	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
 	 */
-    function substitutionAux(t, from, to : Type) : Type{
+    function substitutionAux(t, from, to: Type): Type {
 
         // for convenience...
         var rec = function(type) {
@@ -689,7 +689,7 @@ module TypeChecker {
 	 * equality test since we are no longer attempting to match complete types
 	 * and instead are just looking for TypeVariables or LocationVariables
 	 */
-    export function substitution(type : Type, from : Type, to : Type) : Type {
+    export function substitution(type: Type, from: Type, to: Type): Type {
         if (from.type !== types.LocationVariable &&
             from.type !== types.TypeVariable) {
             error("@substitution: can only substitute a Type/LocationVariable, got: " + from.type);
@@ -1236,7 +1236,7 @@ module TypeChecker {
             case types.DefinitionType: {
                 // lazy use of 'trail' since it should not be needed.
                 if (trail === undefined) {
-                    trail = new Set();
+                    trail = new Set<string>();
                 }
                 const key = t.toString(true);
                 if (trail.has(key))

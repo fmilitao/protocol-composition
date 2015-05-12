@@ -2,14 +2,16 @@
 // GPL v3 Licensed http://www.gnu.org/licenses/
 var TypeChecker;
 (function (TypeChecker) {
-    TypeChecker.unify = function (x, t, a) {
+    function unify(x, t, a) {
         if (x.type !== TypeChecker.types.LocationVariable &&
             x.type !== TypeChecker.types.TypeVariable) {
             TypeChecker.error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
         }
         return unifyAux(x, t, a, new Set());
-    };
-    var unifyAux = function (x, t, a, trail) {
+    }
+    TypeChecker.unify = unify;
+    ;
+    function unifyAux(x, t, a, trail) {
         if (x.type === t.type && x.index() === t.index() && ((x.type === TypeChecker.types.LocationVariable && a.type === TypeChecker.types.LocationVariable) ||
             (x.type === TypeChecker.types.TypeVariable && a.type !== TypeChecker.types.LocationVariable)))
             return a;
@@ -191,7 +193,8 @@ var TypeChecker;
             default:
                 TypeChecker.error("@unifyAux: Not expecting " + t.type);
         }
-    };
+    }
+    ;
     function shift(t, c, d) {
         switch (t.type) {
             case TypeChecker.types.FunctionType:
@@ -564,7 +567,7 @@ var TypeChecker;
         }
         if (t2.type === TypeChecker.types.ExistsType && t1.type !== TypeChecker.types.ExistsType) {
             var t1_s = shift1(t1, 0);
-            var u = TypeChecker.unify(t2.id(), t2.inner(), t1_s);
+            var u = unify(t2.id(), t2.inner(), t1_s);
             if (u === false)
                 return false;
             if (u === true)
@@ -574,7 +577,7 @@ var TypeChecker;
         }
         if (t1.type === TypeChecker.types.ForallType && t2.type !== TypeChecker.types.ForallType) {
             var t2_s = shift1(t2, 0);
-            var u = TypeChecker.unify(t1.id(), t1.inner(), t2_s);
+            var u = unify(t1.id(), t1.inner(), t2_s);
             if (u === false)
                 return false;
             if (u === true)

@@ -18,7 +18,7 @@ const IMPORTS = [
 if (isWorker) {
 
     // convenient debug
-    var console = function(): any {
+    var console : Console = function(): any {
         var aux = function(k, arg) {
             var tmp = [];
             for (var i = 0; i < arg.length; ++i)

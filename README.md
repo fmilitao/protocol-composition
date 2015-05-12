@@ -12,7 +12,6 @@ Instead of recursion, we have 'typedef' for clarity.
 ##FIXMES##
 
 - missing failure tests on conformance on 'test2.txt'
-
 - define error constants/enum instead of having constants spread out through the code.
 
 
