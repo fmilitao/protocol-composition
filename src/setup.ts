@@ -491,6 +491,10 @@ module Setup {
                     });
                 },
 
+                clearAnnotations: function(){
+                    this.updateAnnotations(null);
+                },
+
                 updateAnnotations: function(res) {
                     let session = editor.getSession();
 

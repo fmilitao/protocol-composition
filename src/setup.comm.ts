@@ -43,6 +43,7 @@ module Comm {
             errorHandler: (string) => void;
             setStatus: (string) => void;
             println: (string) => void;
+            clearAnnotations: () => void;
             updateAnnotations: (any) => void;
             clearTyping: () => void;
             printTyping: (string) => void;
@@ -61,6 +62,9 @@ module Comm {
             }
             println(arg: string) {
                 super.dispatch('println', arg);
+            }
+            clearAnnotations() {
+                super.dispatch('clearAnnotations');
             }
             updateAnnotations(any) { //FIXME this updateANnotations is different from the one used in setup.ts
                 super.dispatch('updateAnnotations');
