@@ -19,12 +19,12 @@ if (isWorker) {
 
     // convenient debug
     var console : Console = function(): any {
-        var aux = function(k, arg) {
-            var tmp = [];
+        function aux(k, arg) {
+            const tmp = [];
             for (var i = 0; i < arg.length; ++i)
                 tmp.push(arg[i].toString());
             (<any>self).postMessage({ kind: k, data: '[Worker] ' + tmp.join(' ') });
-        }
+        };
 
         return {
             log: function() { aux('log', arguments) },
@@ -71,7 +71,7 @@ module WebWorker {
     // Receiver object
     //
 
-    export var receiver : Comm.WorkerThread.Receiver = (function() {
+    export const receiver : Comm.WorkerThread.Receiver = (function() {
 
         // local state between calls
         // to avoid reparsing, the 'ast' is made available

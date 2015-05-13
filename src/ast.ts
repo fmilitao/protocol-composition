@@ -63,7 +63,7 @@ module AST {
     };
 
     // convenient but hacky class for adding a match to both Exp and Types
-				class BaseAST {
+    class BaseAST {
 
         public line: number;
         public col: number;
@@ -73,8 +73,8 @@ module AST {
         public kind: string; // attached (statically) by 'unsafe_addKind'
 
         constructor(info?) {
-												// next was found through the link:
-												// http://www.gnu.org/software/bison/manual/html_node/Actions-and-Locations.html#Actions-and-Locations
+            // next was found through the link:
+            // http://www.gnu.org/software/bison/manual/html_node/Actions-and-Locations.html#Actions-and-Locations
             if (info) {
                 // Jison lines start at line 1, but ACE indexing starts at 0
                 this.line = info.first_line - 1;
@@ -111,15 +111,15 @@ module AST {
         export interface MatchExp<T> {
             // intentionally ommit TypeDef since it should not appear in a
             // case analysis (i.e. it is only to be used inside Program)
-												//TypeDef(x: TypeDef): T;
-												Program(x: Program): T;
-												Share(x: Share): T;
-												Subtype(x: Subtype): T;
-												Equals(x: Equals): T;
+            //TypeDef(x: TypeDef): T;
+            Program(x: Program): T;
+            Share(x: Share): T;
+            Subtype(x: Subtype): T;
+            Equals(x: Equals): T;
             Forall(x: Forall): T;
         };
 
-								export class TypeDef extends BaseAST {
+        export class TypeDef extends BaseAST {
             constructor(
                 public id: string,
                 public type: Type.Type,
@@ -128,20 +128,20 @@ module AST {
                 ) {
                 super(info);
             }
-								};
+        };
 
-								export class Program extends BaseAST {
-												constructor(
-																public typedefs: TypeDef[],
-																public exp: Exp[],
-																info: any
-																) {
-																super(info);
-												}
-								};
+        export class Program extends BaseAST {
+            constructor(
+                public typedefs: TypeDef[],
+                public exp: Exp[],
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
 
-								export class Share extends BaseAST {
+        export class Share extends BaseAST {
             constructor(
                 public value: boolean,
                 public type: Type.Type,
@@ -151,9 +151,9 @@ module AST {
                 ) {
                 super(info);
             }
-								};
+        };
 
-								export class Subtype extends BaseAST {
+        export class Subtype extends BaseAST {
             constructor(
                 public value: boolean,
                 public a: Type.Type,
@@ -162,9 +162,9 @@ module AST {
                 ) {
                 super(info);
             }
-								};
+        };
 
-								export class Equals extends BaseAST {
+        export class Equals extends BaseAST {
             constructor(
                 public value: boolean,
                 public a: Type.Type,
@@ -173,18 +173,18 @@ module AST {
                 ) {
                 super(info);
             }
-								};
+        };
 
         export class Forall extends BaseAST {
-												constructor(
-																public id: string,
-																public exp: Exp,
-																public bound: Type.Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
+            constructor(
+                public id: string,
+                public exp: Exp,
+                public bound: Type.Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
         // adds static 'kind' information to each class
         unsafe_addKind(TypeDef);
@@ -194,11 +194,11 @@ module AST {
         unsafe_addKind(Equals);
         unsafe_addKind(Forall);
 
-				};
+    };
 
-				//
-				// Types
-				//
+    //
+    // Types
+    //
 
     export module Type {
 
@@ -210,15 +210,15 @@ module AST {
             Substitution(x: Substitution): T;
 
             Exists(x: Exists): T;
-												Forall(x: Forall): T;
-												Stacked(x: Stacked): T;
-												Rely(x: Rely): T;
-												Guarantee(x: Guarantee): T;
-												Sum(x: Sum): T;
-												Star(x: Star): T;
-												Alternative(x: Alternative): T;
-												Intersection(x: Intersection): T;
-												Function(x: Function): T;
+            Forall(x: Forall): T;
+            Stacked(x: Stacked): T;
+            Rely(x: Rely): T;
+            Guarantee(x: Guarantee): T;
+            Sum(x: Sum): T;
+            Star(x: Star): T;
+            Alternative(x: Alternative): T;
+            Intersection(x: Intersection): T;
+            Function(x: Function): T;
             Capability(x: Capability): T;
             Name(x: Name): T;
             Primitive(x: Primitive): T;
@@ -247,218 +247,218 @@ module AST {
             }
         };
 
-								export class Exists extends BaseAST {
-												constructor(
-																public id: string,
-																public exp: Type,
-																public bound: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Forall extends BaseAST {
-												constructor(
-																public id: string,
-																public exp: Type,
-																public bound: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Stacked extends BaseAST {
-												constructor(
-																public left: Type,
-																public right: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Rely extends BaseAST {
-												constructor(
-																public left: Type,
-																public right: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Guarantee extends BaseAST {
-												constructor(
-																public left: Type,
-																public right: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Sum extends BaseAST {
-												constructor(
-																public sums: Tagged[],
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Star extends BaseAST {
-            public types: Type[];
-												constructor(
-																left: Type,
-																right: Type,
-																info: any
-																) {
-																super(info);
-																this.types = merge(this.kind, left, right);
-												}
-								};
-
-								export class Intersection extends BaseAST {
-            public types: Type[];
-												constructor(
-																left: Type,
-																right: Type,
-																info: any
-																) {
-																super(info);
-																this.types = merge(this.kind, left, right);
-												}
-								};
-
-								export class Alternative extends BaseAST {
-            public types: Type[];
-												constructor(
-																left: Type,
-																right: Type,
-																info: any
-																) {
-																super(info);
-																this.types = merge(this.kind, left, right);
-												}
-								};
-
-								export class Function extends BaseAST {
-												constructor(
-																public arg: Type,
-																public exp: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Capability extends BaseAST {
-												constructor(
-																public id: string,
-																public type: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Name extends BaseAST {
-												constructor(
-																public text: string,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Primitive extends BaseAST {
-												constructor(
-																public text: string,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Reference extends BaseAST {
-												constructor(
-																public text: string,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Bang extends BaseAST {
-												constructor(
-																public type: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Record extends BaseAST {
-												constructor(
-																public exp: Field[],
-																info: any
-																) {
-																super(info);
-												}
-								};
-
-								export class Field extends BaseAST {
-												constructor(
+        export class Exists extends BaseAST {
+            constructor(
                 public id: string,
-																public exp: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
+                public exp: Type,
+                public bound: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
-								export class Tuple extends BaseAST {
-												constructor(
-																public exp: Type[],
-																info: any
-																) {
-																super(info);
-												}
-								};
+        export class Forall extends BaseAST {
+            constructor(
+                public id: string,
+                public exp: Type,
+                public bound: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
-								export class Tagged extends BaseAST {
-												constructor(
-																public tag: string,
-																public type: Type,
-																info: any
-																) {
-																super(info);
-												}
-								};
+        export class Stacked extends BaseAST {
+            constructor(
+                public left: Type,
+                public right: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
-								export class None extends BaseAST {
-												constructor(info: any) {
-																super(info);
-												}
-								};
+        export class Rely extends BaseAST {
+            constructor(
+                public left: Type,
+                public right: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
-								export class Top extends BaseAST {
-												constructor(info: any) {
-																super(info);
-												}
-								};
+        export class Guarantee extends BaseAST {
+            constructor(
+                public left: Type,
+                public right: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
 
-								export class Definition extends BaseAST {
-												constructor(
+        export class Sum extends BaseAST {
+            constructor(
+                public sums: Tagged[],
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Star extends BaseAST {
+            public types: Type[];
+            constructor(
+                left: Type,
+                right: Type,
+                info: any
+                ) {
+                super(info);
+                this.types = merge(this.kind, left, right);
+            }
+        };
+
+        export class Intersection extends BaseAST {
+            public types: Type[];
+            constructor(
+                left: Type,
+                right: Type,
+                info: any
+                ) {
+                super(info);
+                this.types = merge(this.kind, left, right);
+            }
+        };
+
+        export class Alternative extends BaseAST {
+            public types: Type[];
+            constructor(
+                left: Type,
+                right: Type,
+                info: any
+                ) {
+                super(info);
+                this.types = merge(this.kind, left, right);
+            }
+        };
+
+        export class Function extends BaseAST {
+            constructor(
+                public arg: Type,
+                public exp: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Capability extends BaseAST {
+            constructor(
+                public id: string,
+                public type: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Name extends BaseAST {
+            constructor(
+                public text: string,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Primitive extends BaseAST {
+            constructor(
+                public text: string,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Reference extends BaseAST {
+            constructor(
+                public text: string,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Bang extends BaseAST {
+            constructor(
+                public type: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Record extends BaseAST {
+            constructor(
+                public exp: Field[],
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Field extends BaseAST {
+            constructor(
+                public id: string,
+                public exp: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Tuple extends BaseAST {
+            constructor(
+                public exp: Type[],
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class Tagged extends BaseAST {
+            constructor(
+                public tag: string,
+                public type: Type,
+                info: any
+                ) {
+                super(info);
+            }
+        };
+
+        export class None extends BaseAST {
+            constructor(info: any) {
+                super(info);
+            }
+        };
+
+        export class Top extends BaseAST {
+            constructor(info: any) {
+                super(info);
+            }
+        };
+
+        export class Definition extends BaseAST {
+            constructor(
                 public name: string,
                 public args: Type[],
                 info: any
                 ) {
-																super(info);
-												}
-								};
+                super(info);
+            }
+        };
 
         // attachs static 'kind' information to each class
         unsafe_addKind(Substitution);
@@ -485,6 +485,6 @@ module AST {
         unsafe_addKind(Top);
         unsafe_addKind(Definition);
 
-				};
+    };
 
 };

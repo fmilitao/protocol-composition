@@ -39,8 +39,7 @@ var Setup;
             var parameter = parameters[_i];
             var tmp = parameter.split('=');
             if (tmp.length > 1) {
-                var option = tmp[0];
-                var value = tmp[1];
+                var option = tmp[0], value = tmp[1];
                 switch (option) {
                     case 'file':
                         default_file = value;

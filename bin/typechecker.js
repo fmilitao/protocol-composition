@@ -8,6 +8,7 @@ var TypeChecker;
     function isTypeVariableName(n) {
         return n[0] === n[0].toUpperCase();
     }
+    ;
     var unifyRely = function (id, step, state) {
         switch (step.type) {
             case TypeChecker.types.ExistsType:
@@ -549,7 +550,6 @@ var TypeChecker;
         }; },
     };
     function checker(ast, log) {
-        var type_info = [];
         var start = new Date().getTime();
         var c = {
             checkExp: function (ast, env) {
@@ -565,7 +565,7 @@ var TypeChecker;
         finally {
             if (log) {
                 log.diff = (new Date().getTime()) - start;
-                log.info = type_info;
+                log.info = [];
             }
         }
     }

@@ -44,11 +44,10 @@ module Setup {
     let parameters = document.URL.split('?');
     if (parameters.length > 1) {
         parameters = parameters[1].split('&');
-        for (let parameter of parameters) {
-            let tmp = parameter.split('=');
+        for (const parameter of parameters) {
+            const tmp = parameter.split('=');
             if (tmp.length > 1) {
-                const option = tmp[0];
-                const value = tmp[1];
+                const [option,value] = tmp;
                 switch (option) {
                     case 'file': // loads file
                         default_file = value;
@@ -428,6 +427,7 @@ module Setup {
 
             return {
 
+                // note that wrapping function is need because of 'this' in 'log', etc.
                 log: function(msg:string){ console.log(msg); },
                 debug: function(msg:string){ console.debug(msg);},
                 error: function(msg:string){ console.error(msg); },
@@ -496,7 +496,7 @@ module Setup {
                 },
 
                 updateAnnotations: function(res) {
-                    let session = editor.getSession();
+                    const session = editor.getSession();
 
                     if (res !== null) {
                         session.setAnnotations([{
@@ -512,12 +512,14 @@ module Setup {
                         if (marker !== null) {
                             session.removeMarker(marker);
                         }
-                        let tmp = new Range(res.line, res.col,
+
+                        // underline error text, full line if no last col/line given.
+                        const tmp = new Range(res.line, res.col,
                             (res.last_line ? res.last_line : res.line),
                             // highlight the whole line if no end given
                             (res.last_col ? res.last_col : session.getLine(res.line).length));
                         marker = session.addMarker(tmp, "underline_error", "text");
-                        //ace_selection
+
                     } else {
                         // no error, clear old annotations
                         session.clearAnnotations();

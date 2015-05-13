@@ -11,12 +11,13 @@ var IMPORTS = [
     'typechecker.js'];
 if (isWorker) {
     var console = function () {
-        var aux = function (k, arg) {
+        function aux(k, arg) {
             var tmp = [];
             for (var i = 0; i < arg.length; ++i)
                 tmp.push(arg[i].toString());
             self.postMessage({ kind: k, data: '[Worker] ' + tmp.join(' ') });
-        };
+        }
+        ;
         return {
             log: function () { aux('log', arguments); },
             error: function () { aux('error', arguments); },

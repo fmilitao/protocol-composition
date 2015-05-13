@@ -14,7 +14,7 @@ module TypeChecker {
     // TypeVariables must start upper cased.
     function isTypeVariableName(n: string) {
         return n[0] === n[0].toUpperCase();
-    }
+    };
 
     var unifyRely = function(id, step, state) {
         switch (step.type) {
@@ -149,7 +149,7 @@ module TypeChecker {
             }
 
             // if( i > 100 ) //FIXME this is temporary.
-            // 	error('loop bug...');
+            //  error('loop bug...');
         }
         return visited;
     }
@@ -443,7 +443,7 @@ module TypeChecker {
     type MatchType = AST.Type.MatchType<TypeEval>;
     type MatchExp = AST.Exp.MatchExp<TypeEval>;
 
-				const matchExp: MatchExp = {
+    const matchExp: MatchExp = {
 
         Program: ast => (c, _): Type => {
 
@@ -556,8 +556,8 @@ module TypeChecker {
             return left;
         },
 
-								// equality of types
-								Equals: ast => (c, env) => {
+        // equality of types
+        Equals: ast => (c, env) => {
             let left = c.checkType(ast.a, env);
             let right = c.checkType(ast.b, env);
             let s = equals(left, right);
@@ -565,7 +565,7 @@ module TypeChecker {
             return left;
         },
 
-								Forall: ast => (c, env) => {
+        Forall: ast => (c, env) => {
             let id = ast.id;
             let variable;
             let bound;
@@ -587,9 +587,9 @@ module TypeChecker {
 
             return new ForallType(variable, type, bound);
         },
-				};
+    };
 
-				const matchType: MatchType = {
+    const matchType: MatchType = {
 
         Substitution: ast => (c, env) => {
             const type = c.checkType(ast.type, env);
@@ -603,7 +603,7 @@ module TypeChecker {
         },
 
         // auxiliary function for common Forall/Exists code
-        _aux_: (ctr, ast : AST.Type.Exists|AST.Type.Forall) : TypeEval => (c, env) => {
+        _aux_: (ctr, ast: AST.Type.Exists|AST.Type.Forall): TypeEval => (c, env) => {
             const id = ast.id;
             let variable: TypeVariable|LocationVariable;
             let bound: Type;
@@ -626,8 +626,8 @@ module TypeChecker {
             return <Type>new ctr(variable, type, bound);
         },
 
-        Exists: function(ast){ return this._aux_(ExistsType, ast); },
-        Forall: function(ast){ return this._aux_(ForallType, ast); },
+        Exists: function(ast) { return this._aux_(ExistsType, ast); },
+        Forall: function(ast) { return this._aux_(ForallType, ast); },
 
         Stacked: ast => (c, env) => {
             return new StackedType(
@@ -817,32 +817,30 @@ module TypeChecker {
         },
 
         Primitive: ast => (c, env) => {
-												// relying on the parser to limit primitive types to ints, etc.
-												return new PrimitiveType(ast.text);
-								},
+            // relying on the parser to limit primitive types to ints, etc.
+            return new PrimitiveType(ast.text);
+        },
 
         None: ast => (c, env) => {
             // uses singleton NoneType, there is only one.
-												return None;
-								},
-				};
+            return None;
+        },
+    };
 
     // only exports checking function.
     export function checker(ast: AST.Exp.Program, log?): any {
-
-        const type_info: any = []; // reset
 
         // timer start
         const start = new Date().getTime();
         const c: EvalContext = {
 
             // for expressions
-            checkExp: function(ast: AST.Exp.Exp, env: Gamma){
+            checkExp: function(ast: AST.Exp.Exp, env: Gamma) {
                 return (ast.match(matchExp))(c, env);
             },
 
             // for types
-            checkType: function(ast: AST.Type.Type, env: Gamma){
+            checkType: function(ast: AST.Type.Type, env: Gamma) {
                 return (ast.match(matchType))(c, env);
             },
         };
@@ -852,7 +850,7 @@ module TypeChecker {
         } finally {
             if (log) {
                 log.diff = (new Date().getTime()) - start;
-                log.info = type_info;
+                log.info = []; //FIXME: remove
             }
         }
 
