@@ -495,7 +495,7 @@ module Setup {
                     this.updateAnnotations(null);
                 },
 
-                updateAnnotations: function(res) {
+                updateAnnotations: function(res : { line : number, col: number, reason : string, last_line: number, last_col : number }) {
                     const session = editor.getSession();
 
                     if (res !== null) {

@@ -77,7 +77,7 @@ module WebWorker {
         // to avoid reparsing, the 'ast' is made available
         // to the other listener functions through this var.
         let ast: AST.Exp.Program = null;
-        let typeinfo = null;
+        let typeinfo = null; //FIXME: deprecated!
 
         function handleError(e) {
             if (e.stack)

@@ -5,6 +5,59 @@ var TypeChecker;
     var Unit = new TypeChecker.BangType(new TypeChecker.RecordType());
     var None = new TypeChecker.NoneType();
     var Top = new TypeChecker.TopType();
+    var ERROR;
+    (function (ERROR) {
+        function UnknownType(id, ast) {
+            return 'Unknown type ' + id;
+        }
+        ERROR.UnknownType = UnknownType;
+        ;
+        function UnknownLocation(id, ast) {
+            return 'Unknown location variable ' + id;
+        }
+        ERROR.UnknownLocation = UnknownLocation;
+        ;
+        function UnexpectedResult(got, expected, ast) {
+            return 'Unexpected result, got ' + got + ' expecting ' + expected;
+        }
+        ERROR.UnexpectedResult = UnexpectedResult;
+        ;
+        function DuplicatedTypedef(id, ast) {
+            return 'Duplicated typedef: ' + id;
+        }
+        ERROR.DuplicatedTypedef = DuplicatedTypedef;
+        ;
+        function DuplicatedTag(id, ast) {
+            return 'Duplicated tag: ' + id;
+        }
+        ERROR.DuplicatedTag = DuplicatedTag;
+        ;
+        function InvalidSubstitution(t, ast) {
+            return 'Can only substitute a Type/LocationVariable, got:  ' + t.type;
+        }
+        ERROR.InvalidSubstitution = InvalidSubstitution;
+        ;
+        function DuplicatedField(id, r, ast) {
+            return 'Duplicated field "' + id + '" in ' + r;
+        }
+        ERROR.DuplicatedField = DuplicatedField;
+        ;
+        function ArgumentMismatch(got, expected, ast) {
+            return 'Argument number mismatch, got: ' + got + ' expecting ' + expected;
+        }
+        ERROR.ArgumentMismatch = ArgumentMismatch;
+        ;
+        function ExpectingLocation(i, t, ast) {
+            return 'Argument #' + i + ' must be a LocationVariable, got: ' + t.type;
+        }
+        ERROR.ExpectingLocation = ExpectingLocation;
+        ;
+        function UnexpectedLocation(i, ast) {
+            return 'Argument #' + i + ' cannot be a LocationVariable.';
+        }
+        ERROR.UnexpectedLocation = UnexpectedLocation;
+        ;
+    })(ERROR || (ERROR = {}));
     function isTypeVariableName(n) {
         return n[0] === n[0].toUpperCase();
     }
@@ -310,7 +363,7 @@ var TypeChecker;
                         }
                     }
                     TypeChecker.assert(typedef.addType(it.id, args_1)
-                        || ('Duplicated typedef: ' + it.id), it);
+                        || ERROR.DuplicatedTypedef(it.id), it);
                 }
                 for (var i = 0; i < ast.typedefs.length; ++i) {
                     var type = ast.typedefs[i];
@@ -322,7 +375,7 @@ var TypeChecker;
                         }
                     }
                     TypeChecker.assert(typedef.addDefinition(type.id, c.checkType(type.type, tmp_env))
-                        || ('Duplicated typedef: ' + type.id), type);
+                        || ERROR.DuplicatedTypedef(type.id), type);
                 }
             }
             for (var _i = 0, _a = ast.exp; _i < _a.length; _i++) {
@@ -337,21 +390,21 @@ var TypeChecker;
             var right = c.checkType(ast.b, env);
             var table = checkConformance(env, cap, left, right);
             var res = table !== null;
-            TypeChecker.assert(ast.value === res || ('Unexpected Result, got ' + res + ' expecting ' + ast.value), ast);
+            TypeChecker.assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value), ast);
             return table;
         }; },
         Subtype: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = TypeChecker.subtype(left, right);
-            TypeChecker.assert(s == ast.value || ('Unexpected Result, got ' + s + ' expecting ' + ast.value), ast);
+            TypeChecker.assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value), ast);
             return left;
         }; },
         Equals: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = TypeChecker.equals(left, right);
-            TypeChecker.assert(s == ast.value || ('Unexpected Result, got ' + s + ' expecting ' + ast.value), ast);
+            TypeChecker.assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value), ast);
             return left;
         }; },
         Forall: function (ast) { return function (c, env) {
@@ -379,7 +432,7 @@ var TypeChecker;
             var to = c.checkType(ast.to, env);
             var from = c.checkType(ast.from, env);
             TypeChecker.assert((from.type === TypeChecker.types.LocationVariable || from.type === TypeChecker.types.TypeVariable)
-                || ("Can only substitute a Type/LocationVariable, got: " + from.type), ast.from);
+                || ERROR.InvalidSubstitution(from), ast.from);
             return TypeChecker.substitution(type, from, to);
         }; },
         _aux_: function (ctr, ast) { return function (c, env) {
@@ -420,7 +473,7 @@ var TypeChecker;
             for (var _i = 0, _a = ast.sums; _i < _a.length; _i++) {
                 var t = _a[_i];
                 TypeChecker.assert(sum.add(t.tag, c.checkType(t.type, env)) ||
-                    "Duplicated tag: " + t.tag, t);
+                    ERROR.DuplicatedTag(t.tag), t);
             }
             return sum;
         }; },
@@ -455,7 +508,7 @@ var TypeChecker;
             var id = ast.id;
             var loc = env.getTypeByName(id);
             TypeChecker.assert((loc !== undefined && loc.type === TypeChecker.types.LocationVariable) ||
-                ('Unknow Location Variable ' + id), ast);
+                ERROR.UnknownLocation(id), ast);
             return new TypeChecker.CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
         }; },
         Name: function (ast) { return function (c, env) {
@@ -470,13 +523,13 @@ var TypeChecker;
             var lookup_args = typedef.getType(label);
             if (lookup_args !== undefined && lookup_args.length === 0)
                 return new TypeChecker.DefinitionType(label, [], typedef);
-            TypeChecker.assert('Unknown type ' + label, ast);
+            TypeChecker.assert(ERROR.UnknownType(label), ast);
         }; },
         Reference: function (ast) { return function (c, env) {
             var id = ast.text;
             var loc = env.getTypeByName(id);
             TypeChecker.assert((loc !== undefined && loc.type === TypeChecker.types.LocationVariable) ||
-                ('Unknow Location Variable ' + id), ast);
+                ERROR.UnknownLocation(id), ast);
             return new TypeChecker.ReferenceType(loc.copy(env.getNameIndex(id)));
         }; },
         Bang: function (ast) { return function (c, env) {
@@ -488,8 +541,7 @@ var TypeChecker;
                 var field = ast.exp[i];
                 var id = field.id;
                 var value = c.checkType(field.exp, env);
-                TypeChecker.assert(rec.add(id, value) ||
-                    ("Duplicated field '" + id + "' in '" + rec + "'"), field);
+                TypeChecker.assert(rec.add(id, value) || ERROR.DuplicatedField(id, rec), field);
             }
             return rec;
         }; },
@@ -524,19 +576,19 @@ var TypeChecker;
             var id = ast.name;
             var args = ast.args;
             var t_args = typedef.getType(id);
-            TypeChecker.assert(t_args !== undefined || ('Unknown typedef: ' + id), ast);
+            TypeChecker.assert(t_args !== undefined || ERROR.UnknownType(id), ast);
             TypeChecker.assert(t_args.length === args.length ||
-                ('Argument number mismatch: ' + args.length + ' vs ' + t_args.length), ast);
+                ERROR.ArgumentMismatch(args.length, t_args.length), ast);
             var arguments = new Array(args.length);
             for (var i = 0; i < args.length; ++i) {
                 var tmp = c.checkType(args[i], env);
                 if (t_args[i].type === TypeChecker.types.LocationVariable) {
                     TypeChecker.assert((tmp.type === TypeChecker.types.LocationVariable) ||
-                        ('Argument #' + i + ' is not LocationVariable: ' + tmp.type), args[i]);
+                        ERROR.ExpectingLocation(i, tmp), args[i]);
                 }
                 if (t_args[i].type === TypeChecker.types.TypeVariable) {
                     TypeChecker.assert((tmp.type !== TypeChecker.types.LocationVariable) ||
-                        ('Argument #' + i + ' cannot be a LocationVariable'), args[i]);
+                        ERROR.UnexpectedLocation(i), args[i]);
                 }
                 arguments[i] = tmp;
             }
