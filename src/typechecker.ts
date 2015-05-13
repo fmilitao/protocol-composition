@@ -509,6 +509,10 @@ module TypeChecker {
     type MatchType = AST.Type.MatchType<TypeEval>;
     type MatchExp = AST.Exp.MatchExp<TypeEval>;
 
+    //
+    // MATCH EXPRESSION
+    //
+
     const matchExp: MatchExp = {
 
         Program: ast => (c, _): Type => {
@@ -607,7 +611,6 @@ module TypeChecker {
 
             assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast));
 
-            //FIXME return type should depend on the kind of node: types -> type , construct -> some info.
             // returns an array or null
             return table;
         },
@@ -653,6 +656,11 @@ module TypeChecker {
             return new ForallType(variable, type, bound);
         },
     };
+
+
+    //
+    // MATCH TYPE
+    //
 
     const matchType: MatchType = {
 
@@ -812,35 +820,17 @@ module TypeChecker {
         },
 
         Tuple: ast => (c, env): Type => {
-            // Note that TUPLE cannot move to the auto-bang block
-            // because it may contain pure values that are not in the
-            // typing environment and therefore, its type is only bang
-            // or not as a consequence of each field's type and not just
-            // what it consumes from the environment
-            var rec = new TupleType();
-            var bang = true;
-
-            for (var i = 0; i < ast.exp.length; ++i) {
-                var value = c.checkType(ast.exp[i], env);
-                rec.add(value);
-                if (value.type !== types.BangType)
-                    bang = false;
+            const rec = new TupleType();
+            for(const exp of ast.exp ){
+                rec.add(c.checkType(exp, env));
             }
-
-            if (bang)
-                return new BangType(rec);
-
             return rec;
         },
 
         Tagged: ast => (c, env): Type => {
             var sum = new SumType();
-            var tag = ast.tag;
             var exp = c.checkType(ast.type, env);
-            sum.add(tag, exp);
-            if (exp.type === types.BangType) {
-                return new BangType(sum);
-            }
+            sum.add(ast.tag, exp);
             return sum;
         },
 

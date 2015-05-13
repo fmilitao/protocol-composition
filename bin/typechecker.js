@@ -8,7 +8,7 @@ var TypeChecker;
     function assert(msg) {
         if (typeof (msg) === 'boolean' && msg)
             return;
-        assertF('Type error', false, msg.message, msg.ast);
+        assertF('Type Error', false, msg.message, msg.ast);
     }
     TypeChecker.assert = assert;
     ;
@@ -562,25 +562,16 @@ var TypeChecker;
         }; },
         Tuple: function (ast) { return function (c, env) {
             var rec = new TypeChecker.TupleType();
-            var bang = true;
-            for (var i = 0; i < ast.exp.length; ++i) {
-                var value = c.checkType(ast.exp[i], env);
-                rec.add(value);
-                if (value.type !== TypeChecker.types.BangType)
-                    bang = false;
+            for (var _i = 0, _a = ast.exp; _i < _a.length; _i++) {
+                var exp = _a[_i];
+                rec.add(c.checkType(exp, env));
             }
-            if (bang)
-                return new TypeChecker.BangType(rec);
             return rec;
         }; },
         Tagged: function (ast) { return function (c, env) {
             var sum = new TypeChecker.SumType();
-            var tag = ast.tag;
             var exp = c.checkType(ast.type, env);
-            sum.add(tag, exp);
-            if (exp.type === TypeChecker.types.BangType) {
-                return new TypeChecker.BangType(sum);
-            }
+            sum.add(ast.tag, exp);
             return sum;
         }; },
         Top: function (ast) { return function (c, env) {
