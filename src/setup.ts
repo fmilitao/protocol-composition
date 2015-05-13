@@ -385,7 +385,7 @@ module Setup {
         // Handler of (Received) Events
         //
 
-        const handle = (function() {
+        const handler = (function() {
 
             // output panel & typing panel
             const o = $(_OUTPUT_);
@@ -529,36 +529,13 @@ module Setup {
         })();
 
         //
-        // Communication Object
+        // Communication with Worker
         //
 
-        const cc = (function() {
+        Comm.MainThread.setReceiver(handler);
 
-            let send: Function, resetWorker: Function;
-
-            Comm.MainThread.setReceiver(handle);
-            if (worker_enabled) {
-                [send, resetWorker] = Comm.MainThread.getSenderAndReset(WORKER_JS);
-            } else {
-                [send, resetWorker] = Comm.MainThread.getSenderAndReset(null);
-            }
-
-            return {
-                eval: function() {
-                    send('eval', editor.getSession().getValue());
-                },
-
-                checker: function(p) {
-                    send('checker', p);
-                },
-
-                reset: function() {
-                    resetWorker();
-                    this.eval();
-                }
-            };
-
-        })();
+        // js source code for worker, or null if local
+        const cc = Comm.MainThread.getSenderAndReset( worker_enabled ? WORKER_JS : null );
 
         // reset worker button.
         if (worker_enabled) {
@@ -566,10 +543,9 @@ module Setup {
                 "If code does not terminate, you may need to manually reset the worker thread.",
                 "RESET");
 
-            const button = $(_RESET_);
-
-            button.click(function(event) {
+            $(_RESET_).click(function(event) {
                 cc.reset();
+                cc.eval(editor.getSession().getValue());
                 editor.focus();
             });
         }
@@ -589,7 +565,7 @@ module Setup {
         function onChange(e) {
             // simply re-do everything, ignore diff.
             // more efficient incremental parser left as future work...
-            cc.eval();
+            cc.eval(editor.getSession().getValue() );
         };
 
         editor.selection.on("changeCursor", onCursorChange);

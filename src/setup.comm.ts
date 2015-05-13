@@ -22,6 +22,7 @@ module Comm {
             // proxy function that sends message
             public s: (string, ...any) => void
             ) {
+            // intentionally left blank
         }
 
         dispatch(kind: string, ...args: any[]) {
@@ -36,31 +37,44 @@ module Comm {
 
     export module WorkerThread {
 
+        export interface Sender {
+            printError: (string) => void;
+            clearAll: () => void;
+            errorHandler: (string) => void;
+            setStatus: (string) => void;
+            println: (string) => void;
+            updateAnnotations: (any) => void;
+            clearTyping: () => void;
+            printTyping: (string) => void;
+        };
 
-        class SenderObject extends Proxy {
+        class SenderObject extends Proxy implements Sender {
 
-            errorHandler(arg : String) {
-                super.dispatch('errorHandler',arg);
+            errorHandler(arg: string) {
+                super.dispatch('errorHandler', arg);
             }
             clearAll() {
                 super.dispatch('clearAll');
             }
-            setStatus(arg : String) {
-                super.dispatch('setStatus',arg);
+            setStatus(arg: string) {
+                super.dispatch('setStatus', arg);
             }
-            println(arg : String) {
-                super.dispatch('println',arg);
+            println(arg: string) {
+                super.dispatch('println', arg);
             }
-            updateAnnotations() {
+            updateAnnotations(any) { //FIXME this updateANnotations is different from the one used in setup.ts
                 super.dispatch('updateAnnotations');
             }
             clearTyping() {
                 super.dispatch('clearTyping');
             }
-            printTyping(arg : String) {
-                super.dispatch('printTyping',arg);
+            printTyping(arg: string) {
+                super.dispatch('printTyping', arg);
             }
-        }
+            printError(arg: string) {
+                super.dispatch('printError', arg);
+            }
+        };
 
         export interface Receiver {
             eval: (string) => void;
@@ -71,7 +85,7 @@ module Comm {
             worker_receiver = w;
         };
 
-        export function getSender() : SenderObject {
+        export function getSender(): SenderObject {
             if (isWorker) {
                 let send = function(k, msg) {
                     (<any>self).postMessage({ kind: k, data: msg });
@@ -103,11 +117,17 @@ module Comm {
 
     export module MainThread {
 
-        export function setReceiver(m) {
+        export interface Receiver extends WorkerThread.Sender {
+            log: (string) => void;
+            debug: (string) => void;
+            error: (string) => void;
+        };
+
+        export function setReceiver(m : Receiver) {
             main_receiver = m;
         };
 
-        export function getSenderAndReset(WORKER_JS: string): [Function, Function] {
+        function _getSenderAndReset(WORKER_JS: string): [Function, Function] {
             if (WORKER_JS !== null) {
 
                 let worker: Worker = null;
@@ -141,6 +161,7 @@ module Comm {
                 return [send, resetWorker];
 
             } else {
+                 // assume local
 
                 return [
                     // send function
@@ -152,10 +173,32 @@ module Comm {
                         }
                     },
                     // dummy empty reset function
-                    () => { }
+                    function(){}
                 ];
 
             }
+        };
+
+        export interface MainSenderObject extends WorkerThread.Receiver {
+            reset: () => void;
+        };
+
+        export function getSenderAndReset(WORKER_JS: string) : MainSenderObject {
+            const [send, resetWorker] = _getSenderAndReset(WORKER_JS);
+
+            return {
+                eval: function(src : string) {
+                    send('eval', src );
+                },
+
+                checker: function(p) {
+                    send('checker', p);
+                },
+
+                reset: function() {
+                    resetWorker();
+                }
+            };
         };
 
     };

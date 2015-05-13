@@ -38,6 +38,7 @@ var Comm;
     var main_receiver = null;
     var WorkerThread;
     (function (WorkerThread) {
+        ;
         var SenderObject = (function (_super) {
             __extends(SenderObject, _super);
             function SenderObject() {
@@ -55,7 +56,7 @@ var Comm;
             SenderObject.prototype.println = function (arg) {
                 _super.prototype.dispatch.call(this, 'println', arg);
             };
-            SenderObject.prototype.updateAnnotations = function () {
+            SenderObject.prototype.updateAnnotations = function (any) {
                 _super.prototype.dispatch.call(this, 'updateAnnotations');
             };
             SenderObject.prototype.clearTyping = function () {
@@ -64,8 +65,12 @@ var Comm;
             SenderObject.prototype.printTyping = function (arg) {
                 _super.prototype.dispatch.call(this, 'printTyping', arg);
             };
+            SenderObject.prototype.printError = function (arg) {
+                _super.prototype.dispatch.call(this, 'printError', arg);
+            };
             return SenderObject;
         })(Proxy);
+        ;
         ;
         function setReceiver(w) {
             worker_receiver = w;
@@ -105,12 +110,13 @@ var Comm;
     ;
     var MainThread;
     (function (MainThread) {
+        ;
         function setReceiver(m) {
             main_receiver = m;
         }
         MainThread.setReceiver = setReceiver;
         ;
-        function getSenderAndReset(WORKER_JS) {
+        function _getSenderAndReset(WORKER_JS) {
             if (WORKER_JS !== null) {
                 var worker = null;
                 var send;
@@ -149,6 +155,22 @@ var Comm;
                     function () { }
                 ];
             }
+        }
+        ;
+        ;
+        function getSenderAndReset(WORKER_JS) {
+            var _a = _getSenderAndReset(WORKER_JS), send = _a[0], resetWorker = _a[1];
+            return {
+                eval: function (src) {
+                    send('eval', src);
+                },
+                checker: function (p) {
+                    send('checker', p);
+                },
+                reset: function () {
+                    resetWorker();
+                }
+            };
         }
         MainThread.getSenderAndReset = getSenderAndReset;
         ;

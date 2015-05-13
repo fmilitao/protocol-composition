@@ -262,7 +262,7 @@ var Setup;
             });
         }
         ;
-        var handle = (function () {
+        var handler = (function () {
             var o = $(_OUTPUT_);
             var t = $(_TYPING_);
             function clearAll() {
@@ -370,34 +370,13 @@ var Setup;
                 }
             };
         })();
-        var cc = (function () {
-            var send, resetWorker;
-            Comm.MainThread.setReceiver(handle);
-            if (worker_enabled) {
-                _a = Comm.MainThread.getSenderAndReset(WORKER_JS), send = _a[0], resetWorker = _a[1];
-            }
-            else {
-                _b = Comm.MainThread.getSenderAndReset(null), send = _b[0], resetWorker = _b[1];
-            }
-            return {
-                eval: function () {
-                    send('eval', editor.getSession().getValue());
-                },
-                checker: function (p) {
-                    send('checker', p);
-                },
-                reset: function () {
-                    resetWorker();
-                    this.eval();
-                }
-            };
-            var _a, _b;
-        })();
+        Comm.MainThread.setReceiver(handler);
+        var cc = Comm.MainThread.getSenderAndReset(worker_enabled ? WORKER_JS : null);
         if (worker_enabled) {
             actionButton("Re-Start Worker: ", "reset", "If code does not terminate, you may need to manually reset the worker thread.", "RESET");
-            var button = $(_RESET_);
-            button.click(function (event) {
+            $(_RESET_).click(function (event) {
                 cc.reset();
+                cc.eval(editor.getSession().getValue());
                 editor.focus();
             });
         }
@@ -413,7 +392,7 @@ var Setup;
         }
         ;
         function onChange(e) {
-            cc.eval();
+            cc.eval(editor.getSession().getValue());
         }
         ;
         editor.selection.on("changeCursor", onCursorChange);
