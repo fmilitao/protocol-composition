@@ -342,6 +342,9 @@ var Setup;
                         last_line: last_line, last_col: last_col
                     });
                 },
+                clearAnnotations: function () {
+                    this.updateAnnotations(null);
+                },
                 updateAnnotations: function (res) {
                     var session = editor.getSession();
                     if (res !== null) {

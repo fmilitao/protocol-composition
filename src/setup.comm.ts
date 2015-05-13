@@ -44,7 +44,6 @@ module Comm {
             setStatus: (string) => void;
             println: (string) => void;
             clearAnnotations: () => void;
-            updateAnnotations: (any) => void;
             clearTyping: () => void;
             printTyping: (string) => void;
         };
@@ -65,9 +64,6 @@ module Comm {
             }
             clearAnnotations() {
                 super.dispatch('clearAnnotations');
-            }
-            updateAnnotations(any) { //FIXME this updateANnotations is different from the one used in setup.ts
-                super.dispatch('updateAnnotations');
             }
             clearTyping() {
                 super.dispatch('clearTyping');
@@ -125,6 +121,9 @@ module Comm {
             log: (string) => void;
             debug: (string) => void;
             error: (string) => void;
+
+            // this should only be used locally
+            updateAnnotations: (any) => void;
         };
 
         export function setReceiver(m : Receiver) {

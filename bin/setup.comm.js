@@ -56,8 +56,8 @@ var Comm;
             SenderObject.prototype.println = function (arg) {
                 _super.prototype.dispatch.call(this, 'println', arg);
             };
-            SenderObject.prototype.updateAnnotations = function (any) {
-                _super.prototype.dispatch.call(this, 'updateAnnotations');
+            SenderObject.prototype.clearAnnotations = function () {
+                _super.prototype.dispatch.call(this, 'clearAnnotations');
             };
             SenderObject.prototype.clearTyping = function () {
                 _super.prototype.dispatch.call(this, 'clearTyping');

@@ -106,7 +106,7 @@ module WebWorker {
 
                 // no errors!
                 send.setStatus( 'Checked in: ' + typeinfo.diff + ' ms');
-                send.updateAnnotations(null);
+                send.clearAnnotations();
 
             } catch (e) {
                 send.setStatus( 'Error!');
