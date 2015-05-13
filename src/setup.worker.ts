@@ -65,7 +65,7 @@ module WebWorker {
     // Send function
     //
 
-    var send = Comm.WorkerThread.getSender();
+    const send = Comm.WorkerThread.getSender();
 
     //
     // Receiver object
@@ -81,8 +81,8 @@ module WebWorker {
 
         function handleError(e) {
             if (e.stack)
-                (<any>console).error(e.stack.toString());
-            send('errorHandler', JSON.stringify(e));
+                console.error(e.stack.toString());
+            send.errorHandler(JSON.stringify(e));
         };
 
         return {
@@ -90,25 +90,26 @@ module WebWorker {
             try {
                 ast = null;
                 typeinfo = {};
-                send('clearAll', null);
-                send('setStatus', 'Type checking...');
+                send.clearAll();
+                send.setStatus('Type checking...');
 
                 ast = parse(data);
 
-                send('println', '<b>Type</b>: ' +
-                    toHTML(checker(ast, typeinfo)));
+                let res = checker(ast, typeinfo);
+                // ignores result...
+                send.println( '<b>Ok!</b>' );
 
                 if (!isWorker) {
                     // some debug information
-                    (<any>console).debug('checked in: ' + typeinfo.diff + ' ms');
+                    console.debug('checked in: ' + typeinfo.diff + ' ms');
                 }
 
                 // no errors!
-                send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
-                send('updateAnnotations', null);
+                send.setStatus( 'Checked in: ' + typeinfo.diff + ' ms');
+                send.updateAnnotations();
 
             } catch (e) {
-                send('setStatus', 'Error!');
+                send.setStatus( 'Error!');
                 handleError(e);
             }
         },
@@ -120,10 +121,10 @@ module WebWorker {
                     return;
                 else {
                     // resets typing output
-                    send('clearTyping', null);
+                    send.clearTyping();
                 }
 
-                send('printTyping', info(typeinfo, pos).toString());
+                send.printTyping( info(typeinfo, pos).toString() );
             } catch (e) {
                 handleError(e);
             }

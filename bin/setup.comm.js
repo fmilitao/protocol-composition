@@ -24,12 +24,12 @@ var Comm;
         function Proxy(s) {
             this.s = s;
         }
-        Proxy.prototype.dispatch = function (m) {
+        Proxy.prototype.dispatch = function (kind) {
             var args = [];
             for (var _i = 1; _i < arguments.length; _i++) {
                 args[_i - 1] = arguments[_i];
             }
-            this.s(m, args);
+            this.s(kind, args);
         };
         return Proxy;
     })();
@@ -43,26 +43,26 @@ var Comm;
             function SenderObject() {
                 _super.apply(this, arguments);
             }
-            SenderObject.prototype.errorHandler = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+            SenderObject.prototype.errorHandler = function (arg) {
+                _super.prototype.dispatch.call(this, 'errorHandler', arg);
             };
             SenderObject.prototype.clearAll = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+                _super.prototype.dispatch.call(this, 'clearAll');
             };
-            SenderObject.prototype.setStatus = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+            SenderObject.prototype.setStatus = function (arg) {
+                _super.prototype.dispatch.call(this, 'setStatus', arg);
             };
-            SenderObject.prototype.println = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+            SenderObject.prototype.println = function (arg) {
+                _super.prototype.dispatch.call(this, 'println', arg);
             };
             SenderObject.prototype.updateAnnotations = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+                _super.prototype.dispatch.call(this, 'updateAnnotations');
             };
             SenderObject.prototype.clearTyping = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+                _super.prototype.dispatch.call(this, 'clearTyping');
             };
-            SenderObject.prototype.printTyping = function () {
-                _super.prototype.dispatch.call(this, arguments.callee.name);
+            SenderObject.prototype.printTyping = function (arg) {
+                _super.prototype.dispatch.call(this, 'printTyping', arg);
             };
             return SenderObject;
         })(Proxy);
@@ -86,17 +86,17 @@ var Comm;
                         console.error(e);
                     }
                 }, false);
-                return send;
+                return new SenderObject(send);
             }
             else {
-                return function (kind, data) {
+                return new SenderObject(function (kind, data) {
                     try {
                         main_receiver[kind](data);
                     }
                     catch (e) {
                         console.error(e);
                     }
-                };
+                });
             }
         }
         WorkerThread.getSender = getSender;

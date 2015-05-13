@@ -428,9 +428,9 @@ module Setup {
 
             return {
 
-                log: console.log,
-                debug: console.debug,
-                error: console.error,
+                log: function(msg:string){ console.log(msg); },
+                debug: function(msg:string){ console.debug(msg);},
+                error: function(msg:string){ console.error(msg); },
 
                 //
                 // info

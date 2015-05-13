@@ -45,7 +45,7 @@ var WebWorker;
         function handleError(e) {
             if (e.stack)
                 console.error(e.stack.toString());
-            send('errorHandler', JSON.stringify(e));
+            send.errorHandler(JSON.stringify(e));
         }
         ;
         return {
@@ -53,19 +53,19 @@ var WebWorker;
                 try {
                     ast = null;
                     typeinfo = {};
-                    send('clearAll', null);
-                    send('setStatus', 'Type checking...');
+                    send.clearAll();
+                    send.setStatus('Type checking...');
                     ast = parse(data);
-                    send('println', '<b>Type</b>: ' +
-                        toHTML(checker(ast, typeinfo)));
+                    var res = checker(ast, typeinfo);
+                    send.println('<b>Ok!</b>');
                     if (!isWorker) {
                         console.debug('checked in: ' + typeinfo.diff + ' ms');
                     }
-                    send('setStatus', 'Checked in: ' + typeinfo.diff + ' ms');
-                    send('updateAnnotations', null);
+                    send.setStatus('Checked in: ' + typeinfo.diff + ' ms');
+                    send.updateAnnotations();
                 }
                 catch (e) {
-                    send('setStatus', 'Error!');
+                    send.setStatus('Error!');
                     handleError(e);
                 }
             },
@@ -74,9 +74,9 @@ var WebWorker;
                     if (ast === null || typeinfo === null)
                         return;
                     else {
-                        send('clearTyping', null);
+                        send.clearTyping();
                     }
-                    send('printTyping', info(typeinfo, pos).toString());
+                    send.printTyping(info(typeinfo, pos).toString());
                 }
                 catch (e) {
                     handleError(e);

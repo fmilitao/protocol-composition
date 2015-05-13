@@ -827,30 +827,6 @@ module TypeChecker {
 								},
 				};
 
-    /*
-
-    // this moved here just to avoid re building checker on each 'check'
-    // all these variable could be local variables of 'exports.check'
-    var type_info = [];
-    var inspector = function(ast, env, c) {
-        var info: any = { ast: ast, env: env };
-        type_info.push(info);
-
-        var res = c(ast, env);
-        info.res = res;
-
-        // this is a very hackish way to extract conformance table without
-        // breaking the inner return type signature!
-        if (ast.kind === AST.SHARE) {
-            // unit
-            return UnitType;
-        }
-
-        return res;
-    };
-    var checker = buildChecker(inspector);
-    */
-
     // only exports checking function.
     export function checker(ast: AST.Exp.Program, log?): any {
 
@@ -859,25 +835,6 @@ module TypeChecker {
         // timer start
         const start = new Date().getTime();
         const c: EvalContext = {
-
-            aux: function(ast, env) { //TODO!!!
-                /*
-                   var info: any = { ast: ast, env: env };
-                   type_info.push(info);
-
-                   var res = c(ast, env);
-                   info.res = res;
-
-                   // this is a very hackish way to extract conformance table without
-                   // breaking the inner return type signature!
-                   if (ast.kind === AST.SHARE) {
-                       // unit
-                       return UnitType;
-                   }
-
-                   return res;
-                   */
-            },
 
             // for expressions
             checkExp: function(ast: AST.Exp.Exp, env: Gamma){

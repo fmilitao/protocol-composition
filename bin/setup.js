@@ -297,9 +297,9 @@ var Setup;
             ;
             var marker = null;
             return {
-                log: console.log,
-                debug: console.debug,
-                error: console.error,
+                log: function (msg) { console.log(msg); },
+                debug: function (msg) { console.debug(msg); },
+                error: function (msg) { console.error(msg); },
                 printError: printError,
                 clearAll: clearAll,
                 println: println,

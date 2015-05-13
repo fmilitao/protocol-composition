@@ -552,8 +552,6 @@ var TypeChecker;
         var type_info = [];
         var start = new Date().getTime();
         var c = {
-            aux: function (ast, env) {
-            },
             checkExp: function (ast, env) {
                 return (ast.match(matchExp))(c, env);
             },

@@ -24,8 +24,8 @@ module Comm {
             ) {
         }
 
-        dispatch(m: string, ...args: any[]) {
-            this.s(m, args);
+        dispatch(kind: string, ...args: any[]) {
+            this.s(kind, args);
         }
 
         // arguments.callee.name
@@ -36,29 +36,29 @@ module Comm {
 
     export module WorkerThread {
 
-      // FIXME ... implements
+
         class SenderObject extends Proxy {
 
-            errorHandler() {
-                super.dispatch((<any>arguments).callee.name);
+            errorHandler(arg : String) {
+                super.dispatch('errorHandler',arg);
             }
             clearAll() {
-                super.dispatch((<any>arguments).callee.name);
+                super.dispatch('clearAll');
             }
-            setStatus() {
-                super.dispatch((<any>arguments).callee.name);
+            setStatus(arg : String) {
+                super.dispatch('setStatus',arg);
             }
-            println() {
-                super.dispatch((<any>arguments).callee.name);
+            println(arg : String) {
+                super.dispatch('println',arg);
             }
             updateAnnotations() {
-                super.dispatch((<any>arguments).callee.name);
+                super.dispatch('updateAnnotations');
             }
             clearTyping() {
-                super.dispatch((<any>arguments).callee.name);
+                super.dispatch('clearTyping');
             }
-            printTyping() {
-                super.dispatch((<any>arguments).callee.name);
+            printTyping(arg : String) {
+                super.dispatch('printTyping',arg);
             }
         }
 
@@ -71,7 +71,7 @@ module Comm {
             worker_receiver = w;
         };
 
-        export function getSender() {
+        export function getSender() : SenderObject {
             if (isWorker) {
                 let send = function(k, msg) {
                     (<any>self).postMessage({ kind: k, data: msg });
@@ -87,15 +87,15 @@ module Comm {
                     }
                 }, false);
 
-                return send;
+                return new SenderObject(send);
             } else {
-                return function(kind, data) {
+                return new SenderObject(function(kind, data) {
                     try {
                         main_receiver[kind](data);
                     } catch (e) {
                         console.error(e);
                     }
-                };
+                });
             }
         };
 
