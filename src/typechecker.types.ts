@@ -8,25 +8,6 @@
 
 module TypeChecker {
 
-	/*
-	 * WARNING - Usage Notes:
-	 * The following two function smake use of a side-effect when evaluating
-	 * an OR such that A || B will only compute B if A is NOT true. Therefore
-	 * the following functions make use of that assumption on their argument
-	 * such that if the argument is true, then the function does nothing, else
-	 * it throws the respective error with the argument which should be a string
-	 * so that it can be used as:
-	 *		assert( CONDITION || EXPENSIVE_ERROR_MSG , AST );
-	 * and not compute EXPENSIVE_ERROR_MSG unless CONDITION is false.
-	 */
-
-    // yields true or string on error
-    export function assert(msg: string|boolean, ast: AST.Exp.Exp|AST.Type.Type) {
-        // if a boolean and true
-        if (typeof (msg) === 'boolean' && msg)
-            return;
-        assertF('Type error', false, msg, ast);
-    };
 
     // these are program assertions and should never be seen by users
     // unless there is a major malfunction in the code (bug...)

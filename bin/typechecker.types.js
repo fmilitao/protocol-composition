@@ -8,13 +8,6 @@ var __extends = this.__extends || function (d, b) {
 };
 var TypeChecker;
 (function (TypeChecker) {
-    function assert(msg, ast) {
-        if (typeof (msg) === 'boolean' && msg)
-            return;
-        assertF('Type error', false, msg, ast);
-    }
-    TypeChecker.assert = assert;
-    ;
     function error(msg) {
         if (typeof (msg) === 'boolean' && msg)
             return;

@@ -7,49 +7,69 @@ module TypeChecker {
     const None = new NoneType();
     const Top = new TopType();
 
+    /**
+     * Use as:
+     *        assert( BOOLEAN_CONDITION || ERROR_MSG( STRING, AST ) );
+     * so as to only compute ERROR_MSG if BOOLEAN_CONDITION is false.
+     */
+    export function assert(msg: boolean|ERROR.Message) {
+        // if a boolean and true
+        if (typeof (msg) === 'boolean' && msg)
+            return;
+        // casts required due to dumb typescript...
+        assertF('Type Error', false, (<ERROR.Message>msg).message, (<ERROR.Message>msg).ast);
+    };
+
     // typechecker error messages
     module ERROR {
 
         type AST_TYPE = AST.Exp.Exp | AST.Type.Type;
 
-        export function UnknownType(id: string, ast?: AST_TYPE) { 
-            return 'Unknown type ' + id;
+        export class Message {
+            constructor(
+                public message: string,
+                public ast?: AST_TYPE) {
+            }
         };
 
-        export function UnknownLocation(id: string, ast?: AST_TYPE) {
-            return 'Unknown location variable ' + id;
+        export function UnknownType(id: string, ast: AST_TYPE) {
+            return new Message('Unknown type ' + id, ast);
         };
 
-        export function UnexpectedResult(got: any, expected: any, ast?: AST_TYPE) {
-            return 'Unexpected result, got ' + got + ' expecting ' + expected;
+        export function UnknownLocation(id: string, ast: AST_TYPE) {
+            return new Message('Unknown location variable ' + id, ast);
         };
 
-        export function DuplicatedTypedef(id: string, ast?: AST_TYPE) {
-            return 'Duplicated typedef: ' + id;
+        export function UnexpectedResult(got: any, expected: any, ast: AST_TYPE) {
+            return new Message('Unexpected result, got ' + got + ' expecting ' + expected, ast);
         };
 
-        export function DuplicatedTag(id: string, ast?: AST_TYPE) {
-            return 'Duplicated tag: ' + id;
+        export function DuplicatedTypedef(id: string, ast: AST_TYPE) {
+            return new Message('Duplicated typedef: ' + id, ast);
         };
 
-        export function InvalidSubstitution(t: Type, ast?: AST_TYPE) {
-            return 'Can only substitute a Type/LocationVariable, got:  ' + t.type;
+        export function DuplicatedTag(id: string, ast: AST_TYPE) {
+            return new Message('Duplicated tag: ' + id, ast);
         };
 
-        export function DuplicatedField(id: string,r: RecordType, ast?: AST_TYPE) {
-            return 'Duplicated field "'+id+'" in '+r;
+        export function InvalidSubstitution(t: Type, ast: AST_TYPE) {
+            return new Message('Can only substitute a Type/LocationVariable, got:  ' + t.type, ast);
         };
 
-        export function ArgumentMismatch(got:number, expected:number, ast?: AST_TYPE) {
-            return 'Argument number mismatch, got: ' + got + ' expecting ' + expected;
+        export function DuplicatedField(id: string, r: RecordType, ast: AST_TYPE) {
+            return new Message('Duplicated field "' + id + '" in ' + r, ast);
         };
 
-        export function ExpectingLocation(i:number, t: Type, ast?: AST_TYPE){
-            return 'Argument #'+i+' must be a LocationVariable, got: '+t.type;
+        export function ArgumentMismatch(got: number, expected: number, ast: AST_TYPE) {
+            return new Message('Argument number mismatch, got: ' + got + ' expecting ' + expected, ast);
         };
 
-        export function UnexpectedLocation(i: number, ast?: AST_TYPE) {
-            return 'Argument #' + i + ' cannot be a LocationVariable.';
+        export function ExpectingLocation(i: number, t: Type, ast: AST_TYPE) {
+            return new Message('Argument #' + i + ' must be a LocationVariable, got: ' + t.type, ast);
+        };
+
+        export function UnexpectedLocation(i: number, ast: AST_TYPE) {
+            return new Message('Argument #' + i + ' cannot be a LocationVariable.', ast);
         };
     }
 
@@ -522,8 +542,7 @@ module TypeChecker {
                         }
                     }
 
-                    assert(typedef.addType(it.id, args)
-                        || ERROR.DuplicatedTypedef(it.id), it);
+                    assert(typedef.addType(it.id, args) || ERROR.DuplicatedTypedef(it.id, it));
                 }
 
                 // 2nd pass: check that any recursion is well-formed (i.e. correct number and kind of argument)
@@ -543,7 +562,7 @@ module TypeChecker {
                     // map of type names to typechecker types
                     // FIXME needs to ensure that definition is not a locationvariable?
                     assert(typedef.addDefinition(type.id, c.checkType(type.type, tmp_env))
-                        || ERROR.DuplicatedTypedef(type.id), type);
+                        || ERROR.DuplicatedTypedef(type.id, type));
                 }
 
                 /*
@@ -586,7 +605,7 @@ module TypeChecker {
             var res = table !== null; // is valid if table not null
             // checkProtocolConformance(cap, left, right, ast);
 
-            assert(ast.value === res || ERROR.UnexpectedResult(res,ast.value), ast);
+            assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast));
 
             //FIXME return type should depend on the kind of node: types -> type , construct -> some info.
             // returns an array or null
@@ -598,7 +617,7 @@ module TypeChecker {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = subtype(left, right);
-            assert(s == ast.value || ERROR.UnexpectedResult(s,ast.value), ast);
+            assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
             return left;
         },
 
@@ -607,7 +626,7 @@ module TypeChecker {
             let left = c.checkType(ast.a, env);
             let right = c.checkType(ast.b, env);
             let s = equals(left, right);
-            assert(s == ast.value || ERROR.UnexpectedResult(s,ast.value), ast);
+            assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
             return left;
         },
 
@@ -643,7 +662,7 @@ module TypeChecker {
             const from = c.checkType(ast.from, env);
 
             assert((from.type === types.LocationVariable || from.type === types.TypeVariable)
-                || ERROR.InvalidSubstitution(from), ast.from);
+                || ERROR.InvalidSubstitution(from, ast.from));
 
             return substitution(type, from, to);
         },
@@ -698,7 +717,7 @@ module TypeChecker {
             const sum = new SumType();
             for (let t of ast.sums) {
                 assert(sum.add(t.tag, c.checkType(t.type, env)) ||
-                    ERROR.DuplicatedTag(t.tag), t);
+                    ERROR.DuplicatedTag(t.tag, t));
             }
             return sum;
         },
@@ -739,7 +758,7 @@ module TypeChecker {
             let loc = env.getTypeByName(id);
 
             assert((loc !== undefined && loc.type === types.LocationVariable) ||
-                ERROR.UnknownLocation(id), ast);
+                ERROR.UnknownLocation(id, ast));
 
             return new CapabilityType((<LocationVariable>loc).copy(env.getNameIndex(id)), c.checkType(ast.type, env));
         },
@@ -764,7 +783,7 @@ module TypeChecker {
             if (lookup_args !== undefined && lookup_args.length === 0)
                 return new DefinitionType(label, [], typedef);
 
-            assert( ERROR.UnknownType(label), ast);
+            assert(ERROR.UnknownType(label, ast));
         },
 
         Reference: ast => (c, env) => {
@@ -772,7 +791,7 @@ module TypeChecker {
             var loc = env.getTypeByName(id);
 
             assert((loc !== undefined && loc.type === types.LocationVariable) ||
-                ERROR.UnknownLocation(id), ast);
+                ERROR.UnknownLocation(id, ast));
 
             return new ReferenceType((<LocationVariable>loc).copy(env.getNameIndex(id)));
         },
@@ -787,7 +806,7 @@ module TypeChecker {
                 var field = ast.exp[i];
                 var id = field.id;
                 var value = c.checkType(field.exp, env);
-                assert(rec.add(id, value) || ERROR.DuplicatedField(id,rec), field);
+                assert(rec.add(id, value) || ERROR.DuplicatedField(id, rec, field));
             }
             return rec;
         },
@@ -835,9 +854,9 @@ module TypeChecker {
             var args = ast.args;
             var t_args = typedef.getType(id);
 
-            assert(t_args !== undefined || ERROR.UnknownType(id), ast);
+            assert(t_args !== undefined || ERROR.UnknownType(id, ast));
             assert(t_args.length === args.length ||
-                ERROR.ArgumentMismatch(args.length,t_args.length), ast);
+                ERROR.ArgumentMismatch(args.length, t_args.length, ast));
 
             var arguments = new Array(args.length);
             for (var i = 0; i < args.length; ++i) {
@@ -845,12 +864,12 @@ module TypeChecker {
 
                 if (t_args[i].type === types.LocationVariable) {
                     assert((tmp.type === types.LocationVariable) ||
-                        ERROR.ExpectingLocation(i,tmp), args[i]);
+                        ERROR.ExpectingLocation(i, tmp, args[i]));
                 }
 
                 if (t_args[i].type === types.TypeVariable) {
                     assert((tmp.type !== types.LocationVariable) ||
-                        ERROR.UnexpectedLocation(i), args[i]);
+                        ERROR.UnexpectedLocation(i, args[i]));
                 }
 
                 arguments[i] = tmp;
@@ -887,7 +906,7 @@ module TypeChecker {
                 return (ast.match(matchType))(c, env);
             },
         };
-//FIXME: Array = Array.concat(Array)
+        //FIXME: Array = Array.concat(Array)
         try {
             return c.checkExp(ast, null);
         } finally {
