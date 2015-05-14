@@ -294,7 +294,37 @@ var Setup;
                 refreshTypeListners();
             }
             ;
-            var marker = null;
+            var marker = [];
+            function updateAnnotations(a) {
+                var session = editor.getSession();
+                if (marker.length !== 0) {
+                    for (var _i = 0; _i < marker.length; _i++) {
+                        var m = marker[_i];
+                        session.removeMarker(m);
+                    }
+                    marker = [];
+                }
+                if (a === null) {
+                    session.clearAnnotations();
+                    return;
+                }
+                var aux = a.map(function (i) {
+                    return {
+                        row: i.line,
+                        column: i.col,
+                        text: i.reason,
+                        type: "error",
+                        lint: "error"
+                    };
+                });
+                session.setAnnotations(aux);
+                for (var _a = 0; _a < a.length; _a++) {
+                    var r = a[_a];
+                    var range = new Range(r.line, r.col, (r.last_line ? r.last_line : r.line), (r.last_col ? r.last_col : session.getLine(r.line).length));
+                    marker.push(session.addMarker(range, "underline_error", "text"));
+                }
+            }
+            ;
             return {
                 log: function (msg) { console.log(msg); },
                 debug: function (msg) { console.debug(msg); },
@@ -306,6 +336,7 @@ var Setup;
                 printTyping: printTyping,
                 errorHandler: function (e) {
                     e = JSON.parse(e);
+                    e = e[0];
                     var msg = "";
                     var line = 1;
                     var col = 0;
@@ -335,37 +366,14 @@ var Setup;
                         console.groupEnd();
                     }
                     printError(msg);
-                    this.updateAnnotations({
-                        reason: msg,
-                        line: line, col: col,
-                        last_line: last_line, last_col: last_col
-                    });
+                    updateAnnotations([{
+                            reason: msg,
+                            line: line, col: col,
+                            last_line: last_line, last_col: last_col
+                        }]);
                 },
                 clearAnnotations: function () {
-                    this.updateAnnotations(null);
-                },
-                updateAnnotations: function (res) {
-                    var session = editor.getSession();
-                    if (res !== null) {
-                        session.setAnnotations([{
-                                row: res.line,
-                                column: res.col,
-                                text: res.reason,
-                                type: "error",
-                                lint: "error"
-                            }
-                        ]);
-                        if (marker !== null) {
-                            session.removeMarker(marker);
-                        }
-                        var tmp = new Range(res.line, res.col, (res.last_line ? res.last_line : res.line), (res.last_col ? res.last_col : session.getLine(res.line).length));
-                        marker = session.addMarker(tmp, "underline_error", "text");
-                    }
-                    else {
-                        session.clearAnnotations();
-                        session.removeMarker(marker);
-                        marker = null;
-                    }
+                    updateAnnotations(null);
                 },
                 setStatus: function (txt) {
                     $('#status').text(txt);

@@ -7,6 +7,9 @@
 
 module Setup {
 
+    // this type is only useful further down, but typescript does not let me write it there
+    type Annotation = { line: number, col: number, reason: string, last_line: number, last_col: number };
+
     // HTML element IDs that need to be present in the .html file
     const INFO = "info";
     const EDITOR = "editor";
@@ -423,7 +426,46 @@ module Setup {
                 refreshTypeListners();
             };
 
-            let marker = null;
+            let marker = [];
+            function updateAnnotations(a: Annotation[]) {
+                const session = editor.getSession();
+
+                // marker stores the last hightlight mark or null if none exists
+                if (marker.length !== 0) {
+                    for(const m of marker ){
+                        session.removeMarker(m);
+                    }
+                    marker = [];
+                }
+                
+                // clears old annotations
+                if( a === null ){
+                    session.clearAnnotations();
+                    return;
+                }
+
+                const aux = a.map(
+                    function(i : Annotation) {
+                        return {
+                            row: i.line,
+                            column: i.col,
+                            text: i.reason,
+                            type: "error",
+                            lint: "error"
+                        };
+                    });
+                session.setAnnotations(aux);
+
+                for (const r of a) {
+                    // underline error text, full line if no last col/line given.
+                    const range = new Range(r.line, r.col,
+                        (r.last_line ? r.last_line : r.line),
+                        // highlight the whole line if no end given
+                        (r.last_col ? r.last_col : session.getLine(r.line).length));
+                    marker.push(session.addMarker(range, "underline_error", "text"));
+                }
+
+            };
 
             return {
 
@@ -448,7 +490,8 @@ module Setup {
 
                 // WARNING: assumes JSONed object
                 errorHandler: function(e) {
-                    e = JSON.parse(e); //deserialize object
+                    e = JSON.parse(e); //deserialize object FIXME: move elsewhere
+                    e = e[0]; // FIXME
                     let msg = "";
 
                     let line = 1;
@@ -484,48 +527,15 @@ module Setup {
                     }
                     printError(msg);
 
-                    this.updateAnnotations({
+                    updateAnnotations([{
                         reason: msg,
                         line: line, col: col,
                         last_line: last_line, last_col: last_col
-                    });
+                    }]);
                 },
 
                 clearAnnotations: function(){
-                    this.updateAnnotations(null);
-                },
-
-                updateAnnotations: function(res : { line : number, col: number, reason : string, last_line: number, last_col : number }) {
-                    const session = editor.getSession();
-
-                    if (res !== null) {
-                        session.setAnnotations([{
-                            row: res.line,
-                            column: res.col,
-                            text: res.reason,
-                            type: "error",
-                            lint: "error"
-                        } // TODO add other errors.
-                        ]);
-
-                        // marker stores the last hightlight mark or null if none exists
-                        if (marker !== null) {
-                            session.removeMarker(marker);
-                        }
-
-                        // underline error text, full line if no last col/line given.
-                        const tmp = new Range(res.line, res.col,
-                            (res.last_line ? res.last_line : res.line),
-                            // highlight the whole line if no end given
-                            (res.last_col ? res.last_col : session.getLine(res.line).length));
-                        marker = session.addMarker(tmp, "underline_error", "text");
-
-                    } else {
-                        // no error, clear old annotations
-                        session.clearAnnotations();
-                        session.removeMarker(marker);
-                        marker = null;
-                    }
+                    updateAnnotations(null);
                 },
 
                 setStatus: function(txt) {

@@ -10,7 +10,6 @@ var TypeChecker;
             return;
         throw new ErrorWrapper(msg.message, 'Type Error', msg.ast);
     }
-    TypeChecker.assert = assert;
     ;
     var ERROR;
     (function (ERROR) {

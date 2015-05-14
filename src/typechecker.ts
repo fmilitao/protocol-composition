@@ -12,7 +12,7 @@ module TypeChecker {
      *        assert( BOOLEAN_CONDITION || ERROR_MSG( STRING, AST ) );
      * so as to only compute ERROR_MSG if BOOLEAN_CONDITION is false.
      */
-    export function assert(msg: boolean|ERROR.Message) {
+    function assert(msg: boolean|ERROR.Message) {
         // if a boolean and true
         if (typeof (msg) === 'boolean' && msg)
             return;

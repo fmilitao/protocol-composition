@@ -71,7 +71,7 @@ var WebWorker;
                 }
                 catch (e) {
                     send.setStatus('Error!');
-                    handleError(e);
+                    handleError([e]);
                 }
             },
             checker: function (pos) {

@@ -16,6 +16,16 @@ if (typeof (importScripts) === 'undefined') {
 //
 module Comm {
 
+/*
+    function marshal(e){
+        return JSON.stringify(e);
+    };
+
+    function unmarshal(j){
+        return JSON.parse(j);
+    };
+*/
+
     class Proxy {
 
         constructor(
@@ -121,9 +131,6 @@ module Comm {
             log: (string) => void;
             debug: (string) => void;
             error: (string) => void;
-
-            // this should only be used locally
-            updateAnnotations: (any) => void;
         };
 
         export function setReceiver(m : Receiver) {
@@ -145,7 +152,7 @@ module Comm {
 
                     worker = new Worker(WORKER_JS);
                     worker.addEventListener('message', function(e) {
-                        var m = e.data;
+                        const m = e.data;
                         try {
                             main_receiver[m.kind](m.data);
                         } catch (er) {
