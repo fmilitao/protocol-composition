@@ -20,25 +20,42 @@ if (typeof (importScripts) === 'undefined') {
 }
 var Comm;
 (function (Comm) {
+    function marshal(e) {
+        console.log('>>' + e);
+        return JSON.stringify(e);
+    }
+    ;
+    function unmarshal(j) {
+        console.log('<<' + j);
+        return JSON.parse(j);
+    }
+    ;
+    function TRY(f) {
+        try {
+            f();
+        }
+        catch (e) {
+            console.error(e);
+        }
+    }
     var Proxy = (function () {
         function Proxy(s) {
             this.s = s;
         }
-        Proxy.prototype.dispatch = function (kind) {
-            var args = [];
-            for (var _i = 1; _i < arguments.length; _i++) {
-                args[_i - 1] = arguments[_i];
-            }
+        Proxy.prototype.dispatch = function (kind, args) {
             this.s(kind, args);
         };
         return Proxy;
     })();
     ;
-    var worker_receiver = null;
-    var main_receiver = null;
+    ;
+    ;
+    ;
+    ;
+    var local_worker = null;
+    var local_editor = null;
     var WorkerThread;
     (function (WorkerThread) {
-        ;
         var SenderObject = (function (_super) {
             __extends(SenderObject, _super);
             function SenderObject() {
@@ -71,95 +88,70 @@ var Comm;
             return SenderObject;
         })(Proxy);
         ;
-        ;
-        function setReceiver(w) {
-            worker_receiver = w;
+        function setLocalWorker(w) {
+            local_worker = w;
         }
-        WorkerThread.setReceiver = setReceiver;
+        WorkerThread.setLocalWorker = setLocalWorker;
         ;
-        function getSender() {
+        function getRemoteEditor() {
             if (isWorker) {
-                var send = function (k, msg) {
-                    self.postMessage({ kind: k, data: msg });
-                };
                 self.addEventListener('message', function (e) {
-                    var m = e.data;
-                    try {
-                        WebWorker.receiver[m.kind](m.data);
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
+                    TRY(function () { return local_worker[e.data.kind](e.data.data); });
                 }, false);
-                return new SenderObject(send);
+                return new SenderObject(function (k, msg) {
+                    TRY(function () { return self.postMessage({ kind: k, data: msg }); });
+                });
             }
             else {
-                return new SenderObject(function (kind, data) {
-                    try {
-                        main_receiver[kind](data);
-                    }
-                    catch (e) {
-                        console.error(e);
-                    }
+                return new SenderObject(function (kind, msg) {
+                    TRY(function () { return local_editor[kind](msg); });
                 });
             }
         }
-        WorkerThread.getSender = getSender;
+        WorkerThread.getRemoteEditor = getRemoteEditor;
         ;
     })(WorkerThread = Comm.WorkerThread || (Comm.WorkerThread = {}));
     ;
     var MainThread;
     (function (MainThread) {
-        ;
-        function setReceiver(m) {
-            main_receiver = m;
+        function setLocalEditor(m) {
+            local_editor = m;
         }
-        MainThread.setReceiver = setReceiver;
+        MainThread.setLocalEditor = setLocalEditor;
         ;
-        function _getSenderAndReset(WORKER_JS) {
+        function aux(WORKER_JS) {
             if (WORKER_JS !== null) {
                 var worker = null;
-                var send;
                 function resetWorker() {
                     if (worker !== null) {
                         worker.terminate();
                     }
                     worker = new Worker(WORKER_JS);
                     worker.addEventListener('message', function (e) {
-                        var m = e.data;
-                        try {
-                            main_receiver[m.kind](m.data);
-                        }
-                        catch (er) {
-                            console.error(er);
-                        }
+                        TRY(function () { return local_editor[e.data.kind](e.data.data); });
                     }, false);
-                    send = function (k, msg) {
-                        worker.postMessage({ kind: k, data: msg });
-                    };
                 }
                 ;
                 resetWorker();
-                return [send, resetWorker];
+                return [
+                    function (k, msg) {
+                        TRY(function () { return worker.postMessage({ kind: k, data: msg }); });
+                    },
+                    resetWorker
+                ];
             }
             else {
                 return [
                     function (kind, data) {
-                        try {
-                            worker_receiver[kind](data);
-                        }
-                        catch (e) {
-                            console.error(e);
-                        }
+                        TRY(function () { return local_worker[kind](data); });
                     },
                     function () { }
                 ];
             }
         }
         ;
-        ;
-        function getSenderAndReset(WORKER_JS) {
-            var _a = _getSenderAndReset(WORKER_JS), send = _a[0], resetWorker = _a[1];
+        function getRemoteWorker(WORKER_JS) {
+            var _a = aux(WORKER_JS), send = _a[0], resetWorker = _a[1];
             return {
                 eval: function (src) {
                     send('eval', src);
@@ -172,7 +164,7 @@ var Comm;
                 }
             };
         }
-        MainThread.getSenderAndReset = getSenderAndReset;
+        MainThread.getRemoteWorker = getRemoteWorker;
         ;
     })(MainThread = Comm.MainThread || (Comm.MainThread = {}));
     ;

@@ -39,8 +39,8 @@ var WebWorker;
         }
     }
     ;
-    var send = Comm.WorkerThread.getSender();
-    WebWorker.receiver = (function () {
+    var send = Comm.WorkerThread.getRemoteEditor();
+    var receiver = (function () {
         var ast = null;
         function handleError(e) {
             if (e.stack)
@@ -78,9 +78,7 @@ var WebWorker;
             }
         };
     })();
-    if (!isWorker) {
-        Comm.WorkerThread.setReceiver(WebWorker.receiver);
-    }
+    Comm.WorkerThread.setLocalWorker(receiver);
     var printAST = function (ast, r) {
         var res = '';
         if (r !== undefined && r !== null) {

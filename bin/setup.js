@@ -379,8 +379,8 @@ var Setup;
                 }
             };
         })();
-        Comm.MainThread.setReceiver(handler);
-        var cc = Comm.MainThread.getSenderAndReset(worker_enabled ? WORKER_JS : null);
+        Comm.MainThread.setLocalEditor(handler);
+        var cc = Comm.MainThread.getRemoteWorker(worker_enabled ? WORKER_JS : null);
         if (worker_enabled) {
             actionButton("Re-Start Worker: ", "reset", "If code does not terminate, you may need to manually reset the worker thread.", "RESET");
             $(_RESET_).click(function (event) {

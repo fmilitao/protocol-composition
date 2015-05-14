@@ -490,7 +490,7 @@ module Setup {
 
                 // WARNING: assumes JSONed object
                 errorHandler: function(er) {
-                    let e : ErrorWrapper = JSON.parse(er); //deserialize object FIXME: move elsewhere
+                    let e: ErrorWrapper = JSON.parse(er); //deserialize object FIXME: move elsewhere
                     let msg = "";
 
                     let line = 1;
@@ -547,10 +547,10 @@ module Setup {
         // Communication with Worker
         //
 
-        Comm.MainThread.setReceiver(handler);
+        Comm.MainThread.setLocalEditor(handler);
 
         // js source code for worker, or null if local
-        const cc = Comm.MainThread.getSenderAndReset( worker_enabled ? WORKER_JS : null );
+        const cc = Comm.MainThread.getRemoteWorker( worker_enabled ? WORKER_JS : null );
 
         // reset worker button.
         if (worker_enabled) {

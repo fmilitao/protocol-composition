@@ -65,13 +65,13 @@ module WebWorker {
     // Send function
     //
 
-    const send = Comm.WorkerThread.getSender();
+    const send = Comm.WorkerThread.getRemoteEditor();
 
     //
     // Receiver object
     //
 
-    export const receiver: Comm.WorkerThread.Receiver = (function() {
+    const receiver: Comm.WorkerLocal = (function() {
 
         // local state between calls
         // to avoid reparsing, the 'ast' is made available
@@ -82,6 +82,7 @@ module WebWorker {
             if (e.stack)
                 console.error(e.stack.toString());
             send.errorHandler(JSON.stringify(e)); //FIXME move elsewhere
+            //send.errorHandler(<any>e); //FIXME move elsewhere
         };
 
         return {
@@ -139,9 +140,7 @@ module WebWorker {
 
     })();
 
-    if (!isWorker) {
-        Comm.WorkerThread.setReceiver(receiver);
-    }
+    Comm.WorkerThread.setLocalWorker(receiver);
 
 
     //

@@ -16,49 +16,74 @@ if (typeof (importScripts) === 'undefined') {
 //
 module Comm {
 
-/*
     function marshal(e){
+        console.log('>>'+e);
         return JSON.stringify(e);
     };
 
     function unmarshal(j){
+        console.log('<<'+j);
         return JSON.parse(j);
     };
-*/
+
+    function TRY( f : () => void ){
+        try{
+            f();
+        }catch(e){
+            console.error(e);
+        }
+    }
 
     class Proxy {
 
         constructor(
             // proxy function that sends message
-            public s: (string, ...any) => void
+            public s: (string, any?) => void
             ) {
             // intentionally left blank
         }
 
-        dispatch(kind: string, ...args: any[]) {
+        dispatch(kind: string, args?: any) {
             this.s(kind, args);
         }
 
         // arguments.callee.name
     };
 
-    let worker_receiver = null;
-    let main_receiver = null;
+
+    export interface WorkerLocal {
+        eval: (string) => void;
+        checker: (any) => void;
+    };
+
+    export interface WorkerRemote extends WorkerLocal {
+        reset: () => void; // fork controlling the remote Worker
+    };
+
+    export interface EditorRemote {
+        printError: (string) => void;
+        clearAll: () => void;
+        errorHandler: (string) => void;
+        setStatus: (string) => void;
+        println: (string) => void;
+        clearAnnotations: () => void;
+        clearTyping: () => void;
+        printTyping: (string) => void;
+    };
+
+    export interface EditorLocal extends EditorRemote {
+        log: (string) => void;
+        debug: (string) => void;
+        error: (string) => void;
+    };
+
+    // for proxying when local communication is used.
+    let local_worker : WorkerLocal = null;
+    let local_editor : EditorLocal = null;
 
     export module WorkerThread {
 
-        export interface Sender {
-            printError: (string) => void;
-            clearAll: () => void;
-            errorHandler: (string) => void;
-            setStatus: (string) => void;
-            println: (string) => void;
-            clearAnnotations: () => void;
-            clearTyping: () => void;
-            printTyping: (string) => void;
-        };
-
-        class SenderObject extends Proxy implements Sender {
+        class SenderObject extends Proxy implements EditorRemote {
 
             errorHandler(arg: string) {
                 super.dispatch('errorHandler', arg);
@@ -86,39 +111,25 @@ module Comm {
             }
         };
 
-        export interface Receiver {
-            eval: (string) => void;
-            checker: (any) => void;
+
+        export function setLocalWorker(w: WorkerLocal) {
+            local_worker = w;
         };
 
-        export function setReceiver(w: Receiver) {
-            worker_receiver = w;
-        };
-
-        export function getSender(): SenderObject {
+        export function getRemoteEditor(): EditorRemote {
             if (isWorker) {
-                let send = function(k, msg) {
-                    (<any>self).postMessage({ kind: k, data: msg });
-                };
-
+                // if remote communication
                 self.addEventListener('message', function(e) {
-                    const m = e.data;
-                    try {
-                        // this is the 'receiver' var from below
-                        WebWorker.receiver[m.kind](m.data);
-                    } catch (e) {
-                        console.error(e);
-                    }
+                    TRY(() => local_worker[e.data.kind](e.data.data));
                 }, false);
 
-                return new SenderObject(send);
+                return new SenderObject(function(k, msg) {
+                    TRY(() => (<any>self).postMessage({ kind: k, data: msg }));
+                });
             } else {
-                return new SenderObject(function(kind, data) {
-                    try {
-                        main_receiver[kind](data);
-                    } catch (e) {
-                        console.error(e);
-                    }
+                // if local communication
+                return new SenderObject(function(kind, msg) {
+                    TRY(() => local_editor[kind](msg));
                 });
             }
         };
@@ -126,23 +137,17 @@ module Comm {
     };
 
     export module MainThread {
-
-        export interface Receiver extends WorkerThread.Sender {
-            log: (string) => void;
-            debug: (string) => void;
-            error: (string) => void;
+    
+        export function setLocalEditor(m : EditorLocal) {
+            local_editor = m;
         };
 
-        export function setReceiver(m : Receiver) {
-            main_receiver = m;
-        };
-
-        function _getSenderAndReset(WORKER_JS: string): [Function, Function] {
+        function aux(WORKER_JS: string): [Function, Function] {
             if (WORKER_JS !== null) {
-
+                // if remote communication
+                
                 let worker: Worker = null;
-                let send: Function;
-
+                
                 // launch worker
                 function resetWorker() {
                     if (worker !== null) {
@@ -152,35 +157,27 @@ module Comm {
 
                     worker = new Worker(WORKER_JS);
                     worker.addEventListener('message', function(e) {
-                        const m = e.data;
-                        try {
-                            main_receiver[m.kind](m.data);
-                        } catch (er) {
-                            console.error(er);
-                        }
+                        TRY( ()=> local_editor[e.data.kind]( e.data.data ) );
                     }, false);
-
-                    // generic send, tags k as 'kind' and msg as 'data'
-                    send = function(k, msg) {
-                        worker.postMessage({ kind: k, data: msg });
-                    };
                 };
 
                 resetWorker();
 
-                return [send, resetWorker];
+                return [
+                    // generic send, tags k as 'kind' and msg as 'data'
+                    function(k, msg) {
+                        TRY(() => worker.postMessage({ kind: k, data: msg }));
+                    },
+                    resetWorker
+                    ];
 
             } else {
-                 // assume local
+                 // if local communication
 
                 return [
                     // send function
                     function(kind, data) {
-                        try {
-                            worker_receiver[kind](data);
-                        } catch (e) {
-                            console.error(e);
-                        }
+                        TRY(() => local_worker[kind](data));
                     },
                     // dummy empty reset function
                     function(){}
@@ -189,12 +186,8 @@ module Comm {
             }
         };
 
-        export interface MainSenderObject extends WorkerThread.Receiver {
-            reset: () => void;
-        };
-
-        export function getSenderAndReset(WORKER_JS: string) : MainSenderObject {
-            const [send, resetWorker] = _getSenderAndReset(WORKER_JS);
+        export function getRemoteWorker(WORKER_JS: string) : WorkerRemote {
+            const [send, resetWorker] = aux(WORKER_JS);
 
             return {
                 eval: function(src : string) {
