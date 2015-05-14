@@ -17,7 +17,7 @@ module TypeChecker {
         if (typeof (msg) === 'boolean' && msg)
             return;
         // casts required due to dumb typescript...
-        assertF('Type Error', false, (<ERROR.Message>msg).message, (<ERROR.Message>msg).ast);
+        throw new ErrorWrapper((<ERROR.Message>msg).message, 'Type Error', (<ERROR.Message>msg).ast);
     };
 
     // typechecker error messages
@@ -498,16 +498,20 @@ module TypeChecker {
         return [s, a, b];
     };
 
+    //
+    // TYPES
+    //
 
     type TypeEval = (c: EvalContext, env: Gamma) => Type;
+    type ExpEval = (c: EvalContext, env: Gamma) => any[];
 
     interface EvalContext {
-        checkExp(ast: AST.Exp.Exp, env: Gamma): Type;
+        checkExp(ast: AST.Exp.Exp, env: Gamma): any[];
         checkType(ast: AST.Type.Type, env: Gamma): Type;
     };
 
     type MatchType = AST.Type.MatchType<TypeEval>;
-    type MatchExp = AST.Exp.MatchExp<TypeEval>;
+    type MatchExp = AST.Exp.MatchExp<ExpEval>;
 
     //
     // MATCH EXPRESSION
@@ -515,7 +519,7 @@ module TypeChecker {
 
     const matchExp: MatchExp = {
 
-        Program: ast => (c, _): Type => {
+        Program: ast => (c, _) => {
 
             // ignores old environment, this is a new program!
 
@@ -587,13 +591,13 @@ module TypeChecker {
 
             }
 
+            let tmp = [];
             // check main expressions:
             for (let exp of ast.exp) {
-                c.checkExp(exp, env);
+                tmp = tmp.concat(c.checkExp(exp, env));
             }
 
-            // FIXME: bogus return...
-            return None;
+            return tmp;
         },
 
         Share: ast => (c, env) => {
@@ -611,8 +615,7 @@ module TypeChecker {
 
             assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast));
 
-            // returns an array or null
-            return table;
+            return [[ast, table]];
         },
 
         // subtyping of types
@@ -621,7 +624,7 @@ module TypeChecker {
             var right = c.checkType(ast.b, env);
             var s = subtype(left, right);
             assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return left;
+            return [];
         },
 
         // equality of types
@@ -630,7 +633,7 @@ module TypeChecker {
             let right = c.checkType(ast.b, env);
             let s = equals(left, right);
             assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return left;
+            return [];
         },
 
         Forall: ast => (c, env) => {
@@ -651,9 +654,8 @@ module TypeChecker {
             }
 
             let e = env.newScope(id, variable, bound);
-            let type = c.checkExp(ast.exp, e);
 
-            return new ForallType(variable, type, bound);
+            return c.checkExp(ast.exp, e)
         },
     };
 
@@ -821,7 +823,7 @@ module TypeChecker {
 
         Tuple: ast => (c, env): Type => {
             const rec = new TupleType();
-            for(const exp of ast.exp ){
+            for (const exp of ast.exp) {
                 rec.add(c.checkType(exp, env));
             }
             return rec;
@@ -845,8 +847,7 @@ module TypeChecker {
             var t_args = typedef.getType(id);
 
             assert(t_args !== undefined || ERROR.UnknownType(id, ast));
-            assert(t_args.length === args.length ||
-                ERROR.ArgumentMismatch(args.length, t_args.length, ast));
+            assert(t_args.length === args.length || ERROR.ArgumentMismatch(args.length, t_args.length, ast));
 
             var arguments = new Array(args.length);
             for (var i = 0; i < args.length; ++i) {
@@ -880,10 +881,15 @@ module TypeChecker {
     };
 
     // only exports checking function.
-    export function checker(ast: AST.Exp.Program, log?): any {
+    export function checker(ast: AST.Exp.Program): { time: number, info: any[] } {
 
-        // timer start
-        const start = new Date().getTime();
+        const log = { 
+            // timer start
+            time: (new Date().getTime()),
+            // info place_holder
+            info: []
+        };
+
         const c: EvalContext = {
 
             // for expressions
@@ -896,14 +902,13 @@ module TypeChecker {
                 return (ast.match(matchType))(c, env);
             },
         };
-        //FIXME: Array = Array.concat(Array)
+
         try {
-            return c.checkExp(ast, null);
+            log.info = c.checkExp(ast, null);
+            return log;
         } finally {
-            if (log) {
-                log.diff = (new Date().getTime()) - start;
-                log.info = []; //FIXME: remove
-            }
+            // because exceptions may be thrown
+            log.time = (new Date().getTime()) - log.time;
         }
 
     };

@@ -42,7 +42,6 @@ var WebWorker;
     var send = Comm.WorkerThread.getSender();
     WebWorker.receiver = (function () {
         var ast = null;
-        var typeinfo = null;
         function handleError(e) {
             if (e.stack)
                 console.error(e.stack.toString());
@@ -53,16 +52,21 @@ var WebWorker;
             eval: function (data) {
                 try {
                     ast = null;
-                    typeinfo = {};
                     send.clearAll();
                     send.setStatus('Type checking...');
                     ast = parse(data);
-                    var res = checker(ast, typeinfo);
-                    send.println('<b>Ok!</b>');
-                    if (!isWorker) {
-                        console.debug('checked in: ' + typeinfo.diff + ' ms');
+                    var typeinfo = checker(ast);
+                    var pr = '';
+                    for (var _i = 0, _a = typeinfo.info; _i < _a.length; _i++) {
+                        var _b = _a[_i], ast_1 = _b[0], table = _b[1];
+                        pr += printConformance(table);
+                        pr += '<br/>';
                     }
-                    send.setStatus('Checked in: ' + typeinfo.diff + ' ms');
+                    send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
+                    if (!isWorker) {
+                        console.debug('checked in: ' + typeinfo.time + ' ms');
+                    }
+                    send.setStatus('Checked in: ' + typeinfo.time + ' ms');
                     send.clearAnnotations();
                 }
                 catch (e) {
@@ -71,18 +75,8 @@ var WebWorker;
                 }
             },
             checker: function (pos) {
-                try {
-                    if (ast === null || typeinfo === null)
-                        return;
-                    else {
-                        send.clearTyping();
-                    }
-                    send.printTyping(info(typeinfo, pos).toString());
-                }
-                catch (e) {
-                    handleError(e);
-                }
-            } };
+            }
+        };
     })();
     if (!isWorker) {
         Comm.WorkerThread.setReceiver(WebWorker.receiver);
@@ -237,11 +231,12 @@ var WebWorker;
                 return wq(wQ("!") + wq(_toHTML(t.inner())));
             }
             case types.SumType: {
+                var tags = t.tags();
                 var res = [];
-                t.tags().forEach(function (value, key) {
-                    res.push(wQ('<span class="type_tag">' + key + '</span>#') +
-                        wq(_toHTML(value)));
-                });
+                for (var i in tags) {
+                    res.push(wQ('<span class="type_tag">' + tags[i] + '</span>#') +
+                        wq(_toHTML(t.inner(tags[i]))));
+                }
                 return wq(res.join('+'));
             }
             case types.StarType: {
@@ -291,16 +286,16 @@ var WebWorker;
                 return wq(wq(toHTML(t.left())) + wQ(' :: ') + wq(toHTML(t.right())));
             case types.RecordType: {
                 var res = [];
-                t.fields().forEach(function (value, index) {
-                    res.push('<span class="type_field">' + index + '</span>: ' + toHTML(value));
-                });
+                var fields = t.fields();
+                for (var i in fields)
+                    res.push('<span class="type_field">' + i + '</span>: ' + toHTML(fields[i]));
                 return "[" + res.join(', ') + "]";
             }
             case types.TupleType: {
                 var res = [];
                 var values = t.inner();
-                for (var i_1 in values)
-                    res.push(toHTML(values[i_1]));
+                for (var i in values)
+                    res.push(toHTML(values[i]));
                 return "[" + res.join(', ') + "]";
             }
             case types.LocationVariable:
@@ -319,8 +314,8 @@ var WebWorker;
                     return wq(t_def);
                 var res = [];
                 var as = t.args();
-                for (var i_2 in as)
-                    res.push(toHTML(as[i_2]));
+                for (var i in as)
+                    res.push(toHTML(as[i]));
                 return wq(t_def + wQ('[') + res.join(', ') + wQ(']'));
             }
             case types.RelyType:

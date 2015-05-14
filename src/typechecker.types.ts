@@ -3,7 +3,6 @@
 
 /**
  * INCLUDE 'parser.js' (contains required global variables):
- *  assertf : for error handling/flagging.
  */
 
 module TypeChecker {
@@ -16,7 +15,7 @@ module TypeChecker {
         if (typeof (msg) === 'boolean' && msg)
             return;
         // else it should be a string with the type error
-        assertF('Bug Alert', false, msg, undefined); // undefined blamed 'ast'
+        throw new ErrorWrapper(<string>msg, 'BUG ALERT');
     };
 
     //

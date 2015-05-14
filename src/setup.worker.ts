@@ -18,7 +18,7 @@ const IMPORTS = [
 if (isWorker) {
 
     // convenient debug
-    var console : Console = function(): any {
+    var console: Console = function(): any {
         function aux(k, arg) {
             const tmp = [];
             for (var i = 0; i < arg.length; ++i)
@@ -71,13 +71,12 @@ module WebWorker {
     // Receiver object
     //
 
-    export const receiver : Comm.WorkerThread.Receiver = (function() {
+    export const receiver: Comm.WorkerThread.Receiver = (function() {
 
         // local state between calls
         // to avoid reparsing, the 'ast' is made available
         // to the other listener functions through this var.
         let ast: AST.Exp.Program = null;
-        let typeinfo = null; //FIXME: deprecated!
 
         function handleError(e) {
             if (e.stack)
@@ -86,49 +85,57 @@ module WebWorker {
         };
 
         return {
-          eval : function(data : string) {
-            try {
-                ast = null;
-                typeinfo = {};
-                send.clearAll();
-                send.setStatus('Type checking...');
+            eval: function(data: string) {
+                try {
+                    ast = null;
+                    send.clearAll();
+                    send.setStatus('Type checking...');
 
-                ast = parse(data);
+                    ast = parse(data);
 
-                let res = checker(ast, typeinfo);
-                // ignores result...
-                send.println( '<b>Ok!</b>' );
+                    let typeinfo = checker(ast);
+                    let pr = '';
+                    for (let [ast,table] of typeinfo.info) {
+                        pr += printConformance(table);
+                        pr += '<br/>';
+                    }
 
-                if (!isWorker) {
-                    // some debug information
-                    console.debug('checked in: ' + typeinfo.diff + ' ms');
+                    // ignores result...
+                    send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
+
+                    if (!isWorker) {
+                        // some debug information
+                        console.debug('checked in: ' + typeinfo.time + ' ms');
+                    }
+
+                    // no errors!
+                    send.setStatus('Checked in: ' + typeinfo.time + ' ms');
+                    send.clearAnnotations();
+
+                } catch (e) {
+                    send.setStatus('Error!');
+                    handleError(e);
                 }
+            },
 
-                // no errors!
-                send.setStatus( 'Checked in: ' + typeinfo.diff + ' ms');
-                send.clearAnnotations();
+            checker: function(pos) {
+                /*
+                try {
+                    // only if parsed correctly
+                    if (ast === null || typeinfo === null)
+                        return;
+                    else {
+                        // resets typing output
+                        send.clearTyping();
+                    }
 
-            } catch (e) {
-                send.setStatus( 'Error!');
-                handleError(e);
-            }
-        },
-
-        checker : function(pos) {
-            try {
-                // only if parsed correctly
-                if (ast === null || typeinfo === null)
-                    return;
-                else {
-                    // resets typing output
-                    send.clearTyping();
+                    send.printTyping(info(typeinfo, pos).toString());
+                } catch (e) {
+                    handleError(e);
                 }
-
-                send.printTyping( info(typeinfo, pos).toString() );
-            } catch (e) {
-                handleError(e);
+                */
             }
-        } };
+        };
 
     })();
 
@@ -349,34 +356,34 @@ module WebWorker {
                 return wq(wQ("!") + wq(_toHTML(t.inner())));
             }
             case types.SumType: {
+                var tags = t.tags();
                 var res = [];
-                t.tags().forEach(
-                    function(value, key) {
-                        res.push(
-                            wQ('<span class="type_tag">' + key + '</span>#') +
-                            wq(_toHTML(value))
-                            );
-                    });
+                for (let i in tags) {
+                    res.push(
+                        wQ('<span class="type_tag">' + tags[i] + '</span>#') +
+                        wq(_toHTML(t.inner(tags[i])))
+                        );
+                }
                 return wq(res.join('+'));
             }
             case types.StarType: {
                 var inners = t.inner();
                 var res = [];
-                for (var i = 0; i < inners.length; ++i)
+                for (let i = 0; i < inners.length; ++i)
                     res.push(wq(_toHTML(inners[i])));
                 return wq(res.join(wQ(' * ')));
             }
             case types.IntersectionType: {
                 var inners = t.inner();
                 var res = [];
-                for (var i = 0; i < inners.length; ++i)
+                for (let i = 0; i < inners.length; ++i)
                     res.push(wq(_toHTML(inners[i])));
                 return wq(res.join(wQ(' &amp; ')));
             }
             case types.AlternativeType: {
                 var inners = t.inner();
                 var res = [];
-                for (var i = 0; i < inners.length; ++i)
+                for (let i = 0; i < inners.length; ++i)
                     res.push(wq(_toHTML(inners[i])));
                 return wq(res.join(wQ(' &#8853; ')));
             }
@@ -408,9 +415,9 @@ module WebWorker {
                 return wq(wq(toHTML(t.left())) + wQ(' :: ') + wq(toHTML(t.right())));
             case types.RecordType: {
                 var res = [];
-                t.fields().forEach(function(value, index) {
-                    res.push('<span class="type_field">' + index + '</span>: ' + toHTML(value));
-                });
+                var fields = t.fields();
+                for (let i in fields)
+                    res.push('<span class="type_field">' + i + '</span>: ' + toHTML(fields[i]));
                 return "[" + res.join(', ') + "]";
             }
             case types.TupleType: {

@@ -11,7 +11,7 @@ var TypeChecker;
     function error(msg) {
         if (typeof (msg) === 'boolean' && msg)
             return;
-        assertF('Bug Alert', false, msg, undefined);
+        throw new ErrorWrapper(msg, 'BUG ALERT');
     }
     TypeChecker.error = error;
     ;

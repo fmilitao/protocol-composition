@@ -8,7 +8,7 @@ var TypeChecker;
     function assert(msg) {
         if (typeof (msg) === 'boolean' && msg)
             return;
-        assertF('Type Error', false, msg.message, msg.ast);
+        throw new ErrorWrapper(msg.message, 'Type Error', msg.ast);
     }
     TypeChecker.assert = assert;
     ;
@@ -393,11 +393,12 @@ var TypeChecker;
                         || ERROR.DuplicatedTypedef(type.id, type));
                 }
             }
+            var tmp = [];
             for (var _i = 0, _a = ast.exp; _i < _a.length; _i++) {
                 var exp = _a[_i];
-                c.checkExp(exp, env);
+                tmp = tmp.concat(c.checkExp(exp, env));
             }
-            return None;
+            return tmp;
         }; },
         Share: function (ast) { return function (c, env) {
             var cap = c.checkType(ast.type, env);
@@ -406,21 +407,21 @@ var TypeChecker;
             var table = checkConformance(env, cap, left, right);
             var res = table !== null;
             assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast));
-            return table;
+            return [[ast, table]];
         }; },
         Subtype: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = TypeChecker.subtype(left, right);
             assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return left;
+            return [];
         }; },
         Equals: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = TypeChecker.equals(left, right);
             assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return left;
+            return [];
         }; },
         Forall: function (ast) { return function (c, env) {
             var id = ast.id;
@@ -437,8 +438,7 @@ var TypeChecker;
                 bound = null;
             }
             var e = env.newScope(id, variable, bound);
-            var type = c.checkExp(ast.exp, e);
-            return new TypeChecker.ForallType(variable, type, bound);
+            return c.checkExp(ast.exp, e);
         }; },
     };
     var matchType = {
@@ -583,8 +583,7 @@ var TypeChecker;
             var args = ast.args;
             var t_args = typedef.getType(id);
             assert(t_args !== undefined || ERROR.UnknownType(id, ast));
-            assert(t_args.length === args.length ||
-                ERROR.ArgumentMismatch(args.length, t_args.length, ast));
+            assert(t_args.length === args.length || ERROR.ArgumentMismatch(args.length, t_args.length, ast));
             var arguments = new Array(args.length);
             for (var i = 0; i < args.length; ++i) {
                 var tmp = c.checkType(args[i], env);
@@ -607,8 +606,11 @@ var TypeChecker;
             return None;
         }; },
     };
-    function checker(ast, log) {
-        var start = new Date().getTime();
+    function checker(ast) {
+        var log = {
+            time: (new Date().getTime()),
+            info: []
+        };
         var c = {
             checkExp: function (ast, env) {
                 return (ast.match(matchExp))(c, env);
@@ -618,13 +620,11 @@ var TypeChecker;
             },
         };
         try {
-            return c.checkExp(ast, null);
+            log.info = c.checkExp(ast, null);
+            return log;
         }
         finally {
-            if (log) {
-                log.diff = (new Date().getTime()) - start;
-                log.info = [];
-            }
+            log.time = (new Date().getTime()) - log.time;
         }
     }
     TypeChecker.checker = checker;

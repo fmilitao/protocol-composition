@@ -1,43 +1,26 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
 
-// FIXME: this is actually a class??
-function ErrorWrapper(msg, kind, ast, debug, stack?) {
-    this.message = msg;
-    this.kind = kind;
-    this.ast = ast;
-    this.debug = debug;
-    this.stack = stack || (<any>(new Error())).stack.toString();
-    this.toString = () => { kind + ': ' + msg; };
-};
 
-// convenient assert function to wrap errors
-function assertF(kind, f, msg, ast) {
-    let result = undefined;
-    let error = true; // because exceptions
-    let debug = null;
-    try {
-        if (f instanceof Function) {
-            result = f();
-            error = result === undefined;
-        }
-        else {
-            result = f;
-            error = result === undefined || result === false;
-        }
-    } catch (e) {
-        // if it is already one of our own exceptions don't wrap
-        if (e instanceof ErrorWrapper)
-            throw e;
-        if (e instanceof RangeError)
-            msg = e.message;
-        debug = (e || e.message);
+class ErrorWrapper {
+
+    constructor(
+        public message : string,
+        public kind : string,
+        public ast? : any,
+        public debug? : any,
+        public stack? : any
+        ) {
+
+        // if not stack included, add current stack.
+        this.stack = stack || (<any>(new Error())).stack.toString();
     }
-    if (error)
-        throw new ErrorWrapper(msg, kind, ast, debug);
-    return result;
-};
 
+    toString(){
+        return this.kind + ': ' + this.message;
+    }
+
+};
 
 module AST {
 

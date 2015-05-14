@@ -6,40 +6,20 @@ var __extends = this.__extends || function (d, b) {
     __.prototype = b.prototype;
     d.prototype = new __();
 };
-function ErrorWrapper(msg, kind, ast, debug, stack) {
-    this.message = msg;
-    this.kind = kind;
-    this.ast = ast;
-    this.debug = debug;
-    this.stack = stack || (new Error()).stack.toString();
-    this.toString = function () { kind + ': ' + msg; };
-}
-;
-function assertF(kind, f, msg, ast) {
-    var result = undefined;
-    var error = true;
-    var debug = null;
-    try {
-        if (f instanceof Function) {
-            result = f();
-            error = result === undefined;
-        }
-        else {
-            result = f;
-            error = result === undefined || result === false;
-        }
+var ErrorWrapper = (function () {
+    function ErrorWrapper(message, kind, ast, debug, stack) {
+        this.message = message;
+        this.kind = kind;
+        this.ast = ast;
+        this.debug = debug;
+        this.stack = stack;
+        this.stack = stack || (new Error()).stack.toString();
     }
-    catch (e) {
-        if (e instanceof ErrorWrapper)
-            throw e;
-        if (e instanceof RangeError)
-            msg = e.message;
-        debug = (e || e.message);
-    }
-    if (error)
-        throw new ErrorWrapper(msg, kind, ast, debug);
-    return result;
-}
+    ErrorWrapper.prototype.toString = function () {
+        return this.kind + ': ' + this.message;
+    };
+    return ErrorWrapper;
+})();
 ;
 var AST;
 (function (AST) {
