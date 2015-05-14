@@ -78,10 +78,9 @@ module WebWorker {
         // to the other listener functions through this var.
         let ast: AST.Exp.Program = null;
 
-        function handleError(e) {
+        function handleError(e : ErrorWrapper) {
             if (e.stack)
                 console.error(e.stack.toString());
-            //send.errorHandler(e);
             send.errorHandler(JSON.stringify(e)); //FIXME move elsewhere
         };
 
@@ -115,7 +114,7 @@ module WebWorker {
 
                 } catch (e) {
                     send.setStatus('Error!');
-                    handleError([e]); // FIXME
+                    handleError(e); // FIXME
                 }
             },
 
