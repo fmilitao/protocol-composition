@@ -334,8 +334,7 @@ var Setup;
                 println: println,
                 clearTyping: clearTyping,
                 printTyping: printTyping,
-                errorHandler: function (er) {
-                    var e = JSON.parse(er);
+                errorHandler: function (e) {
                     var msg = "";
                     var line = 1;
                     var col = 0;

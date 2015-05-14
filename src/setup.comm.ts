@@ -16,20 +16,18 @@ if (typeof (importScripts) === 'undefined') {
 //
 module Comm {
 
-    function marshal(e){
-        console.log('>>'+e);
+    function marshal(e) {
         return JSON.stringify(e);
     };
 
-    function unmarshal(j){
-        console.log('<<'+j);
+    function unmarshal(j) {
         return JSON.parse(j);
     };
 
-    function TRY( f : () => void ){
-        try{
+    function TRY(f: () => void) {
+        try {
             f();
-        }catch(e){
+        } catch (e) {
             console.error(e);
         }
     }
@@ -63,7 +61,7 @@ module Comm {
     export interface EditorRemote {
         printError: (string) => void;
         clearAll: () => void;
-        errorHandler: (string) => void;
+        errorHandler: (ErrorWrapper) => void;
         setStatus: (string) => void;
         println: (string) => void;
         clearAnnotations: () => void;
@@ -78,15 +76,15 @@ module Comm {
     };
 
     // for proxying when local communication is used.
-    let local_worker : WorkerLocal = null;
-    let local_editor : EditorLocal = null;
+    let local_worker: WorkerLocal = null;
+    let local_editor: EditorLocal = null;
 
     export module WorkerThread {
 
         class SenderObject extends Proxy implements EditorRemote {
 
-            errorHandler(arg: string) {
-                super.dispatch('errorHandler', arg);
+            errorHandler(er: ErrorWrapper) {
+                super.dispatch('errorHandler', er);
             }
             clearAll() {
                 super.dispatch('clearAll');
@@ -124,7 +122,13 @@ module Comm {
                 }, false);
 
                 return new SenderObject(function(k, msg) {
-                    TRY(() => (<any>self).postMessage({ kind: k, data: msg }));
+                    TRY(function() {
+                        (<any>self).postMessage({
+                            kind: k,
+                            // only errorHandler needs to (un)marshal argument
+                            data: k === 'errorHandler' ? marshal(msg) : msg
+                        });
+                    });
                 });
             } else {
                 // if local communication
@@ -137,8 +141,8 @@ module Comm {
     };
 
     export module MainThread {
-    
-        export function setLocalEditor(m : EditorLocal) {
+
+        export function setLocalEditor(m: EditorLocal) {
             local_editor = m;
         };
 
@@ -157,7 +161,12 @@ module Comm {
 
                     worker = new Worker(WORKER_JS);
                     worker.addEventListener('message', function(e) {
-                        TRY( ()=> local_editor[e.data.kind]( e.data.data ) );
+                        TRY(function() {
+                            local_editor[e.data.kind](
+                                // only errorHandler needs to (un)marshal argument
+                                e.data.kind === 'errorHandler' ?
+                                    unmarshal(e.data.data) : e.data.data);
+                        });
                     }, false);
                 };
 
@@ -169,10 +178,10 @@ module Comm {
                         TRY(() => worker.postMessage({ kind: k, data: msg }));
                     },
                     resetWorker
-                    ];
+                ];
 
             } else {
-                 // if local communication
+                // if local communication
 
                 return [
                     // send function
@@ -180,18 +189,18 @@ module Comm {
                         TRY(() => local_worker[kind](data));
                     },
                     // dummy empty reset function
-                    function(){}
+                    function() { }
                 ];
 
             }
         };
 
-        export function getRemoteWorker(WORKER_JS: string) : WorkerRemote {
+        export function getRemoteWorker(WORKER_JS: string): WorkerRemote {
             const [send, resetWorker] = aux(WORKER_JS);
 
             return {
-                eval: function(src : string) {
-                    send('eval', src );
+                eval: function(src: string) {
+                    send('eval', src);
                 },
 
                 checker: function(p) {

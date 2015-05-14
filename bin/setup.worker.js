@@ -45,7 +45,7 @@ var WebWorker;
         function handleError(e) {
             if (e.stack)
                 console.error(e.stack.toString());
-            send.errorHandler(JSON.stringify(e));
+            send.errorHandler(e);
         }
         ;
         return {

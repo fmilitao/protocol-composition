@@ -81,8 +81,7 @@ module WebWorker {
         function handleError(e : ErrorWrapper) {
             if (e.stack)
                 console.error(e.stack.toString());
-            send.errorHandler(JSON.stringify(e)); //FIXME move elsewhere
-            //send.errorHandler(<any>e); //FIXME move elsewhere
+            send.errorHandler(e);
         };
 
         return {

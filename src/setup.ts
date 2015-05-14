@@ -489,8 +489,7 @@ module Setup {
                 //
 
                 // WARNING: assumes JSONed object
-                errorHandler: function(er) {
-                    let e: ErrorWrapper = JSON.parse(er); //deserialize object FIXME: move elsewhere
+                errorHandler: function(e : ErrorWrapper) {
                     let msg = "";
 
                     let line = 1;
