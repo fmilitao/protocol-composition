@@ -335,41 +335,45 @@ var Setup;
                 clearTyping: clearTyping,
                 printTyping: printTyping,
                 errorHandler: function (es) {
-                    var e = es[0];
-                    var msg = "";
-                    var line = 1;
-                    var col = 0;
-                    var last_line = 1;
-                    var last_col = -1;
-                    var groupName = null;
-                    if (e.hasOwnProperty('ast') && e.ast !== undefined) {
-                        line = e.ast.line;
-                        col = e.ast.col;
-                        last_line = e.ast.last_line;
-                        last_col = e.ast.last_col;
-                        msg += e.kind + " on line " + (e.ast.line + 1) +
-                            (e.ast.col ? (":" + e.ast.col) : '') + " - ";
-                    }
-                    else {
-                        groupName = 'Exception:';
-                    }
-                    msg += (e.message || e) + ".";
-                    if (DEBUG_MSG || groupName != null) {
-                        if (groupName == null) {
-                            console.groupCollapsed('[Debug-Info] ' + msg);
+                    var annotations = [];
+                    for (var _i = 0; _i < es.length; _i++) {
+                        var e = es[_i];
+                        var msg = "";
+                        var line = 1;
+                        var col = 0;
+                        var last_line = 1;
+                        var last_col = -1;
+                        var groupName = null;
+                        if (e.hasOwnProperty('ast') && e.ast !== undefined) {
+                            line = e.ast.line;
+                            col = e.ast.col;
+                            last_line = e.ast.last_line;
+                            last_col = e.ast.last_col;
+                            msg += e.kind + " on line " + (e.ast.line + 1) +
+                                (e.ast.col ? (":" + e.ast.col) : '') + " - ";
                         }
                         else {
-                            console.group(groupName);
+                            groupName = 'Exception:';
                         }
-                        console.debug("Extra Info: " + e.debug + "\nStack Trace:\n" + e.stack);
-                        console.groupEnd();
-                    }
-                    printError(msg);
-                    updateAnnotations([{
+                        msg += (e.message || e) + ".";
+                        if (DEBUG_MSG || groupName != null) {
+                            if (groupName == null) {
+                                console.groupCollapsed('[Debug-Info] ' + msg);
+                            }
+                            else {
+                                console.group(groupName);
+                            }
+                            console.debug("Extra Info: " + e.debug + "\nStack Trace:\n" + e.stack);
+                            console.groupEnd();
+                        }
+                        printError(msg);
+                        annotations.push({
                             reason: msg,
                             line: line, col: col,
                             last_line: last_line, last_col: last_col
-                        }]);
+                        });
+                    }
+                    updateAnnotations(annotations);
                 },
                 clearAnnotations: function () {
                     updateAnnotations(null);

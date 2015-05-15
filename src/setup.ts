@@ -490,47 +490,53 @@ module Setup {
 
                 // WARNING: assumes JSONed object
                 errorHandler: function(es : ErrorWrapper[]) {
-                    let e = es[0];
-                    let msg = "";
+                    let annotations : Annotation[] = [];
+                    for (const e of es) {
+                        let msg = "";
 
-                    let line = 1;
-                    let col = 0;
-                    let last_line = 1;
-                    let last_col = -1;
+                        let line = 1;
+                        let col = 0;
+                        let last_line = 1;
+                        let last_col = -1;
 
-                    let groupName = null;
+                        let groupName = null;
 
-                    if (e.hasOwnProperty('ast') && e.ast !== undefined) {
-                        line = e.ast.line;
-                        col = e.ast.col;
-                        last_line = e.ast.last_line;
-                        last_col = e.ast.last_col;
+                        if (e.hasOwnProperty('ast') && e.ast !== undefined) {
+                            line = e.ast.line;
+                            col = e.ast.col;
+                            last_line = e.ast.last_line;
+                            last_col = e.ast.last_col;
 
-                        // for printing we must +1 to properly match ACE's counting
-                        msg += e.kind + " on line " + (e.ast.line + 1) +
-                        (e.ast.col ? (":" + e.ast.col) : '') + " - ";
-                    } else {
-                        groupName = 'Exception:';
-                    }
-                    msg += (e.message || e) + ".";
-
-                    if (DEBUG_MSG || groupName != null) {
-                        if (groupName == null) {
-                            console.groupCollapsed('[Debug-Info] ' + msg);
+                            // for printing we must +1 to properly match ACE's counting
+                            msg += e.kind + " on line " + (e.ast.line + 1) +
+                            (e.ast.col ? (":" + e.ast.col) : '') + " - ";
                         } else {
-                            // real error, show expanded
-                            console.group(groupName);
+                            groupName = 'Exception:';
                         }
-                        console.debug("Extra Info: " + e.debug + "\nStack Trace:\n" + e.stack);
-                        console.groupEnd();
-                    }
-                    printError(msg);
+                        msg += (e.message || e) + ".";
 
-                    updateAnnotations([{
-                        reason: msg,
-                        line: line, col: col,
-                        last_line: last_line, last_col: last_col
-                    }]);
+                        if (DEBUG_MSG || groupName != null) {
+                            if (groupName == null) {
+                                console.groupCollapsed('[Debug-Info] ' + msg);
+                            } else {
+                                // real error, show expanded
+                                console.group(groupName);
+                            }
+                            console.debug("Extra Info: " + e.debug + "\nStack Trace:\n" + e.stack);
+                            console.groupEnd();
+                        }
+                        // this actually adds up the error messages
+                        printError(msg);
+
+                        // must group annotations before showing.
+                        annotations.push({
+                            reason: msg,
+                            line: line, col: col,
+                            last_line: last_line, last_col: last_col
+                        });
+                    }
+
+                    updateAnnotations(annotations);
                 },
 
                 clearAnnotations: function(){
