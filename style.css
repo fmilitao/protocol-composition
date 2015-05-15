@@ -117,10 +117,11 @@ select {
 
 .status{
 	float: left;
+	font-weight: bold;
 	vertical-align:bottom;
 	/* remember to match exbuttong: */
 	padding: 2px 2px;
-	margin: 1px 0 1px 0;
+	margin: 1px 2px 1px 2px;
 }
 
 #editor {

@@ -43,7 +43,7 @@ var WebWorker;
     var receiver = (function () {
         var ast = null;
         function handleErrors(es) {
-            send.setStatus('Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
+            send.setStatus('✘ Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
             es.forEach(function (e) { return console.error(e.stack.toString()); });
             send.errorHandler(es);
         }
@@ -71,7 +71,7 @@ var WebWorker;
                     if (!isWorker) {
                         console.debug('Checked in: ' + i.time + ' ms');
                     }
-                    send.setStatus('Checked in: ' + i.time + ' ms');
+                    send.setStatus('✓ Checked in: ' + i.time + ' ms');
                     send.clearAnnotations();
                 }
                 catch (e) {
