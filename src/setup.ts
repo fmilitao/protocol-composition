@@ -402,7 +402,6 @@ module Setup {
             // aux functions
             function clearAll() {
                 o.html('');
-                clearTyping();
             };
 
             function printError(error) {
@@ -414,25 +413,6 @@ module Setup {
                 let old = o.html();
                 o.html((old ? old + '\n' : '') + val.toString());
                 refreshTypeListners();
-            };
-
-            function clearTyping() {
-                printTyping('');
-            };
-
-            function printTyping(val) {
-                /*
-                if (val == '') {
-                    t.hide();
-                } else {
-                    if (typeinfo)
-                        t.show();
-                }
-                t.html(val.toString());
-
-                // for boxing types
-                refreshTypeListners();
-                */
             };
 
             let marker = [];
@@ -490,8 +470,6 @@ module Setup {
                 printError: printError,
                 clearAll: clearAll,
                 println: println,
-                clearTyping: clearTyping,
-                printTyping: printTyping,
 
                 //
                 // error handling & annotaitons

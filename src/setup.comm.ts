@@ -69,8 +69,6 @@ module Comm {
         
         println(msg : string);
         clearAnnotations();
-        clearTyping();
-        printTyping(msg : string);
     };
 
     export interface EditorLocal extends EditorRemote {
@@ -107,12 +105,6 @@ module Comm {
             }
             clearAnnotations() {
                 super.dispatch('clearAnnotations');
-            }
-            clearTyping() {
-                super.dispatch('clearTyping');
-            }
-            printTyping(arg: string) {
-                super.dispatch('printTyping', arg);
             }
             printError(arg: string) {
                 super.dispatch('printError', arg);

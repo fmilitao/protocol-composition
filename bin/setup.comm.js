@@ -80,12 +80,6 @@ var Comm;
             SenderObject.prototype.clearAnnotations = function () {
                 _super.prototype.dispatch.call(this, 'clearAnnotations');
             };
-            SenderObject.prototype.clearTyping = function () {
-                _super.prototype.dispatch.call(this, 'clearTyping');
-            };
-            SenderObject.prototype.printTyping = function (arg) {
-                _super.prototype.dispatch.call(this, 'printTyping', arg);
-            };
             SenderObject.prototype.printError = function (arg) {
                 _super.prototype.dispatch.call(this, 'printError', arg);
             };

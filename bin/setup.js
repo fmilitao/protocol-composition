@@ -207,7 +207,6 @@ var Setup;
             var ER_CLASS = 'error_status';
             function clearAll() {
                 o.html('');
-                clearTyping();
             }
             ;
             function printError(error) {
@@ -218,13 +217,6 @@ var Setup;
                 var old = o.html();
                 o.html((old ? old + '\n' : '') + val.toString());
                 refreshTypeListners();
-            }
-            ;
-            function clearTyping() {
-                printTyping('');
-            }
-            ;
-            function printTyping(val) {
             }
             ;
             var marker = [];
@@ -265,8 +257,6 @@ var Setup;
                 printError: printError,
                 clearAll: clearAll,
                 println: println,
-                clearTyping: clearTyping,
-                printTyping: printTyping,
                 errorHandler: function (es) {
                     var annotations = [];
                     for (var _i = 0; _i < es.length; _i++) {
