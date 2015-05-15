@@ -158,6 +158,7 @@ select {
 	box-sizing: border-box;
 	-webkit-box-sizing: border-box;
   	-moz-box-sizing: border-box;
+  	opacity: 0.7;
 	font-family: monospace;
 	font-size: 10pt;
 	background: #EEEEEE;
@@ -169,6 +170,11 @@ select {
 	/*border-top-color: gray;
 	border-top-style: solid;
 	border-top-width: 1px;*/
+	z-index: 10000; /* is this enough? */
+}
+
+#output:hover{
+	opacity: 1;
 }
 
 #statusbar{
@@ -176,13 +182,13 @@ select {
 	-webkit-box-sizing: border-box;
   	-moz-box-sizing: border-box;
 	position: absolute;
+	border-top: 1px solid #6e6e6e;
 	background-color: #dcdcdc;
 	/* border-style: solid;
 	border-color: gray; */
 	font-size: 9pt;
 	font-family: sans-serif;
-	z-index: 1000;
-	/* z-index: 10000; /* is this enough? */
+	/* z-index: 10000; */
 }
 
 #typing{

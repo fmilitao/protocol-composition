@@ -15,8 +15,6 @@ var Setup;
     var _OUTPUT_ = "#" + OUTPUT;
     var _EXAMPLES_ = "#" + EXAMPLES;
     var _CURSOR_ = "#cursor-position";
-    var _TYPEINFO_ = '#' + TYPEINFO;
-    var _TYPING_ = '#' + TYPING;
     var _RESET_ = '#reset';
     var IMPORTS = [
         'lib/jison.js',
@@ -31,7 +29,6 @@ var Setup;
     var worker_enabled = true;
     var default_file = 'examples/welcome.txt';
     var default_style = 'ace/theme/mono_industrial';
-    var TYPE_INFO_WIDTHS = null;
     var parameters = document.URL.split('?');
     if (parameters.length > 1) {
         parameters = parameters[1].split('&');
@@ -69,36 +66,24 @@ var Setup;
         // the values are just empirically picked to look OK in chrome.
         var w = window.innerWidth;
         var h = window.innerHeight;
-        var controls_height = 20;
-        var console_height = 80;
-        var split = 270;
-        var bar = 35;
+        var controls_h = 20;
+        var console_h = 80;
+        var top_bar = 35;
         var info = document.getElementById(INFO);
         info.style.width = w + "px";
-        info.style.height = bar + "px";
+        info.style.height = top_bar + "px";
         var editor = document.getElementById(EDITOR);
         editor.style.width = (w) + "px";
-        editor.style.height = (h - console_height - controls_height - bar) + "px";
-        editor.style.top = bar + "px";
+        editor.style.height = (h - controls_h - top_bar) + "px";
+        editor.style.top = top_bar + "px";
         var controls = document.getElementById(STATUS_BAR);
         controls.style.width = w + "px";
-        controls.style.height = (controls_height) + "px";
-        controls.style.top = (h - controls_height) + "px";
+        controls.style.height = (controls_h) + "px";
+        controls.style.top = (h - controls_h) + "px";
         var output = document.getElementById(OUTPUT);
         output.style.width = w + "px";
-        output.style.height = (console_height) + "px";
-        output.style.top = (h - console_height - controls_height) + "px";
-        var typing = document.getElementById(TYPING);
-        typing.style.top = bar + "px";
-        typing.style.left = (w / 2) + "px";
-        typing.style.maxHeight = h + "px";
-        typing.style.maxWidth = (w / 2) + "px";
-        typing.style.opacity = '0.8';
-        TYPE_INFO_WIDTHS = {
-            maxWidth: w, defaultWidth: w / 2,
-            minLeft: 0, defaultLeft: (w / 2),
-            maxOpacity: 1, defaultOpacity: 0.8
-        };
+        output.style.height = (console_h) + "px";
+        output.style.top = (h - console_h - controls_h) + "px";
     }
     ;
     function onReady() {
@@ -196,52 +181,6 @@ var Setup;
             ctr.prepend("<div class='action'>" + label + "<button class='exbuttong' id=" + id +
                 " title=" + title + "><b>" + text + "</b></button></div>");
         };
-        var typeinfo = true;
-        (function () {
-            actionButton("Typing Information: ", "typeinfo", "Type information is shown when the cursor is placed at the beginning of a construct.", "SHOW");
-            var button = $(_TYPEINFO_);
-            var panel = $(_TYPING_);
-            button.click(function (event) {
-                typeinfo = !typeinfo;
-                if (typeinfo) {
-                    button.html("<b>SHOW</b>");
-                    if (panel.html() != '')
-                        panel.show();
-                }
-                else {
-                    button.html("HIDE");
-                    panel.fadeOut('fast');
-                }
-                editor.focus();
-            });
-            panel.click(function () {
-                panel.fadeOut('fast');
-                editor.focus();
-            });
-            var t;
-            panel.hover(function () {
-                window.clearTimeout(t);
-                t = window.setTimeout(function () {
-                    panel.animate({
-                        "left": TYPE_INFO_WIDTHS.minLeft,
-                        "max-width": TYPE_INFO_WIDTHS.maxWidth,
-                        "width": TYPE_INFO_WIDTHS.maxWidth,
-                        "opacity": TYPE_INFO_WIDTHS.maxOpacity
-                    }, 'fast');
-                }, 500);
-            });
-            panel.mouseleave(function () {
-                window.clearTimeout(t);
-                t = window.setTimeout(function () {
-                    panel.animate({
-                        "left": TYPE_INFO_WIDTHS.defaultLeft,
-                        "max-width": TYPE_INFO_WIDTHS.defaultWidth,
-                        "width": "auto",
-                        "opacity": TYPE_INFO_WIDTHS.defaultOpacity
-                    }, 'slow');
-                }, 250);
-            });
-        })();
         var triggers = 'Q';
         var changers = 'q';
         function refreshTypeListners() {
@@ -263,7 +202,6 @@ var Setup;
         ;
         var handler = (function () {
             var o = $(_OUTPUT_);
-            var t = $(_TYPING_);
             var $status = $('#status');
             var OK_CLASS = 'ok_status';
             var ER_CLASS = 'error_status';
@@ -279,6 +217,7 @@ var Setup;
             function println(val) {
                 var old = o.html();
                 o.html((old ? old + '\n' : '') + val.toString());
+                refreshTypeListners();
             }
             ;
             function clearTyping() {
@@ -286,15 +225,6 @@ var Setup;
             }
             ;
             function printTyping(val) {
-                if (val == '') {
-                    t.hide();
-                }
-                else {
-                    if (typeinfo)
-                        t.show();
-                }
-                t.html(val.toString());
-                refreshTypeListners();
             }
             ;
             var marker = [];

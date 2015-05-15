@@ -22,8 +22,8 @@ module Setup {
     const _OUTPUT_ = "#" + OUTPUT;
     const _EXAMPLES_ = "#" + EXAMPLES;
     const _CURSOR_ = "#cursor-position";
-    const _TYPEINFO_ = '#' + TYPEINFO;
-    const _TYPING_ = '#' + TYPING;
+    //const _TYPEINFO_ = '#' + TYPEINFO;
+    //const _TYPING_ = '#' + TYPING;
     const _RESET_ = '#reset';
 
     const IMPORTS = [
@@ -41,7 +41,7 @@ module Setup {
     let default_file = 'examples/welcome.txt';
     let default_style = 'ace/theme/mono_industrial'; //NOTE: cannot be wrapped in quotes.
 
-    let TYPE_INFO_WIDTHS = null;
+    //let TYPE_INFO_WIDTHS = null;
 
     //loads options given as URL parameters
     let parameters = document.URL.split('?');
@@ -87,39 +87,40 @@ module Setup {
         // or they will not be accessible to use in these computations.
         // the values are just empirically picked to look OK in chrome.
 
-        let w = window.innerWidth;
-        let h = window.innerHeight;
+        const w = window.innerWidth;
+        const h = window.innerHeight;
 
         // all values in pixels
-        let controls_height = 20;
-        let console_height = 80;
-        let split = 270;
-        let bar = 35;
+        let controls_h = 20;
+        let console_h = 80;
+        //let split = 270;
+        let top_bar = 35;
 
         let info = document.getElementById(INFO);
         info.style.width = w + "px";
-        info.style.height = bar + "px";
+        info.style.height = top_bar + "px";
 
         let editor = document.getElementById(EDITOR);
         //editor.style.left = split+"px";
         editor.style.width = (w) + "px";
-        editor.style.height = (h - console_height - controls_height - bar) + "px";
-        editor.style.top = bar + "px";
+        editor.style.height = (h - controls_h - top_bar) + "px";
+        editor.style.top = top_bar + "px";
 
         let controls = document.getElementById(STATUS_BAR);
         //controls.style.left = split+"px";
         controls.style.width = w + "px";
-        controls.style.height = (controls_height) + "px";
-        controls.style.top = (h - controls_height) + "px";
+        controls.style.height = (controls_h) + "px";
+        controls.style.top = (h - controls_h) + "px";
 
         let output = document.getElementById(OUTPUT);
         //output.style.left = split+"px";
         output.style.width = w + "px";
-        output.style.height = (console_height) + "px";
-        output.style.top = (h - console_height - controls_height) + "px";
+        output.style.height = (console_h) + "px";
+        output.style.top = (h - console_h - controls_h) + "px";
 
+        /*
         let typing = document.getElementById(TYPING);
-        typing.style.top = bar + "px";
+        typing.style.top = top_bar + "px";
         typing.style.left = (w / 2) + "px";
         typing.style.maxHeight = h + "px";
         typing.style.maxWidth = (w / 2) + "px";
@@ -130,6 +131,7 @@ module Setup {
             minLeft: 0, defaultLeft: (w / 2),
             maxOpacity: 1, defaultOpacity: 0.8
         };
+        */
     };
 
 
@@ -285,6 +287,7 @@ module Setup {
                 " title=" + title + "><b>" + text + "</b></button></div>");
         };
 
+/*
         var typeinfo = true;
         (function() { // Typing-information panel.
             actionButton("Typing Information: ", "typeinfo",
@@ -348,7 +351,7 @@ module Setup {
             });
 
         })();
-
+*/
 
         //
         // Boxing Types
@@ -391,7 +394,7 @@ module Setup {
 
             // output panel & typing panel
             const o = $(_OUTPUT_);
-            const t = $(_TYPING_);
+            //const t = $(_TYPING_);
             const $status = $('#status');
             const OK_CLASS = 'ok_status';
             const ER_CLASS = 'error_status';
@@ -410,6 +413,7 @@ module Setup {
             function println(val) {
                 let old = o.html();
                 o.html((old ? old + '\n' : '') + val.toString());
+                refreshTypeListners();
             };
 
             function clearTyping() {
@@ -417,6 +421,7 @@ module Setup {
             };
 
             function printTyping(val) {
+                /*
                 if (val == '') {
                     t.hide();
                 } else {
@@ -427,6 +432,7 @@ module Setup {
 
                 // for boxing types
                 refreshTypeListners();
+                */
             };
 
             let marker = [];

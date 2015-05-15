@@ -114,11 +114,11 @@ module WebWorker {
 
                     if (!isWorker) {
                         // some debug information
-                        console.debug('Checked in: ' + i.time + ' ms');
+                        console.debug('Checked in ' + i.time + ' ms.');
                     }
 
                     // no errors!
-                    send.setOKStatus('Checked in: ' + i.time + ' ms');
+                    send.setOKStatus('Checked in ' + i.time + ' ms.');
                     send.clearAnnotations();
 
                 } catch (e) {

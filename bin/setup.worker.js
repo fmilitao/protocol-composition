@@ -69,9 +69,9 @@ var WebWorker;
                     }
                     send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
                     if (!isWorker) {
-                        console.debug('Checked in: ' + i.time + ' ms');
+                        console.debug('Checked in ' + i.time + ' ms.');
                     }
-                    send.setOKStatus('Checked in: ' + i.time + ' ms');
+                    send.setOKStatus('Checked in ' + i.time + ' ms.');
                     send.clearAnnotations();
                 }
                 catch (e) {
