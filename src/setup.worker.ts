@@ -77,6 +77,7 @@ module WebWorker {
         // to avoid reparsing, the 'ast' is made available
         // to the other listener functions through this var.
         let ast: AST.Exp.Program = null;
+        let info: [AST.Exp.Exp|AST.Type.Type, any][] = null;
 
         function handleErrors(es : ErrorWrapper[]) {
             send.setErrorStatus('Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
@@ -103,14 +104,8 @@ module WebWorker {
                     }
 
                     // assumes either errors or info, NEVER BOTH!
-                    let pr = '';
-                    for (let [ast,table] of i.info) {
-                        pr += printConformance(table);
-                        pr += '<br/>';
-                    }
-
-                    // ignores result...
-                    send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
+                    // thus the following must be a list of [ast,table] elements.
+                    info = i.info;
 
                     if (!isWorker) {
                         // some debug information
@@ -126,10 +121,32 @@ module WebWorker {
                 }
             },
 
-            checker: function(pos) {
+            checker: function(pos : {row : number, column: number }) {
+
+                    let ptr = null;
+
+                    // search for closest one
+                    for (const [ast,table] of info) {
+                        if( ast.line === pos.row ){
+                                ptr = table;
+                                break;
+                        }
+
+                    }
+
+                    if (ptr === null)
+                        return;
+
+                    send.clearAll();
+                    send.println(printConformance(ptr));
+
+
+                    // ignores result...
+                    //send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
+
                 /*
                 //FIXME shown notations depending on the cursor position.
-                
+
                 try {
                     // only if parsed correctly
                     if (ast === null || typeinfo === null)

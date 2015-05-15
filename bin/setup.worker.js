@@ -42,6 +42,7 @@ var WebWorker;
     var send = Comm.WorkerThread.getRemoteEditor();
     var receiver = (function () {
         var ast = null;
+        var info = null;
         function handleErrors(es) {
             send.setErrorStatus('Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
             es.forEach(function (e) { return console.error(e.stack.toString()); });
@@ -61,13 +62,7 @@ var WebWorker;
                         handleErrors(errors);
                         return;
                     }
-                    var pr = '';
-                    for (var _i = 0, _a = i.info; _i < _a.length; _i++) {
-                        var _b = _a[_i], ast_1 = _b[0], table = _b[1];
-                        pr += printConformance(table);
-                        pr += '<br/>';
-                    }
-                    send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
+                    info = i.info;
                     if (!isWorker) {
                         console.debug('Checked in ' + i.time + ' ms.');
                     }
@@ -79,6 +74,18 @@ var WebWorker;
                 }
             },
             checker: function (pos) {
+                var ptr = null;
+                for (var _i = 0; _i < info.length; _i++) {
+                    var _a = info[_i], ast_1 = _a[0], table = _a[1];
+                    if (ast_1.line === pos.row) {
+                        ptr = table;
+                        break;
+                    }
+                }
+                if (ptr === null)
+                    return;
+                send.clearAll();
+                send.println(printConformance(ptr));
             }
         };
     })();

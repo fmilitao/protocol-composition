@@ -51,7 +51,7 @@ module Comm {
 
     export interface WorkerLocal {
         eval( src : string);
-        checker( pos : any);
+        checker(pos :  {row: number, column: number });
     };
 
     export interface WorkerRemote extends WorkerLocal {
@@ -205,7 +205,7 @@ module Comm {
                     send('eval', src);
                 },
 
-                checker: function(p) {
+                checker: function(p: {row: number, column: number }) {
                     send('checker', p);
                 },
 
