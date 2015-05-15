@@ -78,10 +78,11 @@ module WebWorker {
         // to the other listener functions through this var.
         let ast: AST.Exp.Program = null;
 
-        function handleError(e : ErrorWrapper) {
-            if (e.stack)
-                console.error(e.stack.toString());
-            send.errorHandler(e);
+        function handleErrors(es : ErrorWrapper[]) {
+            send.setStatus('Error' + ((es.length > 1)?'s ('+es.length+')':'') + '!');
+
+            es.forEach(e => console.error(e.stack.toString()));
+            send.errorHandler(es);
         };
 
         return {
@@ -93,9 +94,17 @@ module WebWorker {
 
                     ast = parse(data);
 
-                    let typeinfo = checker(ast);
+                    const i = checker(ast);
+                    
+                    const errors = i.info.filter(j => j instanceof ErrorWrapper);
+                    if( errors.length > 0 ){
+                        handleErrors(errors);
+                        return;
+                    }
+
+                    // assumes either errors or info, NEVER BOTH!
                     let pr = '';
-                    for (let [ast,table] of typeinfo.info) {
+                    for (let [ast,table] of i.info) {
                         pr += printConformance(table);
                         pr += '<br/>';
                     }
@@ -105,16 +114,15 @@ module WebWorker {
 
                     if (!isWorker) {
                         // some debug information
-                        console.debug('checked in: ' + typeinfo.time + ' ms');
+                        console.debug('Checked in: ' + i.time + ' ms');
                     }
 
                     // no errors!
-                    send.setStatus('Checked in: ' + typeinfo.time + ' ms');
+                    send.setStatus('Checked in: ' + i.time + ' ms');
                     send.clearAnnotations();
 
                 } catch (e) {
-                    send.setStatus('Error!');
-                    handleError(e); // FIXME
+                    handleErrors([e]);
                 }
             },
 

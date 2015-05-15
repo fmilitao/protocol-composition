@@ -489,7 +489,8 @@ module Setup {
                 //
 
                 // WARNING: assumes JSONed object
-                errorHandler: function(e : ErrorWrapper) {
+                errorHandler: function(es : ErrorWrapper[]) {
+                    let e = es[0];
                     let msg = "";
 
                     let line = 1;

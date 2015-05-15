@@ -334,7 +334,8 @@ var Setup;
                 println: println,
                 clearTyping: clearTyping,
                 printTyping: printTyping,
-                errorHandler: function (e) {
+                errorHandler: function (es) {
+                    var e = es[0];
                     var msg = "";
                     var line = 1;
                     var col = 0;

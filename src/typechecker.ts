@@ -12,12 +12,15 @@ module TypeChecker {
      *        assert( BOOLEAN_CONDITION || ERROR_MSG( STRING, AST ) );
      * so as to only compute ERROR_MSG if BOOLEAN_CONDITION is false.
      */
-    function assert(msg: boolean|ERROR.Message) {
+    function assert(msg: boolean|ERROR.Message, f? : ()=>any[] ) {
         // if a boolean and true
         if (typeof (msg) === 'boolean' && msg)
-            return;
+            return (f===undefined ? [] : f());
         // casts required due to dumb typescript...
-        throw new ErrorWrapper((<ERROR.Message>msg).message, 'Type Error', (<ERROR.Message>msg).ast);
+        const error = new ErrorWrapper((<ERROR.Message>msg).message, 'Type Error', (<ERROR.Message>msg).ast);
+        if (f === undefined)
+            throw error;
+        return [error].concat(f());
     };
 
     // typechecker error messages
@@ -601,39 +604,45 @@ module TypeChecker {
         },
 
         Share: ast => (c, env) => {
-            var cap = c.checkType(ast.type, env);
-            var left = c.checkType(ast.a, env);
-            var right = c.checkType(ast.b, env);
+            const cap = c.checkType(ast.type, env);
+            const left = c.checkType(ast.a, env);
+            const right = c.checkType(ast.b, env);
 
             // Protocol conformance, goes through all possible "protocol
             // interleaving" and ensures that all those possibilities are
             // considered in both protocols.
 
-            var table = checkConformance(env, cap, left, right);
-            var res = table !== null; // is valid if table not null
+            const table = checkConformance(env, cap, left, right);
+            const res = table !== null; // is valid if table not null
             // checkProtocolConformance(cap, left, right, ast);
 
-            assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast));
-
-            return [[ast, table]];
+            return assert(
+                ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast),
+                () => [[ast, table]]
+                );
         },
 
         // subtyping of types
         Subtype: ast => (c, env) => {
-            var left = c.checkType(ast.a, env);
-            var right = c.checkType(ast.b, env);
-            var s = subtype(left, right);
-            assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return [];
+            const left = c.checkType(ast.a, env);
+            const right = c.checkType(ast.b, env);
+            const s = subtype(left, right);
+            return assert(
+                s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast),
+                () => [] 
+                );
         },
 
         // equality of types
         Equals: ast => (c, env) => {
-            let left = c.checkType(ast.a, env);
-            let right = c.checkType(ast.b, env);
-            let s = equals(left, right);
-            assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return [];
+            const left = c.checkType(ast.a, env);
+            const right = c.checkType(ast.b, env);
+            const s = equals(left, right);
+            
+            return assert(
+                s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast),
+                () => []
+                );
         },
 
         Forall: ast => (c, env) => {

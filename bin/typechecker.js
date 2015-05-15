@@ -5,10 +5,13 @@ var TypeChecker;
     var Unit = new TypeChecker.BangType(new TypeChecker.RecordType());
     var None = new TypeChecker.NoneType();
     var Top = new TypeChecker.TopType();
-    function assert(msg) {
+    function assert(msg, f) {
         if (typeof (msg) === 'boolean' && msg)
-            return;
-        throw new ErrorWrapper(msg.message, 'Type Error', msg.ast);
+            return (f === undefined ? [] : f());
+        var error = new ErrorWrapper(msg.message, 'Type Error', msg.ast);
+        if (f === undefined)
+            throw error;
+        return [error].concat(f());
     }
     ;
     var ERROR;
@@ -405,22 +408,19 @@ var TypeChecker;
             var right = c.checkType(ast.b, env);
             var table = checkConformance(env, cap, left, right);
             var res = table !== null;
-            assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast));
-            return [[ast, table]];
+            return assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast), function () { return [[ast, table]]; });
         }; },
         Subtype: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = TypeChecker.subtype(left, right);
-            assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return [];
+            return assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast), function () { return []; });
         }; },
         Equals: function (ast) { return function (c, env) {
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
             var s = TypeChecker.equals(left, right);
-            assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast));
-            return [];
+            return assert(s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast), function () { return []; });
         }; },
         Forall: function (ast) { return function (c, env) {
             var id = ast.id;

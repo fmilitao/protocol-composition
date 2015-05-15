@@ -42,10 +42,10 @@ var WebWorker;
     var send = Comm.WorkerThread.getRemoteEditor();
     var receiver = (function () {
         var ast = null;
-        function handleError(e) {
-            if (e.stack)
-                console.error(e.stack.toString());
-            send.errorHandler(e);
+        function handleErrors(es) {
+            send.setStatus('Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
+            es.forEach(function (e) { return console.error(e.stack.toString()); });
+            send.errorHandler(es);
         }
         ;
         return {
@@ -55,23 +55,27 @@ var WebWorker;
                     send.clearAll();
                     send.setStatus('Type checking...');
                     ast = parse(data);
-                    var typeinfo = checker(ast);
+                    var i = checker(ast);
+                    var errors = i.info.filter(function (j) { return j instanceof ErrorWrapper; });
+                    if (errors.length > 0) {
+                        handleErrors(errors);
+                        return;
+                    }
                     var pr = '';
-                    for (var _i = 0, _a = typeinfo.info; _i < _a.length; _i++) {
+                    for (var _i = 0, _a = i.info; _i < _a.length; _i++) {
                         var _b = _a[_i], ast_1 = _b[0], table = _b[1];
                         pr += printConformance(table);
                         pr += '<br/>';
                     }
                     send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
                     if (!isWorker) {
-                        console.debug('checked in: ' + typeinfo.time + ' ms');
+                        console.debug('Checked in: ' + i.time + ' ms');
                     }
-                    send.setStatus('Checked in: ' + typeinfo.time + ' ms');
+                    send.setStatus('Checked in: ' + i.time + ' ms');
                     send.clearAnnotations();
                 }
                 catch (e) {
-                    send.setStatus('Error!');
-                    handleError(e);
+                    handleErrors([e]);
                 }
             },
             checker: function (pos) {

@@ -50,29 +50,29 @@ module Comm {
 
 
     export interface WorkerLocal {
-        eval: (string) => void;
-        checker: (any) => void;
+        eval( src : string);
+        checker( pos : any);
     };
 
     export interface WorkerRemote extends WorkerLocal {
-        reset: () => void; // fork controlling the remote Worker
+        reset(); // fork controlling the remote Worker
     };
 
     export interface EditorRemote {
-        printError: (string) => void;
-        clearAll: () => void;
-        errorHandler: (ErrorWrapper) => void;
-        setStatus: (string) => void;
-        println: (string) => void;
-        clearAnnotations: () => void;
-        clearTyping: () => void;
-        printTyping: (string) => void;
+        printError(msg : string);
+        clearAll();
+        errorHandler(errors : ErrorWrapper[]);
+        setStatus(msg : string);
+        println(msg : string);
+        clearAnnotations();
+        clearTyping();
+        printTyping(msg : string);
     };
 
     export interface EditorLocal extends EditorRemote {
-        log: (string) => void;
-        debug: (string) => void;
-        error: (string) => void;
+        log( msg : string);
+        debug( msg : string);
+        error( msg : string);
     };
 
     // for proxying when local communication is used.
@@ -83,7 +83,7 @@ module Comm {
 
         class SenderObject extends Proxy implements EditorRemote {
 
-            errorHandler(er: ErrorWrapper) {
+            errorHandler(er: ErrorWrapper[]) {
                 super.dispatch('errorHandler', er);
             }
             clearAll() {
