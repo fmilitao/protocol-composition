@@ -491,10 +491,6 @@ var TypeChecker;
     }
     ;
     function substitution(type, from, to) {
-        if (from.type !== TypeChecker.types.LocationVariable &&
-            from.type !== TypeChecker.types.TypeVariable) {
-            TypeChecker.error("@substitution: can only substitute a Type/LocationVariable, got: " + from.type);
-        }
         return substitutionAux(type, from, to);
     }
     TypeChecker.substitution = substitution;
@@ -726,10 +722,6 @@ var TypeChecker;
     }
     ;
     function isFree(x, t) {
-        if (x.type !== TypeChecker.types.LocationVariable &&
-            x.type !== TypeChecker.types.TypeVariable) {
-            TypeChecker.error("@isFree: can only check a Type/LocationVariable, got: " + x.type);
-        }
         return isFreeAux(x, t, new Set());
     }
     TypeChecker.isFree = isFree;

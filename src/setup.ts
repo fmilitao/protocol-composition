@@ -288,6 +288,8 @@ module Setup {
         };
 
 /*
+// TODO: convert this to use output panel, instead of typing panel.
+
         var typeinfo = true;
         (function() { // Typing-information panel.
             actionButton("Typing Information: ", "typeinfo",

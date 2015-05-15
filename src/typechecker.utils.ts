@@ -8,8 +8,10 @@
 
 module TypeChecker {
 
-    // unify 'x' in 't' to match 'a'
-    export function unify(x, t, a) {
+    // unify 'x' in 't' to match 'a', false if failed
+    export function unify(x : TypeVariable|LocationVariable, t : Type, a : Type) : Type|boolean {
+        
+//FIXME: remove this check! require type checker
         if (x.type !== types.LocationVariable &&
             x.type !== types.TypeVariable) {
             error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
@@ -584,7 +586,7 @@ module TypeChecker {
 	 * @param {Function} equals function to compare types
 	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
 	 */
-    function substitutionAux(t, from, to: Type): Type {
+    function substitutionAux(t , from , to: Type): Type {
 
         // for convenience...
         var rec = function(type) {
@@ -680,21 +682,13 @@ module TypeChecker {
         }
     };
 
-    // =================================
-
-
 	/*
 	 * This is a "simpler" substitution where 'from' must either be a
 	 * LocationVariable or a TypeVariable. This restriction simplifies the
 	 * equality test since we are no longer attempting to match complete types
 	 * and instead are just looking for TypeVariables or LocationVariables
 	 */
-    export function substitution(type: Type, from: Type, to: Type): Type {
-        if (from.type !== types.LocationVariable &&
-            from.type !== types.TypeVariable) {
-            error("@substitution: can only substitute a Type/LocationVariable, got: " + from.type);
-        }
-
+    export function substitution(type: Type, from: TypeVariable|LocationVariable, to: Type): Type {
         return substitutionAux(type, from, to);
     };
 
@@ -1000,12 +994,7 @@ module TypeChecker {
 
     };
 
-
-    export function isFree(x, t: Type): boolean {
-        if (x.type !== types.LocationVariable &&
-            x.type !== types.TypeVariable) {
-            error("@isFree: can only check a Type/LocationVariable, got: " + x.type);
-        }
+    export function isFree(x : TypeVariable|LocationVariable, t: Type): boolean {
         return isFreeAux(x, t, new Set<string>());
     };
 

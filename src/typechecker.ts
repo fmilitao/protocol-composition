@@ -536,7 +536,7 @@ module TypeChecker {
                 // duplication is not checked at this stage
                 for (var i = 0; i < ast.typedefs.length; ++i) {
                     let it = ast.typedefs[i];
-                    let args: Type[] = [];
+                    let args: (TypeVariable|LocationVariable)[] = [];
                     let pars = it.pars;
 
                     // only do this if there are any actual definition parameters
@@ -683,7 +683,8 @@ module TypeChecker {
             assert((from.type === types.LocationVariable || from.type === types.TypeVariable)
                 || ERROR.InvalidSubstitution(from, ast.from));
 
-            return substitution(type, from, to);
+            // check above ensures that 'from' is either LocationVariable or TypeVariable.
+            return substitution(type, <LocationVariable|TypeVariable>from, to);
         },
 
         // auxiliary function for common Forall/Exists code

@@ -351,7 +351,7 @@ module TypeChecker {
         public definition: () => string;
         public args: () => Type[];
         public getDefinition: () => Type;
-        public getParams: () => Type[];
+        public getParams: () => (TypeVariable|LocationVariable)[];
         public getTypeDef: () => any;
 
         constructor(definition_name, arg, typedef) {
@@ -660,14 +660,14 @@ module TypeChecker {
         // map definition's name with its body
         private typedefs: { [s: string]: Type };
 
-        // maps deinition's name with its arguments
-        private typedefs_args: { [s: string]: Type[] };
+        // maps definition's name with its arguments
+        private typedefs_args: { [s: string]: (TypeVariable|LocationVariable)[] };
 
         constructor() {
             this.reset();
         }
 
-        addType(name: string, args: Type[]) {
+        addType(name: string, args: (TypeVariable|LocationVariable)[]) {
             if (this.typedefs_args.hasOwnProperty(name))
                 return false;
             this.typedefs_args[name] = args;
@@ -680,7 +680,7 @@ module TypeChecker {
             this.typedefs[name] = definition;
             return true;
         }
-        getType(name: string): Type[] {
+        getType(name: string): (TypeVariable|LocationVariable)[] {
             return this.typedefs_args[name];
         }
 

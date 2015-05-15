@@ -128,6 +128,8 @@ module WebWorker {
 
             checker: function(pos) {
                 /*
+                //FIXME shown notations depending on the cursor position.
+                
                 try {
                     // only if parsed correctly
                     if (ast === null || typeinfo === null)
