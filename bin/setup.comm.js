@@ -68,6 +68,12 @@ var Comm;
             SenderObject.prototype.setStatus = function (arg) {
                 _super.prototype.dispatch.call(this, 'setStatus', arg);
             };
+            SenderObject.prototype.setErrorStatus = function (arg) {
+                _super.prototype.dispatch.call(this, 'setErrorStatus', arg);
+            };
+            SenderObject.prototype.setOKStatus = function (arg) {
+                _super.prototype.dispatch.call(this, 'setOKStatus', arg);
+            };
             SenderObject.prototype.println = function (arg) {
                 _super.prototype.dispatch.call(this, 'println', arg);
             };

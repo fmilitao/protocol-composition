@@ -62,7 +62,11 @@ module Comm {
         printError(msg : string);
         clearAll();
         errorHandler(errors : ErrorWrapper[]);
+        
         setStatus(msg : string);
+        setErrorStatus(msg: string);
+        setOKStatus(msg: string);
+        
         println(msg : string);
         clearAnnotations();
         clearTyping();
@@ -91,6 +95,12 @@ module Comm {
             }
             setStatus(arg: string) {
                 super.dispatch('setStatus', arg);
+            }
+            setErrorStatus(arg: string) {
+                super.dispatch('setErrorStatus', arg);
+            }
+            setOKStatus(arg: string) {
+                super.dispatch('setOKStatus', arg);
             }
             println(arg: string) {
                 super.dispatch('println', arg);

@@ -264,6 +264,9 @@ var Setup;
         var handler = (function () {
             var o = $(_OUTPUT_);
             var t = $(_TYPING_);
+            var $status = $('#status');
+            var OK_CLASS = 'ok_status';
+            var ER_CLASS = 'error_status';
             function clearAll() {
                 o.html('');
                 clearTyping();
@@ -379,7 +382,19 @@ var Setup;
                     updateAnnotations(null);
                 },
                 setStatus: function (txt) {
-                    $('#status').text(txt);
+                    $status.removeClass(OK_CLASS);
+                    $status.removeClass(ER_CLASS);
+                    $status.text(txt);
+                },
+                setOKStatus: function (txt) {
+                    $status.removeClass(ER_CLASS);
+                    $status.addClass(OK_CLASS);
+                    $status.text(txt);
+                },
+                setErrorStatus: function (txt) {
+                    $status.removeClass(OK_CLASS);
+                    $status.addClass(ER_CLASS);
+                    $status.text(txt);
                 }
             };
         })();

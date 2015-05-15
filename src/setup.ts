@@ -392,6 +392,9 @@ module Setup {
             // output panel & typing panel
             const o = $(_OUTPUT_);
             const t = $(_TYPING_);
+            const $status = $('#status');
+            const OK_CLASS = 'ok_status';
+            const ER_CLASS = 'error_status';
 
             // aux functions
             function clearAll() {
@@ -544,8 +547,23 @@ module Setup {
                 },
 
                 setStatus: function(txt) {
-                    $('#status').text(txt);
+                    $status.removeClass(OK_CLASS);
+                    $status.removeClass(ER_CLASS);
+                    $status.text(txt);
+                },
+
+                setOKStatus: function(txt) {
+                    $status.removeClass(ER_CLASS);
+                    $status.addClass(OK_CLASS);
+                    $status.text(txt);
+                },
+
+                setErrorStatus: function(txt) {
+                    $status.removeClass(OK_CLASS);
+                    $status.addClass(ER_CLASS);
+                    $status.text(txt);
                 }
+
             };
         })();
 

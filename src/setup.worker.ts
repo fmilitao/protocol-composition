@@ -79,7 +79,7 @@ module WebWorker {
         let ast: AST.Exp.Program = null;
 
         function handleErrors(es : ErrorWrapper[]) {
-            send.setStatus('✘ Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
+            send.setErrorStatus('Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
 
             es.forEach(e => console.error(e.stack.toString()));
             send.errorHandler(es);
@@ -118,7 +118,7 @@ module WebWorker {
                     }
 
                     // no errors!
-                    send.setStatus('✓ Checked in: ' + i.time + ' ms');
+                    send.setOKStatus('Checked in: ' + i.time + ' ms');
                     send.clearAnnotations();
 
                 } catch (e) {
