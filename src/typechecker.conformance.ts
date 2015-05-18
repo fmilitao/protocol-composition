@@ -7,7 +7,42 @@ module TypeChecker {
     // Auxiliary Definitions
     //
 
-    var unifyRely = function(id, step, state) {
+    function isProtocol(t, trail?: Set<string>): boolean {
+        switch (t.type) {
+            case types.NoneType:
+                return true;
+            case types.RelyType:
+                return true;
+            case types.ExistsType:
+                return isProtocol(t.inner(), trail);
+            case types.AlternativeType:
+            case types.IntersectionType:
+            case types.StarType: {
+                const ts = t.inner();
+                for (let i = 0; i < ts.length; ++i) {
+                    if (!isProtocol(ts[i], trail))
+                        return false;
+                }
+                return true;
+            }
+            case types.DefinitionType: {
+                // lazy use of 'trail' since it should not be needed.
+                if (trail === undefined) {
+                    trail = new Set<string>();
+                }
+                const key = t.toString(true);
+                if (trail.has(key))
+                    return true; // assume isProtocol elsewhere
+                trail.add(key);
+                return isProtocol(unfold(t), trail);
+            }
+            default:
+                return false;
+        }
+    };
+
+
+    function unifyRely(id, step, state) {
         switch (step.type) {
             case types.ExistsType: id
                 return unifyRely( // must shift indexes to match new depth
@@ -48,7 +83,7 @@ module TypeChecker {
         }
     };
 
-    var unifyGuarantee = function(id, step, state) {
+    function unifyGuarantee(id, step, state) {
         switch (step.type) {
             case types.ForallType:
                 return unifyGuarantee(shift(id, 0, 1), step.inner(), shift(state, 0, 1));
@@ -86,7 +121,7 @@ module TypeChecker {
         }
     };
 
-    var contains = function(visited, w) {
+    function contains(visited, w) {
         for (var v of visited) {
             // must assume that all types were normalized to have their
             // indexes compacted in order to ensure termination.
@@ -105,7 +140,7 @@ module TypeChecker {
     // Protocol Conformance
     //
 
-    var Work = function(s, p, q) {
+    function Work(s, p, q) {
         return { s: s, p: p, q: q };
     };
 
@@ -116,7 +151,7 @@ module TypeChecker {
         return checkConformanceAux(work, visited);
     };
 
-    var checkConformanceAux = function(work, visited) {
+    function checkConformanceAux(work, visited) {
 
         // var i=0;
         // console.debug( '' );
@@ -145,7 +180,7 @@ module TypeChecker {
         return visited;
     }
 
-    var step = function(s, p, q, isLeft) {
+    function step(s, p, q, isLeft) {
         // expands recursion
         s = unfold(s);
         p = unfold(p);
@@ -228,7 +263,7 @@ module TypeChecker {
     };
 
     // may return null on failed stepping, or set of new configurations
-    var singleStep = function(s, p, q, isLeft) {
+    function singleStep(s, p, q, isLeft) {
 
         var R = function(s, p) {
             var tmp = reIndex(s, p, q);
@@ -393,7 +428,8 @@ module TypeChecker {
         }
     };
 
-    var reIndex = function(s, a, b) {
+    // unshifts types
+    function reIndex(s, a, b) {
         var set = indexSet(s);
         indexSet(a).forEach(function(v) { set.add(v); });
         indexSet(b).forEach(function(v) { set.add(v); });

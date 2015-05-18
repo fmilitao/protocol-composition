@@ -2,7 +2,40 @@
 // GPL v3 Licensed http://www.gnu.org/licenses/
 var TypeChecker;
 (function (TypeChecker) {
-    var unifyRely = function (id, step, state) {
+    function isProtocol(t, trail) {
+        switch (t.type) {
+            case TypeChecker.types.NoneType:
+                return true;
+            case TypeChecker.types.RelyType:
+                return true;
+            case TypeChecker.types.ExistsType:
+                return isProtocol(t.inner(), trail);
+            case TypeChecker.types.AlternativeType:
+            case TypeChecker.types.IntersectionType:
+            case TypeChecker.types.StarType: {
+                var ts = t.inner();
+                for (var i = 0; i < ts.length; ++i) {
+                    if (!isProtocol(ts[i], trail))
+                        return false;
+                }
+                return true;
+            }
+            case TypeChecker.types.DefinitionType: {
+                if (trail === undefined) {
+                    trail = new Set();
+                }
+                var key = t.toString(true);
+                if (trail.has(key))
+                    return true;
+                trail.add(key);
+                return isProtocol(TypeChecker.unfold(t), trail);
+            }
+            default:
+                return false;
+        }
+    }
+    ;
+    function unifyRely(id, step, state) {
         switch (step.type) {
             case TypeChecker.types.ExistsType:
                 id;
@@ -38,8 +71,9 @@ var TypeChecker;
             default:
                 return false;
         }
-    };
-    var unifyGuarantee = function (id, step, state) {
+    }
+    ;
+    function unifyGuarantee(id, step, state) {
         switch (step.type) {
             case TypeChecker.types.ForallType:
                 return unifyGuarantee(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
@@ -74,8 +108,9 @@ var TypeChecker;
             default:
                 return false;
         }
-    };
-    var contains = function (visited, w) {
+    }
+    ;
+    function contains(visited, w) {
         for (var _i = 0; _i < visited.length; _i++) {
             var v = visited[_i];
             if (TypeChecker.subtype(w.s, v.s) &&
@@ -84,10 +119,12 @@ var TypeChecker;
                 return true;
         }
         return false;
-    };
-    var Work = function (s, p, q) {
+    }
+    ;
+    function Work(s, p, q) {
         return { s: s, p: p, q: q };
-    };
+    }
+    ;
     function checkConformance(g, s, p, q) {
         var work = [Work(s, p, q)];
         var visited = [];
@@ -95,7 +132,7 @@ var TypeChecker;
     }
     TypeChecker.checkConformance = checkConformance;
     ;
-    var checkConformanceAux = function (work, visited) {
+    function checkConformanceAux(work, visited) {
         while (work.length > 0) {
             var w = work.pop();
             if (!contains(visited, w)) {
@@ -111,8 +148,8 @@ var TypeChecker;
             }
         }
         return visited;
-    };
-    var step = function (s, p, q, isLeft) {
+    }
+    function step(s, p, q, isLeft) {
         s = TypeChecker.unfold(s);
         p = TypeChecker.unfold(p);
         var res = singleStep(s, p, q, isLeft);
@@ -163,8 +200,9 @@ var TypeChecker;
             }
         }
         return null;
-    };
-    var singleStep = function (s, p, q, isLeft) {
+    }
+    ;
+    function singleStep(s, p, q, isLeft) {
         var R = function (s, p) {
             var tmp = reIndex(s, p, q);
             s = tmp[0];
@@ -175,7 +213,7 @@ var TypeChecker;
         if (p.type === TypeChecker.types.NoneType) {
             return [];
         }
-        if (TypeChecker.isProtocol(s)) {
+        if (isProtocol(s)) {
             if (s.type === TypeChecker.types.ExistsType && p.type === TypeChecker.types.ExistsType) {
                 if (s.id().type !== p.id().type)
                     return null;
@@ -257,8 +295,9 @@ var TypeChecker;
             }
             return null;
         }
-    };
-    var reIndex = function (s, a, b) {
+    }
+    ;
+    function reIndex(s, a, b) {
         var set = TypeChecker.indexSet(s);
         TypeChecker.indexSet(a).forEach(function (v) { set.add(v); });
         TypeChecker.indexSet(b).forEach(function (v) { set.add(v); });
@@ -283,6 +322,7 @@ var TypeChecker;
             }
         }
         return [s, a, b];
-    };
+    }
+    ;
 })(TypeChecker || (TypeChecker = {}));
 ;

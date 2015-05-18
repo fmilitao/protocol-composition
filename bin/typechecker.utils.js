@@ -889,39 +889,5 @@ var TypeChecker;
         }
     }
     ;
-    function isProtocol(t, trail) {
-        switch (t.type) {
-            case TypeChecker.types.NoneType:
-                return true;
-            case TypeChecker.types.RelyType:
-                return true;
-            case TypeChecker.types.ExistsType:
-                return isProtocol(t.inner(), trail);
-            case TypeChecker.types.AlternativeType:
-            case TypeChecker.types.IntersectionType:
-            case TypeChecker.types.StarType: {
-                var ts = t.inner();
-                for (var i = 0; i < ts.length; ++i) {
-                    if (!isProtocol(ts[i], trail))
-                        return false;
-                }
-                return true;
-            }
-            case TypeChecker.types.DefinitionType: {
-                if (trail === undefined) {
-                    trail = new Set();
-                }
-                var key = t.toString(true);
-                if (trail.has(key))
-                    return true;
-                trail.add(key);
-                return isProtocol(unfold(t), trail);
-            }
-            default:
-                return false;
-        }
-    }
-    TypeChecker.isProtocol = isProtocol;
-    ;
 })(TypeChecker || (TypeChecker = {}));
 ;

@@ -1209,39 +1209,4 @@ module TypeChecker {
         }
     };
 
-
-    export function isProtocol(t, trail?: Set<string>): boolean {
-        switch (t.type) {
-            case types.NoneType:
-                return true;
-            case types.RelyType:
-                return true;
-            case types.ExistsType:
-                return isProtocol(t.inner(), trail);
-            case types.AlternativeType:
-            case types.IntersectionType:
-            case types.StarType: {
-                const ts = t.inner();
-                for (let i = 0; i < ts.length; ++i) {
-                    if (!isProtocol(ts[i], trail))
-                        return false;
-                }
-                return true;
-            }
-            case types.DefinitionType: {
-                // lazy use of 'trail' since it should not be needed.
-                if (trail === undefined) {
-                    trail = new Set<string>();
-                }
-                const key = t.toString(true);
-                if (trail.has(key))
-                    return true; // assume isProtocol elsewhere
-                trail.add(key);
-                return isProtocol(unfold(t), trail);
-            }
-            default:
-                return false;
-        }
-    };
-
 };
