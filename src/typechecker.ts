@@ -12,10 +12,11 @@ module TypeChecker {
      *        assert( BOOLEAN_CONDITION || ERROR_MSG( STRING, AST ) );
      * so as to only compute ERROR_MSG if BOOLEAN_CONDITION is false.
      */
-    function assert(msg: boolean|ERROR.Message, f? : ()=>any[] ) {
-        // if a boolean and true
-        if (typeof (msg) === 'boolean' && msg)
-            return (f===undefined ? [] : f());
+    function assert(msg: boolean|ERROR.Message, f?: () => any[]) {
+        // if a boolean (assume it is true, assuming usage above is obeyed)
+        if (typeof (msg) === 'boolean' /* && msg */)
+            return (f === undefined ? [] : f());
+
         // casts required due to dumb typescript...
         const error = new ErrorWrapper((<ERROR.Message>msg).message, 'Type Error', (<ERROR.Message>msg).ast);
         if (f === undefined)
@@ -629,7 +630,7 @@ module TypeChecker {
             const s = subtype(left, right);
             return assert(
                 s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast),
-                () => [] 
+                () => []
                 );
         },
 
@@ -638,7 +639,7 @@ module TypeChecker {
             const left = c.checkType(ast.a, env);
             const right = c.checkType(ast.b, env);
             const s = equals(left, right);
-            
+
             return assert(
                 s == ast.value || ERROR.UnexpectedResult(s, ast.value, ast),
                 () => []

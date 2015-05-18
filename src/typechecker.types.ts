@@ -11,11 +11,8 @@ module TypeChecker {
     // these are program assertions and should never be seen by users
     // unless there is a major malfunction in the code (bug...)
     export function error(msg: string|boolean) {
-        // if a boolean and true
-        if (typeof (msg) === 'boolean' && msg)
-            return;
-        // else it should be a string with the type error
-        throw new ErrorWrapper(<string>msg, 'BUG ALERT');
+        if( !(typeof (msg) === 'boolean' && msg) )
+            throw new ErrorWrapper( msg.toString(), 'BUG ALERT');
     };
 
     //

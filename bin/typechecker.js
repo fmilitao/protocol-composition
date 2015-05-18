@@ -6,7 +6,7 @@ var TypeChecker;
     var None = new TypeChecker.NoneType();
     var Top = new TypeChecker.TopType();
     function assert(msg, f) {
-        if (typeof (msg) === 'boolean' && msg)
+        if (typeof (msg) === 'boolean')
             return (f === undefined ? [] : f());
         var error = new ErrorWrapper(msg.message, 'Type Error', msg.ast);
         if (f === undefined)

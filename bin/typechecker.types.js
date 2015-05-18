@@ -9,9 +9,8 @@ var __extends = this.__extends || function (d, b) {
 var TypeChecker;
 (function (TypeChecker) {
     function error(msg) {
-        if (typeof (msg) === 'boolean' && msg)
-            return;
-        throw new ErrorWrapper(msg, 'BUG ALERT');
+        if (!(typeof (msg) === 'boolean' && msg))
+            throw new ErrorWrapper(msg.toString(), 'BUG ALERT');
     }
     TypeChecker.error = error;
     ;
