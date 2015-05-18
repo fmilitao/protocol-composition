@@ -187,26 +187,24 @@ var TypeChecker;
     }
     ;
     function singleStep(s, p, q, isLeft) {
-        var R = function (s, p) {
-            var tmp = reIndex(s, p, q);
-            s = tmp[0];
-            p = tmp[1];
-            q = tmp[2];
-            return isLeft ? Work(s, p, q) : Work(s, q, p);
-        };
-        if (p.type === TypeChecker.types.NoneType) {
+        function R(s, p) {
+            var _a = reIndex(s, p, q), _s = _a[0], _p = _a[1], _q = _a[2];
+            return isLeft ? Work(_s, _p, _q) : Work(_s, _q, _p);
+        }
+        ;
+        if (p instanceof TypeChecker.NoneType) {
             return [];
         }
         if (isProtocol(s)) {
-            if (s.type === TypeChecker.types.ExistsType && p.type === TypeChecker.types.ExistsType) {
+            if (s instanceof TypeChecker.ExistsType && p instanceof TypeChecker.ExistsType) {
                 if (s.id().type !== p.id().type)
                     return null;
                 return step(s.inner(), p.inner(), TypeChecker.shift(q, 0, 1), isLeft);
             }
-            if (s.type === TypeChecker.types.RelyType && s.guarantee().type === TypeChecker.types.ForallType &&
-                p.type === TypeChecker.types.RelyType && p.guarantee().type === TypeChecker.types.ForallType) {
-                var gs = s.guarantee();
-                var gp = p.guarantee();
+            if (s instanceof TypeChecker.RelyType && (s.guarantee() instanceof TypeChecker.ForallType) &&
+                p instanceof TypeChecker.RelyType && (p.guarantee() instanceof TypeChecker.ForallType)) {
+                var gs = (s.guarantee());
+                var gp = (p.guarantee());
                 if (gs.id().type !== gp.id().type)
                     return null;
                 s = new TypeChecker.RelyType(TypeChecker.shift(s.rely(), 0, 1), gs.inner());
@@ -214,30 +212,31 @@ var TypeChecker;
                 q = TypeChecker.shift(q, 0, 1);
                 return step(s, p, q, isLeft);
             }
-            if (s.type === TypeChecker.types.RelyType && s.guarantee().type === TypeChecker.types.ForallType &&
-                p.type === TypeChecker.types.RelyType && p.guarantee().type !== TypeChecker.types.ForallType) {
-                var b = s.guarantee();
-                var i = b.id();
-                var t = b.inner();
-                b = p.guarantee();
-                if (b.type === TypeChecker.types.GuaranteeType)
-                    b = b.guarantee();
-                var x = unifyGuarantee(i, t, TypeChecker.shift(b, 0, 1));
-                if (x === false)
-                    return null;
-                if (x !== true) {
-                    t = TypeChecker.substitution(t, i, x);
+            if (s instanceof TypeChecker.RelyType && (s.guarantee() instanceof TypeChecker.ForallType) &&
+                p instanceof TypeChecker.RelyType && !(p.guarantee() instanceof TypeChecker.ForallType)) {
+                var b_1 = s.guarantee();
+                var i_1 = b_1.id();
+                var t_1 = b_1.inner();
+                var g = p.guarantee();
+                if (g instanceof TypeChecker.GuaranteeType) {
+                    g = g.guarantee();
                 }
-                t = TypeChecker.shift(t, 0, -1);
-                return step(new TypeChecker.RelyType(s.rely(), t), p, q, isLeft);
+                var x_1 = unifyGuarantee(i_1, t_1, TypeChecker.shift(g, 0, 1));
+                if (x_1 === false)
+                    return null;
+                if (x_1 !== true) {
+                    t_1 = TypeChecker.substitution(t_1, i_1, x_1);
+                }
+                t_1 = TypeChecker.shift(t_1, 0, -1);
+                return step(new TypeChecker.RelyType(s.rely(), t_1), p, q, isLeft);
             }
-            if (s.type === TypeChecker.types.RelyType && p.type === TypeChecker.types.RelyType && TypeChecker.subtype(s.rely(), p.rely())) {
+            if (s instanceof TypeChecker.RelyType && p instanceof TypeChecker.RelyType && TypeChecker.subtype(s.rely(), p.rely())) {
                 var gs = s.guarantee();
                 var gp = p.guarantee();
-                if (gs.type !== TypeChecker.types.GuaranteeType) {
+                if (!(gs instanceof TypeChecker.GuaranteeType)) {
                     gs = new TypeChecker.GuaranteeType(gs, TypeChecker.None);
                 }
-                if (gp.type !== TypeChecker.types.GuaranteeType) {
+                if (!(gp instanceof TypeChecker.GuaranteeType)) {
                     gp = new TypeChecker.GuaranteeType(gp, TypeChecker.None);
                 }
                 if (TypeChecker.subtype(gp.guarantee(), gs.guarantee())) {
@@ -250,7 +249,7 @@ var TypeChecker;
             if (TypeChecker.equals(s, p)) {
                 return [R(TypeChecker.None, TypeChecker.None)];
             }
-            if (p.type === TypeChecker.types.ExistsType) {
+            if (p instanceof TypeChecker.ExistsType) {
                 var i = p.id();
                 var t = p.inner();
                 var x = unifyRely(i, t, TypeChecker.shift(s, 0, 1));
@@ -262,15 +261,12 @@ var TypeChecker;
                 t = TypeChecker.shift(t, 0, -1);
                 return step(s, t, q, isLeft);
             }
-            if (p.type === TypeChecker.types.RelyType && p.guarantee().type === TypeChecker.types.ForallType) {
-                p = new TypeChecker.RelyType(TypeChecker.shift(p.rely(), 0, 1), p.guarantee().inner());
-                q = TypeChecker.shift(q, 0, 1);
-                s = TypeChecker.shift(s, 0, 1);
-                return step(s, p, q, isLeft);
+            if (p instanceof TypeChecker.RelyType && (p.guarantee() instanceof TypeChecker.ForallType)) {
+                return step(TypeChecker.shift(s, 0, 1), new TypeChecker.RelyType(TypeChecker.shift(p.rely(), 0, 1), p.guarantee().inner()), TypeChecker.shift(q, 0, 1), isLeft);
             }
-            if (p.type === TypeChecker.types.RelyType && TypeChecker.subtype(s, p.rely())) {
+            if (p instanceof TypeChecker.RelyType && TypeChecker.subtype(s, p.rely())) {
                 var b = p.guarantee();
-                if (b.type === TypeChecker.types.GuaranteeType) {
+                if (b instanceof TypeChecker.GuaranteeType) {
                     return [R(b.guarantee(), b.rely())];
                 }
                 else {

@@ -251,19 +251,16 @@ module TypeChecker {
     };
 
     // may return null on failed stepping, or set of new configurations
-    function singleStep(s, p, q, isLeft) {
+    function singleStep(s : Type, p : Type, q : Type, isLeft : boolean) : Configuration[] {
 
-        var R = function(s, p) {
-            var tmp = reIndex(s, p, q);
-            s = tmp[0];
-            p = tmp[1];
-            q = tmp[2];
+        function R(s : Type, p : Type) : Configuration {
+            const [_s,_p,_q] = reIndex(s, p, q);
 
-            return isLeft ? Work(s, p, q) : Work(s, q, p);
+            return isLeft ? Work(_s, _p, _q) : Work(_s, _q, _p);
         };
 
         // by (rs:None)
-        if (p.type === types.NoneType) {
+        if (p instanceof NoneType) {
             // no need to add new work, we already know this configuration steps
             return [];
         }
@@ -272,7 +269,7 @@ module TypeChecker {
             // PROTOCOL STEPPING
 
             // by (ps:ExistsType) and by (ps:ExistsLoc)
-            if (s.type === types.ExistsType && p.type === types.ExistsType) {
+            if (s instanceof ExistsType && p instanceof ExistsType) {
 
                 if (s.id().type !== p.id().type)
                     return null; // type mismatch
@@ -283,40 +280,41 @@ module TypeChecker {
             }
 
             // by (ps:ForallType) and by (ps:ForallLoc)
-            if (s.type === types.RelyType && s.guarantee().type === types.ForallType &&
-                p.type === types.RelyType && p.guarantee().type === types.ForallType) {
+            if (s instanceof RelyType && (s.guarantee() instanceof ForallType) &&
+                p instanceof RelyType && (p.guarantee() instanceof ForallType)) {
 
                 // check 's' and 'p' guarantee: ( G ; R )
-                var gs = s.guarantee();
-                var gp = p.guarantee();
+                const gs = <ForallType>((<RelyType>s).guarantee());
+                const gp = <ForallType>((<RelyType>p).guarantee());
 
                 if (gs.id().type !== gp.id().type)
                     return null;
                 //TODO: also check bound
 
-                s = new RelyType(shift(s.rely(), 0, 1), gs.inner());
-                p = new RelyType(shift(p.rely(), 0, 1), gs.inner());
+                s = new RelyType(shift((<RelyType>s).rely(), 0, 1), gs.inner());
+                p = new RelyType(shift((<RelyType>p).rely(), 0, 1), gs.inner());
                 q = shift(q, 0, 1); // must match same depth as others
 
                 return step(s, p, q, isLeft);
             }
 
             // by (ps:TypeApp) and by (ps:LocApp)
-            if (s.type === types.RelyType && s.guarantee().type === types.ForallType &&
-                p.type === types.RelyType && p.guarantee().type !== types.ForallType) {
+            if (s instanceof RelyType && (s.guarantee() instanceof ForallType) &&
+                p instanceof RelyType && !(p.guarantee() instanceof ForallType)) {
                 // unifies the guarantee of 's' with that of 'p'
-                var b = s.guarantee();
-                var i = b.id();
-                var t = b.inner();
+                let b = <ForallType>s.guarantee();
+                const i = b.id();
+                let t = b.inner();
 
                 // find the guarantee:
-                b = p.guarantee();
-                if (b.type === types.GuaranteeType)
-                    b = b.guarantee();
+                let g = p.guarantee();
+                if (g instanceof GuaranteeType){
+                    g = (<GuaranteeType>g).guarantee();
+                }
                 // else the next step was omitted.
 
-                // shifts 'b' to the same depth as 't'
-                var x = unifyGuarantee(i, t, shift(b, 0, 1));
+                // shifts 'g' to the same depth as 't'
+                const x = unifyGuarantee(i, t, shift(g, 0, 1));
 
                 // fails to unify
                 if (x === false)
@@ -333,22 +331,22 @@ module TypeChecker {
             }
 
             // by (ps:Step)
-            if (s.type === types.RelyType && p.type === types.RelyType && subtype(s.rely(), p.rely())) {
+            if (s instanceof RelyType && p instanceof RelyType && subtype(s.rely(), p.rely())) {
                 // check 's' and 'p' guarantee: ( G ; R )
-                var gs = s.guarantee();
-                var gp = p.guarantee();
+                let gs = s.guarantee();
+                let gp = p.guarantee();
 
                 // account for omitted guarantees (i.e.: 'G' == 'G ; none')
-                if (gs.type !== types.GuaranteeType) {
+                if (!(gs instanceof GuaranteeType)) {
                     gs = new GuaranteeType(gs, None);
                 }
-                if (gp.type !== types.GuaranteeType) {
+                if (!(gp instanceof GuaranteeType)) {
                     gp = new GuaranteeType(gp, None);
                 }
 
                 // guarantee state must match
-                if (subtype(gp.guarantee(), gs.guarantee())) {
-                    return [R(gs.rely(), gp.rely())];
+                if (subtype((<GuaranteeType>gp).guarantee(), (<GuaranteeType>gs).guarantee())) {
+                    return [R((<GuaranteeType>gs).rely(), (<GuaranteeType>gp).rely())];
                 }
             }
 
@@ -363,7 +361,7 @@ module TypeChecker {
             }
 
             // by (ss:OpenType) and by (ss:OpenLoc)
-            if (p.type === types.ExistsType) {
+            if (p instanceof ExistsType) {
                 // attempts to find matching type/location to open existential
                 // correctness of type bound is checked inside 'unifyExists'
                 var i = p.id();
@@ -386,23 +384,23 @@ module TypeChecker {
             }
 
             // by (ss:ForallType) and by (ss:ForallLoc)
-            if (p.type === types.RelyType && p.guarantee().type === types.ForallType) {
+            if (p instanceof RelyType && (p.guarantee() instanceof ForallType)) {
 
-                // opening the forall, we must ensure that all old indexes match the new depth
-                p = new RelyType(
-                    shift(p.rely(), 0, 1),
-                    p.guarantee().inner() // direct access to forall guarantee
-                    );
-                q = shift(q, 0, 1);
-                s = shift(s, 0, 1);
-
-                return step(s, p, q, isLeft);
+                return step(
+                    shift(s, 0, 1),
+                    // opening the forall, we must ensure that all old indexes match the new depth
+                    new RelyType(
+                        shift(p.rely(), 0, 1),
+                        (<ForallType>p.guarantee()).inner() // direct access to forall guarantee
+                        ),
+                    shift(q, 0, 1),
+                    isLeft);
             }
 
             // by (ss:Step)
-            if (p.type === types.RelyType && subtype(s, p.rely())) {
+            if (p instanceof RelyType && subtype(s, p.rely())) {
                 var b = p.guarantee();
-                if (b.type === types.GuaranteeType) {
+                if (b instanceof GuaranteeType) {
                     // single step of the protocol
                     return [R(b.guarantee(), b.rely())];
                 } else {
