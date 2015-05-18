@@ -81,11 +81,6 @@ module TypeChecker {
     // Auxiliary Definitions
     //
 
-    // TypeVariables must start upper cased.
-    function isTypeVariableName(n: string) {
-        return n[0] === n[0].toUpperCase();
-    };
-
     var unifyRely = function(id, step, state) {
         switch (step.type) {
             case types.ExistsType: id

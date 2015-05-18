@@ -76,10 +76,6 @@ var TypeChecker;
         ERROR.UnexpectedLocation = UnexpectedLocation;
         ;
     })(ERROR || (ERROR = {}));
-    function isTypeVariableName(n) {
-        return n[0] === n[0].toUpperCase();
-    }
-    ;
     var unifyRely = function (id, step, state) {
         switch (step.type) {
             case TypeChecker.types.ExistsType:
@@ -375,7 +371,7 @@ var TypeChecker;
                         args_1 = new Array(pars.length);
                         for (var j = 0; j < pars.length; ++j) {
                             var n = pars[j];
-                            args_1[j] = isTypeVariableName(n) ?
+                            args_1[j] = TypeChecker.isTypeVariableName(n) ?
                                 new TypeChecker.TypeVariable(n, (pars.length - j - 1), null) :
                                 new TypeChecker.LocationVariable(n, (pars.length - j - 1));
                         }
@@ -426,7 +422,7 @@ var TypeChecker;
             var id = ast.id;
             var variable;
             var bound;
-            if (isTypeVariableName(id)) {
+            if (TypeChecker.isTypeVariableName(id)) {
                 bound = !ast.bound ?
                     Top :
                     c.checkType(ast.bound, new TypeChecker.Gamma(env.getTypeDef(), null));
@@ -453,7 +449,7 @@ var TypeChecker;
             var id = ast.id;
             var variable;
             var bound;
-            if (isTypeVariableName(id)) {
+            if (TypeChecker.isTypeVariableName(id)) {
                 bound = !ast.bound ?
                     Top :
                     c.checkType(ast.bound, new TypeChecker.Gamma(env.getTypeDef(), null));

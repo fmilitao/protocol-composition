@@ -503,6 +503,206 @@ var TypeChecker;
     function subtypeAux(t1, t2, trail) {
         if (t1 === t2 || equals(t1, t2))
             return true;
+        if (t1 instanceof TypeChecker.PrimitiveType && t2 instanceof TypeChecker.PrimitiveType) {
+            return t1.name() === t2.name();
+        }
+        var def1 = t1 instanceof TypeChecker.DefinitionType;
+        var def2 = t2 instanceof TypeChecker.DefinitionType;
+        if (def1 || def2) {
+            var key = keyF(t1, t2);
+            if (trail.has(key))
+                return true;
+            trail.add(key);
+            t1 = def1 ? unfold(t1) : t1;
+            t2 = def2 ? unfold(t2) : t2;
+            return subtypeAux(t1, t2, trail);
+        }
+        if (t2 instanceof TypeChecker.TopType)
+            return true;
+        if (t1 instanceof TypeChecker.TypeVariable) {
+            var bound = t1.bound();
+            if (bound !== null && subtypeAux(bound, t2, trail))
+                return true;
+        }
+        if (t1 instanceof TypeChecker.BangType && subtypeAux(t1.inner(), t2, trail)) {
+            return true;
+        }
+        if (t1 instanceof TypeChecker.BangType && t2 instanceof TypeChecker.BangType) {
+            var i = t2.inner();
+            if (i instanceof TypeChecker.RecordType && i.isEmpty())
+                return true;
+        }
+        if (t1 instanceof TypeChecker.BangType && t2 instanceof TypeChecker.BangType && subtypeAux(t1.inner(), t2.inner(), trail)) {
+            return true;
+        }
+        if (t1 instanceof TypeChecker.FunctionType && t2 instanceof TypeChecker.FunctionType &&
+            subtypeAux(t2.argument(), t1.argument(), trail) && subtypeAux(t1.body(), t2.body(), trail)) {
+            return true;
+        }
+        if (t1 instanceof TypeChecker.StackedType && t2 instanceof TypeChecker.StackedType &&
+            subtypeAux(t1.left(), t2.left(), trail) && subtypeAux(t1.right(), t2.right(), trail)) {
+            return true;
+        }
+        if (t1 instanceof TypeChecker.CapabilityType && t2 instanceof TypeChecker.CapabilityType &&
+            equals(t1.location(), t2.location()) &&
+            subtypeAux(t1.value(), t2.value(), trail)) {
+            return true;
+        }
+        if (t1 instanceof TypeChecker.StarType && t2 instanceof TypeChecker.StarType) {
+            var i1s = t1.inner();
+            var i2s = t2.inner();
+            if (i1s.length === i2s.length) {
+                var tmp_i2s = i2s.slice(0);
+                var fail = false;
+                for (var _i = 0; _i < i1s.length; _i++) {
+                    var curr = i1s[_i];
+                    var found = false;
+                    for (var _a = 0; _a < tmp_i2s.length; _a++) {
+                        var tmp = tmp_i2s[_a];
+                        for (var j = 0; j < tmp_i2s.length; ++j) {
+                            var tmp_1 = tmp_i2s[j];
+                            if (subtypeAux(curr, tmp_1, trail)) {
+                                tmp_i2s.splice(j, 1);
+                                found = true;
+                                break;
+                            }
+                        }
+                    }
+                    if (!found) {
+                        fail = true;
+                        break;
+                    }
+                }
+                if (!fail) {
+                    return true;
+                }
+            }
+        }
+        if ((t1 instanceof TypeChecker.ExistsType && t2 instanceof TypeChecker.ExistsType) ||
+            (t1 instanceof TypeChecker.ForallType && t2 instanceof TypeChecker.ForallType)) {
+            if ((t1.id().type === t2.id().type) &&
+                equals(t1.bound(), t2.bound()) &&
+                subtypeAux(t1.inner(), t2.inner(), trail))
+                return true;
+        }
+        if (t2 instanceof TypeChecker.ExistsType && !(t1 instanceof TypeChecker.ExistsType)) {
+            var t1_s = shift1(t1, 0);
+            var u = unify(t2.id(), t2.inner(), t1_s);
+            if (u === false)
+                return false;
+            if (u === true)
+                return true;
+            var b = t2.bound();
+            return b === null || subtypeAux(u, b, trail);
+        }
+        if (t1 instanceof TypeChecker.ForallType && !(t2 instanceof TypeChecker.ForallType)) {
+            var t2_s = shift1(t2, 0);
+            var u = unify(t1.id(), t1.inner(), t2_s);
+            if (u === false)
+                return false;
+            if (u === true)
+                return true;
+            var b = t1.bound();
+            return b === null || subtypeAux(u, b, trail);
+        }
+        if (t1 instanceof TypeChecker.RecordType && t2 instanceof TypeChecker.RecordType) {
+            if (!t1.isEmpty() && t2.isEmpty())
+                return false;
+            var t1fields = t1.fields();
+            var t2fields = t2.fields();
+            for (var k in t2fields) {
+                if (t1fields[k] === undefined ||
+                    !subtypeAux(t1fields[k], t2fields[k], trail)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+        if (t1 instanceof TypeChecker.SumType && t2 instanceof TypeChecker.SumType) {
+            var t1_tags = t1.tags();
+            for (var k in t1_tags) {
+                if (t2.inner(t1_tags[k]) === undefined ||
+                    !subtypeAux(t1.inner(t1_tags[k]), t2.inner(t1_tags[k]), trail))
+                    return false;
+            }
+            return true;
+        }
+        if (t1 instanceof TypeChecker.TupleType && t2 instanceof TypeChecker.TupleType) {
+            var t1s = t1.inner();
+            var t2s = t2.inner();
+            if (t1s.length !== t2s.length)
+                return false;
+            for (var i = 0; i < t1s.length; ++i)
+                if (!subtypeAux(t1s[i], t2s[i], trail))
+                    return false;
+            return true;
+        }
+        if (!(t1 instanceof TypeChecker.AlternativeType) && t2 instanceof TypeChecker.AlternativeType) {
+            var i2s = t2.inner();
+            for (var j = 0; j < i2s.length; ++j) {
+                if (subtypeAux(t1, i2s[j], trail)) {
+                    return true;
+                }
+            }
+        }
+        if (t1 instanceof TypeChecker.AlternativeType && t2 instanceof TypeChecker.AlternativeType) {
+            var i1s = t1.inner();
+            var i2s = t2.inner();
+            if (i1s.length > i2s.length)
+                return false;
+            var tmp_i2s = i2s.slice(0);
+            for (var i = 0; i < i1s.length; ++i) {
+                var curr = i1s[i];
+                var found = false;
+                for (var j = 0; j < tmp_i2s.length; ++j) {
+                    var tmp = tmp_i2s[j];
+                    if (subtypeAux(curr, tmp, trail)) {
+                        tmp_i2s.splice(j, 1);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
+        }
+        if (t1 instanceof TypeChecker.IntersectionType && !(t2 instanceof TypeChecker.IntersectionType)) {
+            var i1s = t1.inner();
+            for (var j = 0; j < i1s.length; ++j) {
+                if (subtypeAux(i1s[j], t2, trail)) {
+                    return true;
+                }
+            }
+        }
+        if (t1 instanceof TypeChecker.IntersectionType && t2 instanceof TypeChecker.IntersectionType) {
+            var i1s = t2.inner();
+            var i2s = t1.inner();
+            if (i1s.length > i2s.length)
+                return false;
+            var tmp_i2s = i2s.slice(0);
+            for (var i = 0; i < i1s.length; ++i) {
+                var curr = i1s[i];
+                var found = false;
+                for (var j = 0; j < tmp_i2s.length; ++j) {
+                    var tmp = tmp_i2s[j];
+                    if (subtypeAux(curr, tmp, trail)) {
+                        tmp_i2s.splice(j, 1);
+                        found = true;
+                        break;
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
+        }
+        return false;
+    }
+    ;
+    function OLD_subtypeAux(t1, t2, trail) {
+        if (t1 === t2 || equals(t1, t2))
+            return true;
         var def1 = t1.type === TypeChecker.types.DefinitionType;
         var def2 = t2.type === TypeChecker.types.DefinitionType;
         if (def1 || def2) {

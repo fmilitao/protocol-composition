@@ -480,6 +480,11 @@ var TypeChecker;
         error(!TypeChecker.fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
         TypeChecker.fct[t].prototype.toString = fun;
     }
+    function isTypeVariableName(n) {
+        return n[0] === n[0].toUpperCase();
+    }
+    TypeChecker.isTypeVariableName = isTypeVariableName;
+    ;
     var Gamma = (function () {
         function Gamma(typedef, parent, id, type, bound) {
             this.typedef = typedef;

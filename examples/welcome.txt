@@ -13,7 +13,7 @@ typedef Sum[q,l] = tag#(ref q) + teg#(ref l)
 // subtyping
     subtype [a:int,b:int] <: [a:int]
 <B> subtype [a:int,b:B] <: [a:int]
-    subtype int <: !int
+    subtype !int <: !int
 not subtype int <: boolean
 
  	subtype int <: exists q.int
@@ -22,6 +22,9 @@ not subtype int <: boolean
 
 <q> subtype rw q int <: exists w.rw w int
 <q> subtype rw q string <: exists w.rw q string
+
+<q> subtype ref q <: ref q
+<q><w> not subtype ref q <: ref w
 
 <q> subtype forall w.rw w int <: rw q int
 <q> subtype forall w.rw w string <: rw q string

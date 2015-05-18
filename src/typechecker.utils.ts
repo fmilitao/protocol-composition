@@ -9,9 +9,9 @@
 module TypeChecker {
 
     // unify 'x' in 't' to match 'a', false if failed
-    export function unify(x : TypeVariable|LocationVariable, t : Type, a : Type) : Type|boolean {
+    export function unify(x: TypeVariable|LocationVariable, t: Type, a: Type): Type|boolean {
         
-//FIXME: remove this check! require type checker
+        //FIXME: remove this check! require type checker (some uses of unify are not typesafe so check remains)
         if (x.type !== types.LocationVariable &&
             x.type !== types.TypeVariable) {
             error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
@@ -586,7 +586,7 @@ module TypeChecker {
 	 * @param {Function} equals function to compare types
 	 * @return a new 'type' where all instances of 'from' have been replaced with 'to'.
 	 */
-    function substitutionAux(t , from , to: Type): Type {
+    function substitutionAux(t, from, to: Type): Type {
 
         // for convenience...
         var rec = function(type) {
@@ -702,7 +702,305 @@ module TypeChecker {
         return subtypeAux(t1, t2, new Set<string>());
     };
 
-    function subtypeAux(t1, t2, trail: Set<string>): boolean {
+
+    function subtypeAux(t1: Type, t2: Type, trail: Set<string>): boolean {
+        // (st:Symmetry)
+        if (t1 === t2 || equals(t1, t2))
+            return true;
+
+        // primitive types (no corresponding rule)
+        if (t1 instanceof PrimitiveType && t2 instanceof PrimitiveType) {
+            return t1.name() === t2.name();
+        }
+
+        // (eq:Rec) & (st:Weakening)
+        const def1 = t1 instanceof DefinitionType;
+        const def2 = t2 instanceof DefinitionType;
+
+        if (def1 || def2) {
+
+            const key = keyF(t1, t2);
+
+            if (trail.has(key))
+                return true;
+
+            trail.add(key);
+            t1 = def1 ? unfold(t1) : t1;
+            t2 = def2 ? unfold(t2) : t2;
+
+            return subtypeAux(t1, t2, trail);
+        }
+
+        // (st:Top)
+        if (t2 instanceof TopType)
+            return true;
+
+        // (st:TypeVar)
+        if (t1 instanceof TypeVariable) {
+            const bound = t1.bound();
+
+            if (bound !== null && subtypeAux(bound, t2, trail))
+                return true;
+        }
+
+        // (st:ToLinear)
+        if (t1 instanceof BangType && subtypeAux(t1.inner(), t2, trail)) {
+            return true;
+        }
+            
+        // (st:PureTop)
+        if (t1 instanceof BangType && t2 instanceof BangType) {
+            const i = t2.inner();
+            if (i instanceof RecordType && i.isEmpty())
+                return true;
+        }
+
+        // (st:Pure)
+        if (t1 instanceof BangType && t2 instanceof BangType && subtypeAux(t1.inner(), t2.inner(), trail)) {
+            return true;
+        }
+
+        // (st:Function)
+        if (t1 instanceof FunctionType && t2 instanceof FunctionType &&
+            subtypeAux(t2.argument(), t1.argument(), trail) && subtypeAux(t1.body(), t2.body(), trail)) {
+            return true;
+        }
+
+        // (st:Stack)
+        if (t1 instanceof StackedType && t2 instanceof StackedType &&
+            subtypeAux(t1.left(), t2.left(), trail) && subtypeAux(t1.right(), t2.right(), trail)) {
+            return true;
+        }
+
+        // (st:Cap)
+        if (t1 instanceof CapabilityType && t2 instanceof CapabilityType &&
+            equals(t1.location(), t2.location()) &&
+            subtypeAux(t1.value(), t2.value(), trail)) {
+            return true;
+        }
+
+        // (st:Star)
+        if (t1 instanceof StarType && t2 instanceof StarType) {
+            const i1s = t1.inner();
+            const i2s = t2.inner();
+
+            if (i1s.length === i2s.length) {
+            
+                // for *-type, any order will do
+                const tmp_i2s = i2s.slice(0); // copies array
+                let fail = false;
+
+                for (const curr of i1s) {
+                    let found = false;
+                    for (const tmp of tmp_i2s)
+                        for (let j = 0; j < tmp_i2s.length; ++j) {
+                            const tmp = tmp_i2s[j];
+                            if (subtypeAux(curr, tmp, trail)) {
+                                tmp_i2s.splice(j, 1); // removes element
+                                found = true;
+                                break; // continue to next
+                            }
+                        }
+                    if (!found) {
+                        fail = true;
+                        break; // break loop, rule failed
+                    }
+                }
+
+                if (!fail) {
+                    return true;
+                }
+            }
+        }
+
+        // (st:Loc-Exists)
+        // (st:Loc-Forall)
+        // (st:Type-Exists)
+        // (st:Type-Forall)
+        if ((t1 instanceof ExistsType && t2 instanceof ExistsType) ||
+            (t1 instanceof ForallType && t2 instanceof ForallType)) {
+
+            if ((t1.id().type === t2.id().type) &&
+                equals(t1.bound(), t2.bound()) &&
+                subtypeAux(t1.inner(), t2.inner(), trail))
+                return true;
+        }
+        
+        // (st:PackLoc)
+        // (st:PackType)
+        if (t2 instanceof ExistsType && !(t1 instanceof ExistsType)) {
+            // must shift 't1' to match 't2' depth
+            const t1_s = shift1(t1, 0);
+
+            // if found unification and it obeys bound, successed.
+            const u = unify(t2.id(), t2.inner(), t1_s);
+
+            // must use '===' to avoid implicit conversions
+            if (u === false)
+                return false;
+            if (u === true)
+                // no need to check bounds because match was empty (but valid)
+                return true;
+            // else 'u' must be a type
+            const b = t2.bound();
+            return b === null || subtypeAux(<Type>u, <Type>b, trail);
+        }
+
+        // (st:TypeApp)
+        // (st:LocApp)        
+        if (t1 instanceof ForallType && !(t2 instanceof ForallType)) {
+            // must shift 't2' to match 't1' depth
+            const t2_s = shift1(t2, 0);
+
+            const u = unify(t1.id(), t1.inner(), t2_s);
+
+            // must use '===' to avoid implicit conversions
+            if (u === false)
+                return false;
+            if (u === true)
+                // no need to check bounds because match was empty (but valid)
+                return true;
+            // else 'u' must be a type
+            const b = t1.bound();
+            return b === null || subtypeAux(<Type>u, <Type>b, trail);
+        }
+
+        // (st:Discard) and (st:Record) combined
+        if (t1 instanceof RecordType && t2 instanceof RecordType) {
+            // no other matching of record types exists, so OK to fail early
+            // without trying other rules.
+            if (!t1.isEmpty() && t2.isEmpty())
+                return false;
+
+            // all fields of t2 must be in t1
+            const t1fields = t1.fields();
+            const t2fields = t2.fields();
+            for (const k in t2fields) {
+                if (t1fields[k] === undefined ||
+                    !subtypeAux(t1fields[k], t2fields[k], trail)) {
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        // (st:Sum)
+        if (t1 instanceof SumType && t2 instanceof SumType) {
+            // again, only possible way of matching sum types
+            const t1_tags = t1.tags();
+            for (const k in t1_tags) {
+                if (t2.inner(t1_tags[k]) === undefined || // if tag is missing, or
+                    !subtypeAux(t1.inner(t1_tags[k]), t2.inner(t1_tags[k]), trail))
+                    return false;
+            }
+            return true;
+        }
+
+        // tuple (not a rule, but encoded directly instead via abbreviation)
+        if (t1 instanceof TupleType && t2 instanceof TupleType) {
+            // again, only possible match of two tuples
+            const t1s = t1.inner();
+            const t2s = t2.inner();
+            if (t1s.length !== t2s.length)
+                return false;
+            for (let i = 0; i < t1s.length; ++i)
+                if (!subtypeAux(t1s[i], t2s[i], trail))
+                    return false;
+            return true;
+        }
+
+        // (st:Alternative) 
+        if (!(t1 instanceof AlternativeType) && t2 instanceof AlternativeType) {
+            // only requirement is that t1 is one of t2's alternative
+            const i2s = t2.inner();
+            for (let j = 0; j < i2s.length; ++j) {
+                if (subtypeAux(t1, i2s[j], trail)) {
+                    return true;
+                }
+            }
+            // return false;
+        }
+
+        // (st:Alternative-Cong)
+        if (t1 instanceof AlternativeType && t2 instanceof AlternativeType) {
+            const i1s = t1.inner();
+            const i2s = t2.inner();
+
+            // more alternatives in t1
+            if (i1s.length > i2s.length)
+                return false;
+
+            // any order will do, but must ensure all of t1 is inside t2
+            const tmp_i2s = i2s.slice(0); // copies array
+            for (let i = 0; i < i1s.length; ++i) {
+                const curr = i1s[i];
+                let found = false;
+                for (let j = 0; j < tmp_i2s.length; ++j) {
+                    const tmp = tmp_i2s[j];
+                    if (subtypeAux(curr, tmp, trail)) {
+                        tmp_i2s.splice(j, 1); // removes element
+                        found = true;
+                        break; // continue to next
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
+        }
+
+
+        // (st:Intersection)
+        if (t1 instanceof IntersectionType && !(t2 instanceof IntersectionType)) {
+            // one of t1s alts is t2
+            const i1s = t1.inner();
+            for (let j = 0; j < i1s.length; ++j) {
+                if (subtypeAux(i1s[j], t2, trail)) {
+                    return true;
+                }
+            }
+            //return false;
+        }
+
+        // (st:Intersection-Cong)
+        if (t1 instanceof IntersectionType && t2 instanceof IntersectionType) {
+            // note intentionally inverts order, rest copy pasted from above.
+            const i1s = t2.inner();
+            const i2s = t1.inner();
+
+            // more alternatives in t1
+            if (i1s.length > i2s.length)
+                return false;
+
+            // any order will do, but must ensure all of t1 is inside t2
+            const tmp_i2s = i2s.slice(0); // copies array
+            for (let i = 0; i < i1s.length; ++i) {
+                const curr = i1s[i];
+                let found = false;
+                for (let j = 0; j < tmp_i2s.length; ++j) {
+                    const tmp = tmp_i2s[j];
+                    if (subtypeAux(curr, tmp, trail)) {
+                        tmp_i2s.splice(j, 1); // removes element
+                        found = true;
+                        break; // continue to next
+                    }
+                }
+                if (!found)
+                    return false;
+            }
+            return true;
+        }
+
+        // this check could be used earlier instead of having to test all types even if different kind.
+        // if (t1.type !== t2.type) {
+        //     return false;
+        // }
+
+        return false;
+    };
+
+    /** @deprecated */
+    function OLD_subtypeAux(t1, t2, trail: Set<string>): boolean {
         if (t1 === t2 || equals(t1, t2)) // A <: A
             return true;
 
@@ -804,7 +1102,7 @@ module TypeChecker {
                 return true;
             // else 'u' must be a type
             var b = t2.bound();
-            return b === null || subtypeAux(u, b, trail);
+            return b === null || subtypeAux(<Type>u, <Type>b, trail);
         }
 
         if (t1.type === types.ForallType && t2.type !== types.ForallType) {
@@ -821,7 +1119,7 @@ module TypeChecker {
                 return true;
             // else 'u' must be a type
             var b = t1.bound();
-            return b === null || subtypeAux(u, b, trail);
+            return b === null || subtypeAux(<Type>u, <Type>b, trail);
         }
 
         // all remaining rule require equal kind of type
@@ -994,7 +1292,7 @@ module TypeChecker {
 
     };
 
-    export function isFree(x : TypeVariable|LocationVariable, t: Type): boolean {
+    export function isFree(x: TypeVariable|LocationVariable, t: Type): boolean {
         return isFreeAux(x, t, new Set<string>());
     };
 

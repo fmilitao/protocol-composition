@@ -175,12 +175,12 @@ module TypeChecker {
     };
 
     export class ForallType extends BaseType {
-        public id: () => string;
+        public id: () => LocationVariable|TypeVariable;
         public inner: () => Type;
         public bound: () => Type;
 
         constructor(
-            id: string,
+            id: LocationVariable|TypeVariable,
             inner: Type,
             bound: Type) {
             super();
@@ -192,12 +192,12 @@ module TypeChecker {
     };
 
     export class ExistsType extends BaseType {
-        public id: () => string;
+        public id: () => LocationVariable|TypeVariable;
         public inner: () => Type;
         public bound: () => Type;
 
         constructor(
-            id: string,
+            id: LocationVariable|TypeVariable,
             inner: Type,
             bound: Type) {
             super();
@@ -569,6 +569,11 @@ module TypeChecker {
         fct[t].prototype.toString = fun;
     }
 
+
+    // TypeVariables must start upper cased.
+    export function isTypeVariableName(n: string) {
+        return n[0] === n[0].toUpperCase();
+    };
 
 	/**
 	 * The typing environment is a spaghetti stack where the parent

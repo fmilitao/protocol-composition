@@ -25,8 +25,8 @@ not subtype int <: boolean
 
     subtype !int <: int
     subtype !boolean <: boolean
-    subtype int <: !int
-    subtype boolean <: !boolean
+not subtype int <: !int
+not subtype boolean <: !boolean
 
 not subtype int <: none
 not subtype none <: int
@@ -50,7 +50,7 @@ subtype !boolean <: ![]
 not subtype int -o boolean <: boolean -o int
 not subtype boolean -o int <: int -o boolean
 
-subtype !int -o boolean <: int -o boolean
+not subtype !int -o boolean <: int -o boolean
 subtype int -o boolean <: !int -o boolean
 
 // contra-variant
