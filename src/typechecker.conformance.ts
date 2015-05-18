@@ -5,11 +5,13 @@ module TypeChecker {
 
     // does distinction between R and S grammar kinds.
     function isProtocol(t: Type, trail?: Set<string>): boolean {
-        if (t instanceof NoneType || t instanceof RelyType)
+        if (t instanceof NoneType || t instanceof RelyType){
             return true;
+        }
 
-        if (t instanceof ExistsType)
+        if (t instanceof ExistsType){
             return isProtocol(t.inner(), trail);
+        }
 
         if (t instanceof AlternativeType || t instanceof IntersectionType || t instanceof StarType) {
             for (const p of t.inner())
@@ -85,8 +87,9 @@ module TypeChecker {
                 step.inner(), shift(state, 0, 1));
         }
 
-        if (step instanceof GuaranteeType)
+        if (step instanceof GuaranteeType){
             return unify(id, step.guarantee(), state);
+        }
 
         if (step instanceof AlternativeType) {
             for (const is of step.inner()) {
@@ -253,6 +256,7 @@ module TypeChecker {
     // may return null on failed stepping, or set of new configurations
     function singleStep(s : Type, p : Type, q : Type, isLeft : boolean) : Configuration[] {
 
+        // note that this is a closure (uses 'q')
         function R(s : Type, p : Type) : Configuration {
             const [_s,_p,_q] = reIndex(s, p, q);
 

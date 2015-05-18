@@ -3,10 +3,12 @@
 var TypeChecker;
 (function (TypeChecker) {
     function isProtocol(t, trail) {
-        if (t instanceof TypeChecker.NoneType || t instanceof TypeChecker.RelyType)
+        if (t instanceof TypeChecker.NoneType || t instanceof TypeChecker.RelyType) {
             return true;
-        if (t instanceof TypeChecker.ExistsType)
+        }
+        if (t instanceof TypeChecker.ExistsType) {
             return isProtocol(t.inner(), trail);
+        }
         if (t instanceof TypeChecker.AlternativeType || t instanceof TypeChecker.IntersectionType || t instanceof TypeChecker.StarType) {
             for (var _i = 0, _a = t.inner(); _i < _a.length; _i++) {
                 var p = _a[_i];
@@ -68,8 +70,9 @@ var TypeChecker;
         if (step instanceof TypeChecker.ForallType) {
             return unifyGuarantee(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
         }
-        if (step instanceof TypeChecker.GuaranteeType)
+        if (step instanceof TypeChecker.GuaranteeType) {
             return TypeChecker.unify(id, step.guarantee(), state);
+        }
         if (step instanceof TypeChecker.AlternativeType) {
             for (var _i = 0, _a = step.inner(); _i < _a.length; _i++) {
                 var is = _a[_i];
