@@ -697,4 +697,8 @@ module TypeChecker {
 
     };
 
+    export const Unit = new BangType(new RecordType());
+    export const None = new NoneType();
+    export const Top = new TopType();
+
 };

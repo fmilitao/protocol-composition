@@ -26,6 +26,7 @@
         "./src/setup.worker.ts",
         "./src/typechecker.ts",
         "./src/typechecker.types.ts",
-        "./src/typechecker.utils.ts"
+        "./src/typechecker.utils.ts",
+        "./src/typechecker.conformance.ts"
     ]
 }

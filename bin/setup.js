@@ -23,6 +23,7 @@ var Setup;
         'bin/parser.js',
         'bin/typechecker.types.js',
         'bin/typechecker.utils.js',
+        'bin/typechecker.conformance.js',
         'bin/typechecker.js'];
     var WORKER_JS = 'bin/setup.worker.js';
     var DEBUG_MSG = true;

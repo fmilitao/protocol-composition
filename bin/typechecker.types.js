@@ -575,5 +575,8 @@ var TypeChecker;
     })();
     TypeChecker.TypeDefinition = TypeDefinition;
     ;
+    TypeChecker.Unit = new BangType(new RecordType());
+    TypeChecker.None = new NoneType();
+    TypeChecker.Top = new TopType();
 })(TypeChecker || (TypeChecker = {}));
 ;

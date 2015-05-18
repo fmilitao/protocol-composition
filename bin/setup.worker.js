@@ -8,6 +8,7 @@ var IMPORTS = [
     'parser.js',
     'typechecker.types.js',
     'typechecker.utils.js',
+    'typechecker.conformance.js',
     'typechecker.js'];
 if (isWorker) {
     var console = function () {
