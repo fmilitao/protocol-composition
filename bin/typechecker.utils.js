@@ -3,10 +3,6 @@
 var TypeChecker;
 (function (TypeChecker) {
     function unify(x, t, a) {
-        if (x.type !== TypeChecker.types.LocationVariable &&
-            x.type !== TypeChecker.types.TypeVariable) {
-            TypeChecker.error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
-        }
         return unifyAux(x, t, a, new Set());
     }
     TypeChecker.unify = unify;

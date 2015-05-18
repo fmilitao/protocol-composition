@@ -10,13 +10,6 @@ module TypeChecker {
 
     // unify 'x' in 't' to match 'a', false if failed
     export function unify(x: TypeVariable|LocationVariable, t: Type, a: Type): Type|boolean {
-        
-        //FIXME: remove this check! require type checker (some uses of unify are not typesafe so check remains)
-        if (x.type !== types.LocationVariable &&
-            x.type !== types.TypeVariable) {
-            error("@unify: can only unify a Type/LocationVariable, got: " + x.type);
-        }
-
         return unifyAux(x, t, a, new Set());
     };
 

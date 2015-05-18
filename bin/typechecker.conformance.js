@@ -30,6 +30,33 @@ var TypeChecker;
         return false;
     }
     ;
+    function reIndex(s, a, b) {
+        var set = TypeChecker.indexSet(s);
+        TypeChecker.indexSet(a).forEach(function (v) { set.add(v); });
+        TypeChecker.indexSet(b).forEach(function (v) { set.add(v); });
+        if (set.size > 0) {
+            var v = [];
+            set.forEach(function (val) { v.push(val); });
+            v.sort();
+            for (var i = 0; i < v.length; ++i) {
+                if (v[i] !== i) {
+                    v[i] = i - v[i] - (i > 0 ? v[i - 1] : 0);
+                }
+                else {
+                    v[i] = 0;
+                }
+            }
+            for (var i = 0; i < v.length; ++i) {
+                if (v[i] < 0) {
+                    s = TypeChecker.shift(s, i, v[i]);
+                    a = TypeChecker.shift(a, i, v[i]);
+                    b = TypeChecker.shift(b, i, v[i]);
+                }
+            }
+        }
+        return [s, a, b];
+    }
+    ;
     function unifyRely(id, step, state) {
         if (step instanceof TypeChecker.ExistsType) {
             return unifyRely(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
@@ -136,6 +163,7 @@ var TypeChecker;
         }
         return visited;
     }
+    ;
     function step(s, p, q, isLeft) {
         s = TypeChecker.unfold(s);
         p = TypeChecker.unfold(p);
@@ -278,33 +306,6 @@ var TypeChecker;
             }
             return null;
         }
-    }
-    ;
-    function reIndex(s, a, b) {
-        var set = TypeChecker.indexSet(s);
-        TypeChecker.indexSet(a).forEach(function (v) { set.add(v); });
-        TypeChecker.indexSet(b).forEach(function (v) { set.add(v); });
-        if (set.size > 0) {
-            var v = [];
-            set.forEach(function (val) { v.push(val); });
-            v.sort();
-            for (var i = 0; i < v.length; ++i) {
-                if (v[i] !== i) {
-                    v[i] = i - v[i] - (i > 0 ? v[i - 1] : 0);
-                }
-                else {
-                    v[i] = 0;
-                }
-            }
-            for (var i = 0; i < v.length; ++i) {
-                if (v[i] < 0) {
-                    s = TypeChecker.shift(s, i, v[i]);
-                    a = TypeChecker.shift(a, i, v[i]);
-                    b = TypeChecker.shift(b, i, v[i]);
-                }
-            }
-        }
-        return [s, a, b];
     }
     ;
 })(TypeChecker || (TypeChecker = {}));

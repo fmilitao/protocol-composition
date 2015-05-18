@@ -36,6 +36,37 @@ module TypeChecker {
 
     };
 
+    // unshifts types
+    function reIndex(s: Type, a: Type, b: Type): [Type, Type, Type] {
+        const set: Set<number> = indexSet(s);
+        indexSet(a).forEach(function(v) { set.add(v); });
+        indexSet(b).forEach(function(v) { set.add(v); });
+
+        if (set.size > 0) {
+            const v = [];
+            set.forEach(function(val) { v.push(val); });
+            v.sort();
+            // find shifting value
+            for (let i = 0; i < v.length; ++i) {
+                if (v[i] !== i) {
+                    v[i] = i - v[i] - (i > 0 ? v[i - 1] : 0);
+                } else {
+                    v[i] = 0; // no shift
+                }
+            }
+            // apply shifts
+            for (let i = 0; i < v.length; ++i) {
+                if (v[i] < 0) {
+                    s = shift(s, i, v[i]);
+                    a = shift(a, i, v[i]);
+                    b = shift(b, i, v[i]);
+                }
+            }
+        }
+
+        return [s, a, b];
+    };
+
     function unifyRely(id: LocationVariable|TypeVariable, step: Type, state: Type): boolean | Type {
 
         if (step instanceof ExistsType) {
@@ -173,7 +204,7 @@ module TypeChecker {
         }
 
         return visited;
-    }
+    };
 
     function step(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[] {
         // expands recursion
@@ -418,35 +449,40 @@ module TypeChecker {
         }
     };
 
-    // unshifts types
-    function reIndex(s: Type, a: Type, b: Type): [Type, Type, Type] {
-        const set: Set<number> = indexSet(s);
-        indexSet(a).forEach(function(v) { set.add(v); });
-        indexSet(b).forEach(function(v) { set.add(v); });
+    /*
+    // s >> p || q
+    function cf(
+        s: Type,
+        p: Type, q: Type,
+        visited: Configuration[]
+        ): Configuration[] {
 
-        if (set.size > 0) {
-            const v = [];
-            set.forEach(function(val) { v.push(val); });
-            v.sort();
-            // find shifting value
-            for (let i = 0; i < v.length; ++i) {
-                if (v[i] !== i) {
-                    v[i] = i - v[i] - (i > 0 ? v[i - 1] : 0);
-                } else {
-                    v[i] = 0; // no shift
-                }
-            }
-            // apply shifts
-            for (let i = 0; i < v.length; ++i) {
-                if (v[i] < 0) {
-                    s = shift(s, i, v[i]);
-                    a = shift(a, i, v[i]);
-                    b = shift(b, i, v[i]);
-                }
-            }
-        }
+        const left = stp(w.s, w.p, w.q, true, visited);
+        const right = step(w.s, w.q, w.p, false, visited);
+        if (left === null || right === null)
+            return null; // fails
 
-        return [s, a, b];
+        return  [].concat(left).concat(right);
     };
 
+    function stp(
+        s: Type,
+        p: Type,
+        q: Type,
+        isLeft : boolean,
+        visited: Configuration[]
+        ) : Configuration[] {
+
+        // FIXME!!
+
+    }
+    */
+
 };
+
+
+
+
+
+
+
