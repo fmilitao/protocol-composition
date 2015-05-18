@@ -7,80 +7,78 @@ module TypeChecker {
     // Auxiliary Definitions
     //
 
-    function isProtocol(t, trail?: Set<string>): boolean {
-        switch (t.type) {
-            case types.NoneType:
-                return true;
-            case types.RelyType:
-                return true;
-            case types.ExistsType:
-                return isProtocol(t.inner(), trail);
-            case types.AlternativeType:
-            case types.IntersectionType:
-            case types.StarType: {
-                const ts = t.inner();
-                for (let i = 0; i < ts.length; ++i) {
-                    if (!isProtocol(ts[i], trail))
-                        return false;
-                }
-                return true;
-            }
-            case types.DefinitionType: {
-                // lazy use of 'trail' since it should not be needed.
-                if (trail === undefined) {
-                    trail = new Set<string>();
-                }
-                const key = t.toString(true);
-                if (trail.has(key))
-                    return true; // assume isProtocol elsewhere
-                trail.add(key);
-                return isProtocol(unfold(t), trail);
-            }
-            default:
-                return false;
+    // does distinction between R and S grammar kinds.
+    function isProtocol(t: Type, trail?: Set<string>): boolean {
+        if (t instanceof NoneType || t instanceof RelyType)
+            return true;
+
+        if (t instanceof ExistsType)
+            return isProtocol(t.inner(), trail);
+
+        if (t instanceof AlternativeType || t instanceof IntersectionType || t instanceof StarType) {
+            for (const p of t.inner())
+                if (!isProtocol(p, trail))
+                    return false;
+            return true;
         }
+
+        if (t instanceof DefinitionType) {
+            // lazy use of 'trail' since it should not be needed.
+            if (trail === undefined) {
+                trail = new Set<string>();
+            }
+            const key = t.toString(true);
+            if (trail.has(key))
+                return true; // assume isProtocol elsewhere
+            trail.add(key);
+            return isProtocol(unfold(t), trail);
+        }
+
+        return false;
+
     };
 
+    function unifyRely(id : LocationVariable|TypeVariable, step : Type, state : Type) {
 
-    function unifyRely(id, step, state) {
-        switch (step.type) {
-            case types.ExistsType: id
-                return unifyRely( // must shift indexes to match new depth
-                    shift(id, 0, 1),
-                    step.inner(),
-                    shift(state, 0, 1));
-            case types.RelyType:
-                return unify(id, step.rely(), state);
-            case types.AlternativeType: {
-                var is = step.inner();
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyRely(id, is[i], state);
-                    // if found one unification that is valid (either empty or not)
-                    if (tmp !== false)
-                        return tmp;
-                }
-                return false;
-            }
-            case types.IntersectionType: {
-                var is = step.inner();
-                var res = null; // assuming at least one element in 'is'
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyRely(id, is[i], state);
-                    // if one fails, they all do.
-                    if (tmp === false)
-                        return tmp;
-                    if (res === null) {
-                        res = tmp;
-                    } else {
-                        if (!equals(res, tmp))
-                            return false;
-                    }
-                }
-                return res;
-            }
-            default:
-                return false;
+        if (step instanceof ExistsType) {
+            return unifyRely( // must shift indexes to match new depth
+                <LocationVariable|TypeVariable>shift(id, 0, 1),
+                step.inner(),
+                shift(state, 0, 1));
         }
+
+        if (step instanceof RelyType) {
+            return unify(id, step.rely(), state);
+        }
+
+        if (step instanceof AlternativeType) {
+            for (const is of step.inner()) {
+                const tmp = unifyRely(id, is, state);
+                // if found one unification that is valid (either empty or not)
+                if (tmp !== false)
+                    return tmp;
+            }
+            return false;
+        }
+
+        if (step instanceof IntersectionType) {
+            let res = null; // assuming at least one element in 'is'
+            for (const is of step.inner() ) {
+                const tmp = unifyRely(id, is, state);
+                // if one fails, they all do.
+                if (tmp === false)
+                    return tmp;
+                if (res === null) {
+                    res = tmp;
+                } else {
+                    if (!equals(res, tmp))
+                        return false;
+                }
+            }
+            return res;
+        }
+
+        return false;
     };
 
     function unifyGuarantee(id, step, state) {
@@ -121,7 +119,7 @@ module TypeChecker {
         }
     };
 
-    function contains(visited, w) {
+    function contains(visited : Configuration[], w : Configuration) : boolean {
         for (var v of visited) {
             // must assume that all types were normalized to have their
             // indexes compacted in order to ensure termination.
@@ -140,32 +138,29 @@ module TypeChecker {
     // Protocol Conformance
     //
 
-    function Work(s, p, q) {
+    type Configuration = { s: Type, p: Type, q: Type };
+
+    function Work(s : Type, p : Type, q : Type) : Configuration {
         return { s: s, p: p, q: q };
     };
 
-    export function checkConformance(g, s, p, q) {
+    export function checkConformance(g : Gamma, s : Type, p : Type, q : Type) : Configuration[] {
         // we can ignore 'g' because of using indexes
-        var work = [Work(s, p, q)];
-        var visited = [];
-        return checkConformanceAux(work, visited);
+        return checkConformanceAux(
+            [Work(s, p, q)], // initial work to do.
+            [] // initial empty visited set.
+            );
     };
 
-    function checkConformanceAux(work, visited) {
+    function checkConformanceAux(work : Configuration[], visited : Configuration[]) : Configuration[] {
 
-        // var i=0;
-        // console.debug( '' );
         while (work.length > 0) {
-            var w = work.pop();
+            const w = work.pop();
 
             if (!contains(visited, w)) {
-                var s = w.s;
-                var p = w.p;
-                var q = w.q;
 
-                // console.debug( (i++)+' : '+s+' >> '+p+' || '+q );
-                var left = step(s, p, q, true);
-                var right = step(s, q, p, false);
+                const left = step(w.s, w.p, w.q, true);
+                const right = step(w.s, w.q, w.p, false);
                 if (left === null || right === null)
                     return null; // fails
 
@@ -173,10 +168,8 @@ module TypeChecker {
 
                 visited.push(w);
             }
-
-            // if( i > 100 ) //FIXME this is temporary.
-            //  error('loop bug...');
         }
+
         return visited;
     }
 

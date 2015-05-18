@@ -3,74 +3,65 @@
 var TypeChecker;
 (function (TypeChecker) {
     function isProtocol(t, trail) {
-        switch (t.type) {
-            case TypeChecker.types.NoneType:
-                return true;
-            case TypeChecker.types.RelyType:
-                return true;
-            case TypeChecker.types.ExistsType:
-                return isProtocol(t.inner(), trail);
-            case TypeChecker.types.AlternativeType:
-            case TypeChecker.types.IntersectionType:
-            case TypeChecker.types.StarType: {
-                var ts = t.inner();
-                for (var i = 0; i < ts.length; ++i) {
-                    if (!isProtocol(ts[i], trail))
-                        return false;
-                }
-                return true;
+        if (t instanceof TypeChecker.NoneType || t instanceof TypeChecker.RelyType)
+            return true;
+        if (t instanceof TypeChecker.ExistsType)
+            return isProtocol(t.inner(), trail);
+        if (t instanceof TypeChecker.AlternativeType || t instanceof TypeChecker.IntersectionType || t instanceof TypeChecker.StarType) {
+            for (var _i = 0, _a = t.inner(); _i < _a.length; _i++) {
+                var p = _a[_i];
+                if (!isProtocol(p, trail))
+                    return false;
             }
-            case TypeChecker.types.DefinitionType: {
-                if (trail === undefined) {
-                    trail = new Set();
-                }
-                var key = t.toString(true);
-                if (trail.has(key))
-                    return true;
-                trail.add(key);
-                return isProtocol(TypeChecker.unfold(t), trail);
-            }
-            default:
-                return false;
+            return true;
         }
+        if (t instanceof TypeChecker.DefinitionType) {
+            if (trail === undefined) {
+                trail = new Set();
+            }
+            var key = t.toString(true);
+            if (trail.has(key))
+                return true;
+            trail.add(key);
+            return isProtocol(TypeChecker.unfold(t), trail);
+        }
+        return false;
     }
     ;
     function unifyRely(id, step, state) {
-        switch (step.type) {
-            case TypeChecker.types.ExistsType:
-                id;
-                return unifyRely(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
-            case TypeChecker.types.RelyType:
-                return TypeChecker.unify(id, step.rely(), state);
-            case TypeChecker.types.AlternativeType: {
-                var is = step.inner();
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyRely(id, is[i], state);
-                    if (tmp !== false)
-                        return tmp;
-                }
-                return false;
-            }
-            case TypeChecker.types.IntersectionType: {
-                var is = step.inner();
-                var res = null;
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyRely(id, is[i], state);
-                    if (tmp === false)
-                        return tmp;
-                    if (res === null) {
-                        res = tmp;
-                    }
-                    else {
-                        if (!TypeChecker.equals(res, tmp))
-                            return false;
-                    }
-                }
-                return res;
-            }
-            default:
-                return false;
+        if (step instanceof TypeChecker.ExistsType) {
+            return unifyRely(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
         }
+        if (step instanceof TypeChecker.RelyType) {
+            return TypeChecker.unify(id, step.rely(), state);
+        }
+        if (step instanceof TypeChecker.AlternativeType) {
+            for (var _i = 0, _a = step.inner(); _i < _a.length; _i++) {
+                var is = _a[_i];
+                var tmp = unifyRely(id, is, state);
+                if (tmp !== false)
+                    return tmp;
+            }
+            return false;
+        }
+        if (step instanceof TypeChecker.IntersectionType) {
+            var res = null;
+            for (var _b = 0, _c = step.inner(); _b < _c.length; _b++) {
+                var is = _c[_b];
+                var tmp = unifyRely(id, is, state);
+                if (tmp === false)
+                    return tmp;
+                if (res === null) {
+                    res = tmp;
+                }
+                else {
+                    if (!TypeChecker.equals(res, tmp))
+                        return false;
+                }
+            }
+            return res;
+        }
+        return false;
     }
     ;
     function unifyGuarantee(id, step, state) {
@@ -126,9 +117,7 @@ var TypeChecker;
     }
     ;
     function checkConformance(g, s, p, q) {
-        var work = [Work(s, p, q)];
-        var visited = [];
-        return checkConformanceAux(work, visited);
+        return checkConformanceAux([Work(s, p, q)], []);
     }
     TypeChecker.checkConformance = checkConformance;
     ;
@@ -136,11 +125,8 @@ var TypeChecker;
         while (work.length > 0) {
             var w = work.pop();
             if (!contains(visited, w)) {
-                var s = w.s;
-                var p = w.p;
-                var q = w.q;
-                var left = step(s, p, q, true);
-                var right = step(s, q, p, false);
+                var left = step(w.s, w.p, w.q, true);
+                var right = step(w.s, w.q, w.p, false);
                 if (left === null || right === null)
                     return null;
                 work = work.concat(left).concat(right);
