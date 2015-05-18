@@ -38,7 +38,7 @@ module TypeChecker {
 
     };
 
-    function unifyRely(id : LocationVariable|TypeVariable, step : Type, state : Type) {
+    function unifyRely(id : LocationVariable|TypeVariable, step : Type, state : Type) : boolean | Type{
 
         if (step instanceof ExistsType) {
             return unifyRely( // must shift indexes to match new depth
@@ -62,16 +62,16 @@ module TypeChecker {
         }
 
         if (step instanceof IntersectionType) {
-            let res = null; // assuming at least one element in 'is'
+            let res : Type = null; // assuming at least one element in 'is'
             for (const is of step.inner() ) {
                 const tmp = unifyRely(id, is, state);
                 // if one fails, they all do.
                 if (tmp === false)
                     return tmp;
                 if (res === null) {
-                    res = tmp;
+                    res = <Type>tmp;
                 } else {
-                    if (!equals(res, tmp))
+                    if (!equals(res, <Type>tmp))
                         return false;
                 }
             }
@@ -81,42 +81,45 @@ module TypeChecker {
         return false;
     };
 
-    function unifyGuarantee(id, step, state) {
-        switch (step.type) {
-            case types.ForallType:
-                return unifyGuarantee(shift(id, 0, 1), step.inner(), shift(state, 0, 1));
-            case types.GuaranteeType:
-                return unify(id, step.guarantee(), state);
-            case types.AlternativeType: {
-                var is = step.inner();
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyGuarantee(id, is[i], state);
-                    // if found one unification that is valid (either empty or not)
-                    if (tmp !== false)
-                        return tmp;
-                }
-                return false;
-            }
-            case types.IntersectionType: {
-                var is = step.inner();
-                var res = null; // assuming at least one element in 'is'
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyGuarantee(id, is[i], state);
-                    // if one fails, they all do.
-                    if (tmp === false)
-                        return tmp;
-                    if (res === null) {
-                        res = tmp;
-                    } else {
-                        if (!equals(res, tmp))
-                            return false;
-                    }
-                }
-                return res;
-            }
-            default:
-                return false;
+    function unifyGuarantee(id: LocationVariable|TypeVariable, step : Type, state : Type) : boolean | Type {
+
+        if (step instanceof ForallType) {
+            return unifyGuarantee(
+                <LocationVariable|TypeVariable>shift(id, 0, 1),
+                step.inner(), shift(state, 0, 1));
         }
+
+        if (step instanceof GuaranteeType)
+            return unify(id, step.guarantee(), state);
+
+        if (step instanceof AlternativeType) {
+            for (const is of step.inner() ) {
+                const tmp = unifyGuarantee(id, is, state);
+                // if found one unification that is valid (either empty or not)
+                if (tmp !== false)
+                    return tmp;
+            }
+            return false;
+        }
+
+        if (step instanceof IntersectionType) {
+            let res : Type = null; // assuming at least one element in 'is'
+            for (const is of step.inner() ) {
+                const tmp = unifyGuarantee(id, is, state);
+                // if one fails, they all do.
+                if (tmp === false)
+                    return tmp;
+                if (res === null) {
+                    res = <Type>tmp;
+                } else {
+                    if (!equals(res, <Type>tmp))
+                        return false;
+                }
+            }
+            return res;
+        }
+
+        return false;
     };
 
     function contains(visited : Configuration[], w : Configuration) : boolean {
@@ -329,7 +332,7 @@ module TypeChecker {
                 // TODO: check bound
                 // is some valid unification
                 if (x !== true) {
-                    t = substitution(t, i, x);
+                    t = substitution(t, i, <Type>x);
                 }
                 // unshift because we are opening the forall
                 t = shift(t, 0, -1);
@@ -382,7 +385,7 @@ module TypeChecker {
                 // TODO: check bound
                 // is some valid unification
                 if (x !== true) {
-                    t = substitution(t, i, x);
+                    t = substitution(t, i, <Type>x);
                 }
                 // unshift because we are opening the existential
                 t = shift(t, 0, -1);

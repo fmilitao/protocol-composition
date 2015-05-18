@@ -65,40 +65,38 @@ var TypeChecker;
     }
     ;
     function unifyGuarantee(id, step, state) {
-        switch (step.type) {
-            case TypeChecker.types.ForallType:
-                return unifyGuarantee(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
-            case TypeChecker.types.GuaranteeType:
-                return TypeChecker.unify(id, step.guarantee(), state);
-            case TypeChecker.types.AlternativeType: {
-                var is = step.inner();
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyGuarantee(id, is[i], state);
-                    if (tmp !== false)
-                        return tmp;
-                }
-                return false;
-            }
-            case TypeChecker.types.IntersectionType: {
-                var is = step.inner();
-                var res = null;
-                for (var i = 0; i < is.length; ++i) {
-                    var tmp = unifyGuarantee(id, is[i], state);
-                    if (tmp === false)
-                        return tmp;
-                    if (res === null) {
-                        res = tmp;
-                    }
-                    else {
-                        if (!TypeChecker.equals(res, tmp))
-                            return false;
-                    }
-                }
-                return res;
-            }
-            default:
-                return false;
+        if (step instanceof TypeChecker.ForallType) {
+            return unifyGuarantee(TypeChecker.shift(id, 0, 1), step.inner(), TypeChecker.shift(state, 0, 1));
         }
+        if (step instanceof TypeChecker.GuaranteeType)
+            return TypeChecker.unify(id, step.guarantee(), state);
+        if (step instanceof TypeChecker.AlternativeType) {
+            for (var _i = 0, _a = step.inner(); _i < _a.length; _i++) {
+                var is = _a[_i];
+                var tmp = unifyGuarantee(id, is, state);
+                if (tmp !== false)
+                    return tmp;
+            }
+            return false;
+        }
+        if (step instanceof TypeChecker.IntersectionType) {
+            var res = null;
+            for (var _b = 0, _c = step.inner(); _b < _c.length; _b++) {
+                var is = _c[_b];
+                var tmp = unifyGuarantee(id, is, state);
+                if (tmp === false)
+                    return tmp;
+                if (res === null) {
+                    res = tmp;
+                }
+                else {
+                    if (!TypeChecker.equals(res, tmp))
+                        return false;
+                }
+            }
+            return res;
+        }
+        return false;
     }
     ;
     function contains(visited, w) {
