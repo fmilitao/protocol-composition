@@ -139,48 +139,48 @@ var TypeChecker;
         var res = singleStep(s, p, q, isLeft);
         if (res !== null)
             return res;
-        if (s.type === TypeChecker.types.AlternativeType) {
-            var ss = s.inner();
-            var res = [];
-            for (var i = 0; i < ss.length; ++i) {
-                var tmp = step(ss[i], p, q, isLeft);
-                if (tmp === null) {
-                    res = null;
+        if (s instanceof TypeChecker.AlternativeType) {
+            var res_1 = [];
+            for (var _i = 0, _a = s.inner(); _i < _a.length; _i++) {
+                var ss = _a[_i];
+                var tmp_1 = step(ss, p, q, isLeft);
+                if (tmp_1 === null) {
+                    res_1 = null;
                     break;
                 }
-                res = res.concat(tmp);
+                res_1 = res_1.concat(tmp_1);
             }
-            if (res !== null)
-                return res;
+            if (res_1 !== null)
+                return res_1;
         }
-        if (p.type === TypeChecker.types.IntersectionType) {
-            var pp = p.inner();
-            var res = [];
-            for (var i = 0; i < pp.length; ++i) {
-                var tmp = step(s, pp[i], q, isLeft);
+        if (p instanceof TypeChecker.IntersectionType) {
+            var res_2 = [];
+            for (var _b = 0, _c = p.inner(); _b < _c.length; _b++) {
+                var pp = _c[_b];
+                var tmp = step(s, pp, q, isLeft);
                 if (tmp === null) {
-                    res = null;
+                    res_2 = null;
                     break;
                 }
-                res = res.concat(tmp);
+                res_2 = res_2.concat(tmp);
             }
-            if (res !== null)
-                return res;
+            if (res_2 !== null)
+                return res_2;
         }
-        if (p.type === TypeChecker.types.AlternativeType) {
-            var pp = p.inner();
-            for (var i = 0; i < pp.length; ++i) {
-                var tmp = step(s, pp[i], q, isLeft);
-                if (tmp !== null)
-                    return tmp;
+        if (p instanceof TypeChecker.AlternativeType) {
+            for (var _d = 0, _e = p.inner(); _d < _e.length; _d++) {
+                var pp = _e[_d];
+                var tmp_2 = step(s, pp, q, isLeft);
+                if (tmp_2 !== null)
+                    return tmp_2;
             }
         }
-        if (s.type === TypeChecker.types.IntersectionType) {
-            var ss = s.inner();
-            for (var i = 0; i < ss.length; ++i) {
-                var tmp = step(ss[i], p, q, isLeft);
-                if (tmp !== null)
-                    return tmp;
+        if (s instanceof TypeChecker.IntersectionType) {
+            for (var _f = 0, _g = s.inner(); _f < _g.length; _f++) {
+                var ss = _g[_f];
+                var tmp_3 = step(ss, p, q, isLeft);
+                if (tmp_3 !== null)
+                    return tmp_3;
             }
         }
         return null;

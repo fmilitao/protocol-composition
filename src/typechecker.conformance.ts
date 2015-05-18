@@ -3,10 +3,6 @@
 
 module TypeChecker {
 
-    //
-    // Auxiliary Definitions
-    //
-
     // does distinction between R and S grammar kinds.
     function isProtocol(t: Type, trail?: Set<string>): boolean {
         if (t instanceof NoneType || t instanceof RelyType)
@@ -38,7 +34,7 @@ module TypeChecker {
 
     };
 
-    function unifyRely(id : LocationVariable|TypeVariable, step : Type, state : Type) : boolean | Type{
+    function unifyRely(id: LocationVariable|TypeVariable, step: Type, state: Type): boolean | Type {
 
         if (step instanceof ExistsType) {
             return unifyRely( // must shift indexes to match new depth
@@ -62,8 +58,8 @@ module TypeChecker {
         }
 
         if (step instanceof IntersectionType) {
-            let res : Type = null; // assuming at least one element in 'is'
-            for (const is of step.inner() ) {
+            let res: Type = null; // assuming at least one element in 'is'
+            for (const is of step.inner()) {
                 const tmp = unifyRely(id, is, state);
                 // if one fails, they all do.
                 if (tmp === false)
@@ -81,7 +77,7 @@ module TypeChecker {
         return false;
     };
 
-    function unifyGuarantee(id: LocationVariable|TypeVariable, step : Type, state : Type) : boolean | Type {
+    function unifyGuarantee(id: LocationVariable|TypeVariable, step: Type, state: Type): boolean | Type {
 
         if (step instanceof ForallType) {
             return unifyGuarantee(
@@ -93,7 +89,7 @@ module TypeChecker {
             return unify(id, step.guarantee(), state);
 
         if (step instanceof AlternativeType) {
-            for (const is of step.inner() ) {
+            for (const is of step.inner()) {
                 const tmp = unifyGuarantee(id, is, state);
                 // if found one unification that is valid (either empty or not)
                 if (tmp !== false)
@@ -103,8 +99,8 @@ module TypeChecker {
         }
 
         if (step instanceof IntersectionType) {
-            let res : Type = null; // assuming at least one element in 'is'
-            for (const is of step.inner() ) {
+            let res: Type = null; // assuming at least one element in 'is'
+            for (const is of step.inner()) {
                 const tmp = unifyGuarantee(id, is, state);
                 // if one fails, they all do.
                 if (tmp === false)
@@ -122,8 +118,8 @@ module TypeChecker {
         return false;
     };
 
-    function contains(visited : Configuration[], w : Configuration) : boolean {
-        for (var v of visited) {
+    function contains(visited: Configuration[], w: Configuration): boolean {
+        for (const v of visited) {
             // must assume that all types were normalized to have their
             // indexes compacted in order to ensure termination.
             // Therefore, we do not need to check gamma.
@@ -143,11 +139,11 @@ module TypeChecker {
 
     type Configuration = { s: Type, p: Type, q: Type };
 
-    function Work(s : Type, p : Type, q : Type) : Configuration {
+    function Work(s: Type, p: Type, q: Type): Configuration {
         return { s: s, p: p, q: q };
     };
 
-    export function checkConformance(g : Gamma, s : Type, p : Type, q : Type) : Configuration[] {
+    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type): Configuration[] {
         // we can ignore 'g' because of using indexes
         return checkConformanceAux(
             [Work(s, p, q)], // initial work to do.
@@ -155,7 +151,7 @@ module TypeChecker {
             );
     };
 
-    function checkConformanceAux(work : Configuration[], visited : Configuration[]) : Configuration[] {
+    function checkConformanceAux(work: Configuration[], visited: Configuration[]): Configuration[] {
 
         while (work.length > 0) {
             const w = work.pop();
@@ -176,24 +172,23 @@ module TypeChecker {
         return visited;
     }
 
-    function step(s, p, q, isLeft) {
+    function step(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[] {
         // expands recursion
         s = unfold(s);
         p = unfold(p);
 
-        var res = singleStep(s, p, q, isLeft);
+        const res = singleStep(s, p, q, isLeft);
         if (res !== null)
             return res; // valid stepping
 
         // else step failed, attempt breaking 's' or 'p'
 
         // by (rs:StateAlternative)
-        if (s.type === types.AlternativeType) {
-            var ss = s.inner();
-            var res: any = [];
+        if (s instanceof AlternativeType) {
+            let res: Configuration[] = [];
             // protocol must consider *all* cases
-            for (var i = 0; i < ss.length; ++i) {
-                var tmp = step(ss[i], p, q, isLeft);
+            for (const ss of s.inner()) {
+                const tmp = step(ss, p, q, isLeft);
                 // one failed!
                 if (tmp === null) {
                     res = null; // signal fail
@@ -208,12 +203,11 @@ module TypeChecker {
         }
 
         // by (rs:ProtocolIntersection)
-        if (p.type === types.IntersectionType) {
-            var pp = p.inner();
-            var res: any = [];
+        if (p instanceof IntersectionType) {
+            let res: Configuration[] = [];
             // protocol must consider *all* cases
-            for (var i = 0; i < pp.length; ++i) {
-                var tmp = step(s, pp[i], q, isLeft);
+            for (const pp of p.inner()) {
+                var tmp = step(s, pp, q, isLeft);
                 // one failed!
                 if (tmp === null) {
                     res = null;
@@ -227,11 +221,10 @@ module TypeChecker {
         }
 
         // by (rs:ProtocolAlternative)
-        if (p.type === types.AlternativeType) {
-            var pp = p.inner();
+        if (p instanceof AlternativeType) {
             // protocol only needs to consider *one* case
-            for (var i = 0; i < pp.length; ++i) {
-                var tmp = step(s, pp[i], q, isLeft);
+            for (const pp of p.inner()) {
+                const tmp = step(s, pp, q, isLeft);
                 // one steps, we are done
                 if (tmp !== null)
                     return tmp;
@@ -241,11 +234,10 @@ module TypeChecker {
         }
 
         // by (rs:StateIntersection)
-        if (s.type === types.IntersectionType) {
-            var ss = s.inner();
+        if (s instanceof IntersectionType) {
             // protocol only needs to consider *one* case
-            for (var i = 0; i < ss.length; ++i) {
-                var tmp = step(ss[i], p, q, isLeft);
+            for (const ss of s.inner()) {
+                const tmp = step(ss, p, q, isLeft);
                 // one steps, we are done
                 if (tmp !== null)
                     return tmp;
@@ -425,17 +417,17 @@ module TypeChecker {
     };
 
     // unshifts types
-    function reIndex(s, a, b) {
-        var set = indexSet(s);
+    function reIndex(s: Type, a: Type, b: Type): [Type, Type, Type] {
+        const set: Set<number> = indexSet(s);
         indexSet(a).forEach(function(v) { set.add(v); });
         indexSet(b).forEach(function(v) { set.add(v); });
 
         if (set.size > 0) {
-            var v = [];
+            const v = [];
             set.forEach(function(val) { v.push(val); });
             v.sort();
             // find shifting value
-            for (var i = 0; i < v.length; ++i) {
+            for (let i = 0; i < v.length; ++i) {
                 if (v[i] !== i) {
                     v[i] = i - v[i] - (i > 0 ? v[i - 1] : 0);
                 } else {
@@ -443,7 +435,7 @@ module TypeChecker {
                 }
             }
             // apply shifts
-            for (var i = 0; i < v.length; ++i) {
+            for (let i = 0; i < v.length; ++i) {
                 if (v[i] < 0) {
                     s = shift(s, i, v[i]);
                     a = shift(a, i, v[i]);
