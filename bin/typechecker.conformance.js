@@ -230,7 +230,7 @@ var TypeChecker;
         }
         if (isProtocol(s)) {
             if (s instanceof TypeChecker.ExistsType && p instanceof TypeChecker.ExistsType) {
-                if (s.id().type !== p.id().type)
+                if (s.id().type !== p.id().type && !TypeChecker.equals(s.bound(), p.bound()))
                     return null;
                 return step(s.inner(), p.inner(), TypeChecker.shift(q, 0, 1), isLeft);
             }
@@ -238,7 +238,7 @@ var TypeChecker;
                 p instanceof TypeChecker.RelyType && (p.guarantee() instanceof TypeChecker.ForallType)) {
                 var gs = (s.guarantee());
                 var gp = (p.guarantee());
-                if (gs.id().type !== gp.id().type)
+                if (gs.id().type !== gp.id().type || !TypeChecker.equals(gs.bound(), gp.bound()))
                     return null;
                 s = new TypeChecker.RelyType(TypeChecker.shift(s.rely(), 0, 1), gs.inner());
                 p = new TypeChecker.RelyType(TypeChecker.shift(p.rely(), 0, 1), gs.inner());
@@ -255,7 +255,7 @@ var TypeChecker;
                     g = g.guarantee();
                 }
                 var x_1 = unifyGuarantee(i_1, t_1, TypeChecker.shift(g, 0, 1));
-                if (x_1 === false)
+                if (x_1 === false || !TypeChecker.subtype(x_1, b_1.bound()))
                     return null;
                 if (x_1 !== true) {
                     t_1 = TypeChecker.substitution(t_1, i_1, x_1);
@@ -286,7 +286,7 @@ var TypeChecker;
                 var i = p.id();
                 var t = p.inner();
                 var x = unifyRely(i, t, TypeChecker.shift(s, 0, 1));
-                if (x === false)
+                if (x === false || !TypeChecker.subtype(x, p.bound()))
                     return null;
                 if (x !== true) {
                     t = TypeChecker.substitution(t, i, x);

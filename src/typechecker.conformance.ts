@@ -313,9 +313,8 @@ module TypeChecker {
             // by (ps:ExistsType) and by (ps:ExistsLoc)
             if (s instanceof ExistsType && p instanceof ExistsType) {
 
-                if (s.id().type !== p.id().type)
+                if (s.id().type !== p.id().type && !equals( s.bound(), p.bound() ))
                     return null; // type mismatch
-                //TODO: also check bound
 
                 // must shift index in 'q' to match depth of the opened existential
                 return step(s.inner(), p.inner(), shift(q, 0, 1), isLeft);
@@ -329,9 +328,8 @@ module TypeChecker {
                 const gs = <ForallType>((<RelyType>s).guarantee());
                 const gp = <ForallType>((<RelyType>p).guarantee());
 
-                if (gs.id().type !== gp.id().type)
+                if (gs.id().type !== gp.id().type || !equals( gs.bound(), gp.bound() ))
                     return null;
-                //TODO: also check bound
 
                 s = new RelyType(shift((<RelyType>s).rely(), 0, 1), gs.inner());
                 p = new RelyType(shift((<RelyType>p).rely(), 0, 1), gs.inner());
@@ -359,9 +357,8 @@ module TypeChecker {
                 const x = unifyGuarantee(i, t, shift(g, 0, 1));
 
                 // fails to unify
-                if (x === false)
+                if (x === false || !subtype(<Type>x, b.bound()))
                     return null;
-                // TODO: check bound
                 // is some valid unification
                 if (x !== true) {
                     t = substitution(t, i, <Type>x);
@@ -412,9 +409,8 @@ module TypeChecker {
                 var x = unifyRely(i, t, shift(s, 0, 1));
 
                 // fails to unify
-                if (x === false)
+                if (x === false || !subtype(<Type>x, p.bound()) )
                     return null;
-                // TODO: check bound
                 // is some valid unification
                 if (x !== true) {
                     t = substitution(t, i, <Type>x);
