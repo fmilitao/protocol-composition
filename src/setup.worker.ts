@@ -197,9 +197,12 @@ module WebWorker {
             '</tr>';
         for (var i = 0; i < cf.length; ++i) {
             tmp += '<tr>' + '<td>' + i + '</td>' +
-            '<td>' + toHTML(cf[i].s) + '</td>' +
-            '<td>' + toHTML(cf[i].p) + '</td>' +
-            '<td>' + toHTML(cf[i].q) + '</td>' +
+            // '<td>' + toHTML(cf[i].s) + '</td>' +
+            // '<td>' + toHTML(cf[i].p) + '</td>' +
+            // '<td>' + toHTML(cf[i].q) + '</td>' +
+            '<td>' + toHTML(cf[i].resource) + '</td>' +
+            '<td>' + toHTML(cf[i].protocol) + '</td>' +
+            '<td>' + toHTML(cf[i].stationary) + '</td>' +
             '</tr>';
         }
         return tmp + '</table>';

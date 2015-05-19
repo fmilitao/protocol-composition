@@ -152,26 +152,26 @@ module TypeChecker {
         return false;
     };
 
-    function contains(visited: Configuration[], w: Configuration): boolean {
-        for (const v of visited) {
-            // must assume that all types were normalized to have their
-            // indexes compacted in order to ensure termination.
-            // Therefore, we do not need to check gamma.
-            // by (rs:Weakening) and by (rs:Subsumption)
-            if (subtype(w.s, v.s) &&
-                subtype(v.p, w.p) &&
-                subtype(v.q, w.q))
-                return true;
-        }
-
-        return false;
-    };
-
     //
     // Protocol Conformance
     //
 
     type Configuration = { s: Type, p: Type, q: Type };
+
+    function contains(visited: Configuration[], {s : ws, p : wp, q : wq}: Configuration): boolean {
+        for (const {s: vs, p: vp, q: vq } of visited) {
+            // must assume that all types were normalized to have their
+            // indexes compacted in order to ensure termination.
+            // Therefore, we do not need to check gamma.
+            // by (rs:Weakening) and by (rs:Subsumption)
+            if (subtype(ws, vs) &&
+                subtype(vp, wp) &&
+                subtype(vq, wq))
+                return true;
+        }
+
+        return false;
+    };
 
     function Work(s: Type, p: Type, q: Type): Configuration {
         return { s: s, p: p, q: q };
@@ -185,15 +185,22 @@ module TypeChecker {
             );
     };
 
+/*
+    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type): Conf[] {
+        // we can ignore 'g' because of using indexes
+        return cf( s, p, q,[] );
+    }; */
+
     function checkConformanceAux(work: Configuration[], visited: Configuration[]): Configuration[] {
 
         while (work.length > 0) {
             const w = work.pop();
+            const {s: s, p: p, q: q} = w;
 
             if (!contains(visited, w)) {
 
-                const left = step(w.s, w.p, w.q, true);
-                const right = step(w.s, w.q, w.p, false);
+                const left = step( s, p, q, true);
+                const right = step( s, q, p, false);
                 if (left === null || right === null)
                     return null; // fails
 
@@ -449,40 +456,187 @@ module TypeChecker {
         }
     };
 
-    /*
+    // NEW VERSION ======== BROKEN.
+
+    type Conf = {resource : Type, protocol: Type, stationary: Type};
+
+    function C(res : Type, p : Type, q : Type ) : Conf {
+        return { resource: res, protocol: p, stationary: q };
+    }
+
     // s >> p || q
     function cf(
         s: Type,
-        p: Type, q: Type,
-        visited: Configuration[]
-        ): Configuration[] {
+        p: Type,
+        q: Type,
+        visited: Conf[]
+        ): Conf[] {
 
-        const left = stp(w.s, w.p, w.q, true, visited);
-        const right = step(w.s, w.q, w.p, false, visited);
-        if (left === null || right === null)
+        // (cf:Step)
+        const v1 = stp( s, p, q, visited);
+        if (v1 == null)
+            return null; // fails
+        const v2 = stp( s, q, p, v1);
+        if (v2 === null )
             return null; // fails
 
-        return  [].concat(left).concat(right);
+        return  v2;
     };
 
     function stp(
-        s: Type,
-        p: Type,
-        q: Type,
-        isLeft : boolean,
-        visited: Configuration[]
-        ) : Configuration[] {
+        resource : Type,
+        protocol : Type,
+        stationary : Type,
+        visited: Conf[]
+        ) : Conf[] {
 
-        // FIXME!!
+        // (cf-rs:Weakening)
+        for (const c of visited) {
+            if (subtype(resource, c.resource) &&
+                subtype(c.protocol, protocol) &&
+                subtype(c.stationary, stationary))
+                return visited;
+        }
 
+        // (eq:Rec)
+        if( resource instanceof DefinitionType ){
+            return stp(unfold(resource), protocol, stationary, visited);
+        }
+        if (protocol instanceof DefinitionType) {
+            return stp(resource, unfold(protocol), stationary, visited);
+        }
+
+        // (cf-rs:None)
+        if (protocol instanceof NoneType) {
+            return cf(resource, None, stationary,
+                // add visited step
+                visited.concat([C(resource, protocol, stationary)])
+                );
+        }
+
+        // on the resource
+        // (cf-rs:StateAlternative)
+        if( resource instanceof AlternativeType ){
+            let v: Conf[] = visited;
+            // protocol must consider *all* cases
+            for (const a of resource.inner()) {
+                const tmp = stp(a, protocol, stationary, v);
+                // if one fails to step, they all do.
+                if (tmp === null) {
+                    v = null; // signal fail
+                    break;
+                }
+                v = tmp;
+            }
+
+            if (v !== null)
+                return v; // FIXME contact outter too
+            // else intentionally fall through
+        }
+
+        // (cf-rs:StateIntersection)
+        if( resource instanceof IntersectionType ){
+            // protocol only needs to consider *one* case
+            for (const r of resource.inner()) {
+                const tmp = stp(r, protocol, stationary, visited);
+                // one steps, we are done
+                if (tmp !== null)
+                    return tmp; //FIXME concat outter too
+            }
+        }
+
+        // on the protocol
+        // (cf-rs:ProtocolAlternative)
+        if( protocol instanceof AlternativeType ){
+            // protocol only needs to consider *one* case
+            for (const p of protocol.inner()) {
+                const tmp = stp(resource, p, stationary, visited);
+                // one steps, we are done
+                if (tmp !== null)
+                    return tmp; //FIXME concat outter too
+            }
+
+            // did not find a good step, fall through.
+        }
+
+        // (cf-rs:ProtocolIntersection)
+        if( protocol instanceof IntersectionType ){
+            let v: Conf[] = visited;
+            // protocol must consider *all* cases
+            for (const p of protocol.inner()) {
+                const tmp = stp(resource, p, stationary, v);
+                // one failed!
+                if (tmp === null) {
+                    v = null;
+                    break;
+                }
+                v = tmp;
+            }
+            if (v !== null)
+                return v; //FIXME concat outter too
+            // else intentionally fall through
+        }
+
+        // case analysis of S in R or P
+        if (isProtocol(resource)) {
+            // protocol stepping
+        
+            // (cf-ps:ExistsLoc)
+            // (cf-ps:ExistsType)
+            // (cf-ps:ForallLoc)
+            // (cf-ps:ForallType)
+            // (cf-ps:LocApp)
+            // (cf-ps:TypeApp)
+            // (cf-ps:Step)
+            
+        }else{
+            // resource stepping
+            
+            // (cf-ss:Recovery)
+            if (equals(resource, protocol)) {
+                return cf(
+                    None, // new resource
+                    None, // new protocol
+                    stationary, // stationary protocol
+                    // add visited step
+                    visited.concat([C(resource, protocol, stationary)])
+                    );
+            }
+
+            // (cf-ss:OpenLoc)
+            // (cf-ss:OpenType)
+            // (cf-ss:ForallLoc)
+            // (cf-ss:ForallType)
+
+            // (cf-ss:Step)
+            if (protocol instanceof RelyType && subtype(resource, protocol.rely())) {
+                let b = protocol.guarantee();
+                if (b instanceof GuaranteeType) {
+                    // single step of the protocol
+                    return  cf(
+                        b.guarantee(), // new resource
+                        b.rely(), // new protocol
+                        stationary, // stationary protocol
+                        // add visited step
+                        visited.concat([C(resource, protocol, stationary)])
+                        );
+                } else {
+                    // assume case is that of omitted '; none' and that 'b' is the new state.
+                    // assume that type was previously checked to be well-formed.
+                    return cf(
+                        b, // new resource
+                        None, // new protocol
+                        stationary, // stationary protocol
+                        // add visited step
+                        visited.concat([C(resource, protocol, stationary)])
+                        );
+                }
+            }
+        }
+
+        // failed to step
+        return null;
     }
-    */
 
 };
-
-
-
-
-
-
 

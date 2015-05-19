@@ -60,3 +60,15 @@ typedef Head[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 
 	 share none as none || none
 <l> share Empty[l] as Head[l] || Tail[l]
+
+
+
+
+
+
+
+
+
+
+
+
