@@ -179,35 +179,35 @@ module TypeChecker {
 
     export function checkConformance(g: Gamma, s: Type, p: Type, q: Type) {
         // we can ignore 'g' because of using indexes
-        return checkConformanceAux( [Work(s, p, q)], [] );
+        return checkConformanceAux([Work(s, p, q)], []);
     };
 
     function checkConformanceAux(work: Configuration[], visited: Configuration[]): Configuration[] {
+        if (work.length === 0)
+            return visited;
 
-        while (work.length > 0) {
-            const w = work.pop();
+        let next = [];
+        let v = [].concat(visited);
+        for (const w of work) {
             const {s: s, p: p, q: q} = w;
 
-            if (!contains(visited, w)) {
+            if (!contains(v, w)) {
 
                 const left = step(s, p, q, true);
                 const right = step(s, q, p, false);
                 if (left === null || right === null)
                     return null; // fails
 
-                work = work.concat(left).concat(right);
+                next = next.concat(left).concat(right);
 
-                visited.push(w);
+                v.push(w);
             }
         }
 
-        return visited;
+        return checkConformanceAux(next, v);
     };
 
     function step(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[] {
-        // expands recursion
-        s = unfold(s);
-        p = unfold(p);
 
         const res = singleStep(s, p, q, isLeft);
         if (res !== null)
@@ -276,6 +276,14 @@ module TypeChecker {
             }
 
             // did not find a good step, fall through.
+        }
+
+        // expands recursion (assuming non-bottom types)
+        if (s instanceof DefinitionType) {
+            return step(unfold(s), p, q, isLeft);
+        }
+        if (p instanceof DefinitionType) {
+            return step(s, unfold(p), q, isLeft);
         }
 
         // fails to step
@@ -442,273 +450,6 @@ module TypeChecker {
             return null;
         }
     };
-
-/*
-    // NEW VERSION ======== BROKEN.
-
-    type Conf = {
-        resource: Type,
-        protocol: Type,
-        stationary: Type,
-        order: Order
-    };
-    enum Order { L, R };
-
-    // s >> p || q
-    function cf(
-        s: Type,
-        p: Type,
-        q: Type,
-        visited: Conf[]
-        ): Conf[] {
-
-        // (cf:Step)
-        const v1 = stp(s, p, q, Order.L, visited);
-        if (v1 === null)
-            return null; // fails
-        const v2 = stp(s, q, p, Order.R, v1);
-        if (v2 === null)
-            return null; // fails
-
-        return v2;
-    };
-
-    function _cf(
-        s: Type,
-        p: Type,
-        q: Type,
-        o: Order,
-        visited: Conf[]
-        ): Conf[] {
-        return cf(s, o === Order.L ? p : q, o === Order.L ? q : p, visited);
-    };
-
-    function stp(
-        resource: Type,
-        protocol: Type,
-        stationary: Type,
-        order: Order,
-        visited: Conf[]
-        ): Conf[] {
-
-        function add(p: Type = protocol, q: Type = stationary): Conf[] {
-            const [_r, _p, _q] = reIndex(resource, p, q);
-
-            return visited.concat({
-                resource: _r,
-                protocol: _p,
-                stationary: _q,
-                order: order
-            });
-        }
-
-        // (cf-rs:Weakening)
-        for (const {resource: r, protocol: p, stationary: s, order: o} of visited) {
-
-            // console.log('>>'+r+' \t '+p+' \t '+s+' '+o);
-            // console.log('<<'+resource + ' \t ' + protocol + ' \t ' + stationary + ' ' + order);
-
-            if (o === order &&
-                equals(resource, r) &&
-                equals(p, protocol) &&
-                equals(s, stationary))
-                return visited;
-        }
-
-        // (cf-rs:None)
-        if (protocol instanceof NoneType) {
-            return _cf(resource, None, stationary, order, add());
-        }
-
-        // on the resource
-        // (cf-rs:StateAlternative)
-        if (resource instanceof AlternativeType) {
-            let v = visited;
-            // protocol must consider *all* cases
-            for (const a of resource.inner()) {
-                const tmp = stp(a, protocol, stationary, order, v);
-                // if one fails to step, they all do.
-                if (tmp === null) {
-                    v = null; // signal fail
-                    break;
-                }
-                v = tmp;
-            }
-
-            if (v !== null)
-                return v;
-            // else intentionally fall through
-        }
-
-        // (cf-rs:StateIntersection)
-        if (resource instanceof IntersectionType) {
-            // protocol only needs to consider *one* case
-            for (const r of resource.inner()) {
-                const tmp = stp(r, protocol, stationary, order, visited);
-                // one steps, we are done
-                if (tmp !== null)
-                    return tmp;
-            }
-        }
-
-        // on the protocol
-        // (cf-rs:ProtocolAlternative)
-        if (protocol instanceof AlternativeType) {
-            // protocol only needs to consider *one* case
-            for (const p of protocol.inner()) {
-                const tmp = stp(resource, p, stationary, order, visited);
-                // one steps, we are done
-                if (tmp !== null)
-                    return tmp;
-            }
-
-            // did not find a good step, fall through.
-        }
-
-        // (cf-rs:ProtocolIntersection)
-        if (protocol instanceof IntersectionType) {
-            let v = visited;
-            // protocol must consider *all* cases
-            for (const p of protocol.inner()) {
-                const tmp = stp(resource, p, stationary, order, v);
-                // one failed!
-                if (tmp === null) {
-                    v = null;
-                    break;
-                }
-                v = tmp;
-            }
-            if (v !== null)
-                return v;
-            // else intentionally fall through
-        }
-
-        // case analysis of S in R or P
-        if (isProtocol(resource)) {
-            // protocol stepping
-        
-            // (cf-ps:ExistsLoc)
-            // (cf-ps:ExistsType)
-            // (cf-ps:ForallLoc)
-            // (cf-ps:ForallType)
-            // (cf-ps:LocApp)
-            // (cf-ps:TypeApp)
-            
-            // (cf-ps:Step)
-            if (protocol instanceof RelyType && subtype(resource, protocol.rely())) {
-                let b = protocol.guarantee();
-                if (b instanceof GuaranteeType) {
-                    // single step of the protocol
-                    return _cf(
-                        b.guarantee(), // new resource
-                        b.rely(), // new protocol
-                        stationary, // stationary protocol
-                        order,
-                        add() // add visited step
-                        );
-                } else {
-                    // assume case is that of omitted '; none' and that 'b' is the new state.
-                    // assume that type was previously checked to be well-formed.
-                    return _cf(
-                        b, // new resource
-                        None, // new protocol
-                        stationary, // stationary protocol
-                        order,
-                        add() // add visited step
-                        );
-                }
-            }
-            
-        } else {
-            // resource stepping
-            
-            // (cf-ss:Recovery)
-            if (equals(resource, protocol)) {
-                return _cf(
-                    None, // new resource
-                    None, // new protocol
-                    stationary, // stationary protocol
-                    order,
-                    add() // add visited step
-                    );
-            }
-
-            // (cf-ss:OpenLoc)
-            // (cf-ss:OpenType)
-            if (protocol instanceof ExistsType) {
-                // attempts to find matching type/location to open existential
-                // correctness of type bound is checked inside 'unifyExists'
-                let i = protocol.id();
-                let t = protocol.inner();
-                // shifts 's' to the same depth as 't'
-                let x = unifyRely(i, t, shift(resource, 0, 1));
-
-                // fails to unify
-                if (x === false || !subtype(<Type>x, protocol.bound()))
-                    return null;
-                // is some valid unification
-                if (x !== true) {
-                    t = substitution(t, i, <Type>x);
-                }
-                // unshift because we are opening the existential
-                t = shift(t, 0, -1);
-                return stp(resource, t, stationary, order, visited);
-            }
-
-            // (cf-ss:ForallLoc)
-            // (cf-ss:ForallType)
-            if (protocol instanceof RelyType && (protocol.guarantee() instanceof ForallType)) {
-
-                return stp(
-                    shift(resource, 0, 1),
-                    // opening the forall, we must ensure that all old indexes match the new depth
-                    new RelyType(
-                        shift(protocol.rely(), 0, 1),
-                        (<ForallType>protocol.guarantee()).inner() // direct access to forall guarantee
-                        ),
-                    shift(stationary, 0, 1),
-                    order,
-                    add());
-            }
-
-            // (cf-ss:Step)
-            if (protocol instanceof RelyType && subtype(resource, protocol.rely())) {
-                let b = protocol.guarantee();
-                if (b instanceof GuaranteeType) {
-                    // single step of the protocol
-                    return _cf(
-                        b.guarantee(), // new resource
-                        b.rely(), // new protocol
-                        stationary, // stationary protocol
-                        order,
-                        add() // add visited step
-                        );
-                } else {
-                    // assume case is that of omitted '; none' and that 'b' is the new state.
-                    // assume that type was previously checked to be well-formed.
-                    return _cf(
-                        b, // new resource
-                        None, // new protocol
-                        stationary, // stationary protocol
-                        order,
-                        add() // add visited step
-                        );
-                }
-            }
-        }
-
-        // (eq:Rec)
-        if (resource instanceof DefinitionType) {
-            return stp(unfold(resource), protocol, stationary, order, visited);
-        }
-        if (protocol instanceof DefinitionType) {
-            return stp(resource, unfold(protocol), stationary, order, visited);
-        }
-
-        // failed to step
-        return null;
-    }
-    */
 
 };
 

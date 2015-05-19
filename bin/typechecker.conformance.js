@@ -151,24 +151,26 @@ var TypeChecker;
     TypeChecker.checkConformance = checkConformance;
     ;
     function checkConformanceAux(work, visited) {
-        while (work.length > 0) {
-            var w = work.pop();
+        if (work.length === 0)
+            return visited;
+        var next = [];
+        var v = [].concat(visited);
+        for (var _i = 0; _i < work.length; _i++) {
+            var w = work[_i];
             var s = w.s, p = w.p, q = w.q;
-            if (!contains(visited, w)) {
+            if (!contains(v, w)) {
                 var left = step(s, p, q, true);
                 var right = step(s, q, p, false);
                 if (left === null || right === null)
                     return null;
-                work = work.concat(left).concat(right);
-                visited.push(w);
+                next = next.concat(left).concat(right);
+                v.push(w);
             }
         }
-        return visited;
+        return checkConformanceAux(next, v);
     }
     ;
     function step(s, p, q, isLeft) {
-        s = TypeChecker.unfold(s);
-        p = TypeChecker.unfold(p);
         var res = singleStep(s, p, q, isLeft);
         if (res !== null)
             return res;
@@ -215,6 +217,12 @@ var TypeChecker;
                 if (tmp_3 !== null)
                     return tmp_3;
             }
+        }
+        if (s instanceof TypeChecker.DefinitionType) {
+            return step(TypeChecker.unfold(s), p, q, isLeft);
+        }
+        if (p instanceof TypeChecker.DefinitionType) {
+            return step(s, TypeChecker.unfold(p), q, isLeft);
         }
         return null;
     }
