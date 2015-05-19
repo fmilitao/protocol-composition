@@ -146,7 +146,7 @@ var TypeChecker;
     }
     ;
     function checkConformance(g, s, p, q) {
-        return cf(s, p, q, []);
+        return checkConformanceAux([Work(s, p, q)], []);
     }
     TypeChecker.checkConformance = checkConformance;
     ;
@@ -310,124 +310,5 @@ var TypeChecker;
         }
     }
     ;
-    var Order;
-    (function (Order) {
-        Order[Order["L"] = 0] = "L";
-        Order[Order["R"] = 1] = "R";
-    })(Order || (Order = {}));
-    ;
-    function cf(s, p, q, visited) {
-        var v1 = stp(s, p, q, Order.L, visited);
-        if (v1 === null)
-            return null;
-        var v2 = stp(s, q, p, Order.R, v1);
-        if (v2 === null)
-            return null;
-        return v2;
-    }
-    ;
-    function _cf(s, p, q, o, visited) {
-        return cf(s, o === Order.L ? p : q, o === Order.L ? q : p, visited);
-    }
-    ;
-    function stp(resource, protocol, stationary, order, visited) {
-        function add(p, q) {
-            if (p === void 0) { p = protocol; }
-            if (q === void 0) { q = stationary; }
-            return visited.concat({
-                resource: resource,
-                protocol: p,
-                stationary: q,
-                order: order
-            });
-        }
-        for (var _i = 0; _i < visited.length; _i++) {
-            var _a = visited[_i], r = _a.resource, p = _a.protocol, s = _a.stationary, o = _a.order;
-            if (o === order &&
-                TypeChecker.subtype(resource, r) &&
-                TypeChecker.subtype(p, protocol) &&
-                TypeChecker.subtype(s, stationary))
-                return visited;
-        }
-        if (protocol instanceof TypeChecker.NoneType) {
-            return _cf(resource, TypeChecker.None, stationary, order, add());
-        }
-        if (resource instanceof TypeChecker.AlternativeType) {
-            var v = visited;
-            for (var _b = 0, _c = resource.inner(); _b < _c.length; _b++) {
-                var a = _c[_b];
-                var tmp = stp(a, protocol, stationary, order, v);
-                if (tmp === null) {
-                    v = null;
-                    break;
-                }
-                v = tmp;
-            }
-            if (v !== null)
-                return v;
-        }
-        if (resource instanceof TypeChecker.IntersectionType) {
-            for (var _d = 0, _e = resource.inner(); _d < _e.length; _d++) {
-                var r = _e[_d];
-                var tmp = stp(r, protocol, stationary, order, visited);
-                if (tmp !== null)
-                    return tmp;
-            }
-        }
-        if (protocol instanceof TypeChecker.AlternativeType) {
-            for (var _f = 0, _g = protocol.inner(); _f < _g.length; _f++) {
-                var p = _g[_f];
-                var tmp = stp(resource, p, stationary, order, visited);
-                if (tmp !== null)
-                    return tmp;
-            }
-        }
-        if (protocol instanceof TypeChecker.IntersectionType) {
-            var v = visited;
-            for (var _h = 0, _j = protocol.inner(); _h < _j.length; _h++) {
-                var p = _j[_h];
-                var tmp = stp(resource, p, stationary, order, v);
-                if (tmp === null) {
-                    v = null;
-                    break;
-                }
-                v = tmp;
-            }
-            if (v !== null)
-                return v;
-        }
-        if (isProtocol(resource)) {
-            if (protocol instanceof TypeChecker.RelyType && TypeChecker.subtype(resource, protocol.rely())) {
-                var b = protocol.guarantee();
-                if (b instanceof TypeChecker.GuaranteeType) {
-                    return _cf(b.guarantee(), b.rely(), stationary, order, add());
-                }
-                else {
-                    return _cf(b, TypeChecker.None, stationary, order, add());
-                }
-            }
-        }
-        else {
-            if (TypeChecker.equals(resource, protocol)) {
-                return _cf(TypeChecker.None, TypeChecker.None, stationary, order, add());
-            }
-            if (protocol instanceof TypeChecker.RelyType && TypeChecker.subtype(resource, protocol.rely())) {
-                var b = protocol.guarantee();
-                if (b instanceof TypeChecker.GuaranteeType) {
-                    return _cf(b.guarantee(), b.rely(), stationary, order, add());
-                }
-                else {
-                    return _cf(b, TypeChecker.None, stationary, order, add());
-                }
-            }
-        }
-        if (resource instanceof TypeChecker.DefinitionType) {
-            return stp(TypeChecker.unfold(resource), protocol, stationary, order, visited);
-        }
-        if (protocol instanceof TypeChecker.DefinitionType) {
-            return stp(resource, TypeChecker.unfold(protocol), stationary, order, visited);
-        }
-        return null;
-    }
 })(TypeChecker || (TypeChecker = {}));
 ;

@@ -179,8 +179,7 @@ module TypeChecker {
 
     export function checkConformance(g: Gamma, s: Type, p: Type, q: Type) {
         // we can ignore 'g' because of using indexes
-        //return checkConformanceAux( [Work(s, p, q)], [] );
-        return cf(s, p, q, []);
+        return checkConformanceAux( [Work(s, p, q)], [] );
     };
 
     function checkConformanceAux(work: Configuration[], visited: Configuration[]): Configuration[] {
@@ -444,6 +443,7 @@ module TypeChecker {
         }
     };
 
+/*
     // NEW VERSION ======== BROKEN.
 
     type Conf = {
@@ -492,20 +492,26 @@ module TypeChecker {
         ): Conf[] {
 
         function add(p: Type = protocol, q: Type = stationary): Conf[] {
+            const [_r, _p, _q] = reIndex(resource, p, q);
+
             return visited.concat({
-                resource: resource,
-                protocol: p,
-                stationary: q,
+                resource: _r,
+                protocol: _p,
+                stationary: _q,
                 order: order
             });
         }
 
         // (cf-rs:Weakening)
         for (const {resource: r, protocol: p, stationary: s, order: o} of visited) {
+
+            // console.log('>>'+r+' \t '+p+' \t '+s+' '+o);
+            // console.log('<<'+resource + ' \t ' + protocol + ' \t ' + stationary + ' ' + order);
+
             if (o === order &&
-                subtype(resource, r) &&
-                subtype(p, protocol) &&
-                subtype(s, stationary))
+                equals(resource, r) &&
+                equals(p, protocol) &&
+                equals(s, stationary))
                 return visited;
         }
 
@@ -530,7 +536,7 @@ module TypeChecker {
             }
 
             if (v !== null)
-                return v; // FIXME contact outter too
+                return v;
             // else intentionally fall through
         }
 
@@ -541,7 +547,7 @@ module TypeChecker {
                 const tmp = stp(r, protocol, stationary, order, visited);
                 // one steps, we are done
                 if (tmp !== null)
-                    return tmp; //FIXME concat outter too
+                    return tmp;
             }
         }
 
@@ -553,7 +559,7 @@ module TypeChecker {
                 const tmp = stp(resource, p, stationary, order, visited);
                 // one steps, we are done
                 if (tmp !== null)
-                    return tmp; //FIXME concat outter too
+                    return tmp;
             }
 
             // did not find a good step, fall through.
@@ -573,7 +579,7 @@ module TypeChecker {
                 v = tmp;
             }
             if (v !== null)
-                return v; //FIXME concat outter too
+                return v;
             // else intentionally fall through
         }
 
@@ -629,9 +635,41 @@ module TypeChecker {
 
             // (cf-ss:OpenLoc)
             // (cf-ss:OpenType)
-            
+            if (protocol instanceof ExistsType) {
+                // attempts to find matching type/location to open existential
+                // correctness of type bound is checked inside 'unifyExists'
+                let i = protocol.id();
+                let t = protocol.inner();
+                // shifts 's' to the same depth as 't'
+                let x = unifyRely(i, t, shift(resource, 0, 1));
+
+                // fails to unify
+                if (x === false || !subtype(<Type>x, protocol.bound()))
+                    return null;
+                // is some valid unification
+                if (x !== true) {
+                    t = substitution(t, i, <Type>x);
+                }
+                // unshift because we are opening the existential
+                t = shift(t, 0, -1);
+                return stp(resource, t, stationary, order, visited);
+            }
+
             // (cf-ss:ForallLoc)
             // (cf-ss:ForallType)
+            if (protocol instanceof RelyType && (protocol.guarantee() instanceof ForallType)) {
+
+                return stp(
+                    shift(resource, 0, 1),
+                    // opening the forall, we must ensure that all old indexes match the new depth
+                    new RelyType(
+                        shift(protocol.rely(), 0, 1),
+                        (<ForallType>protocol.guarantee()).inner() // direct access to forall guarantee
+                        ),
+                    shift(stationary, 0, 1),
+                    order,
+                    add());
+            }
 
             // (cf-ss:Step)
             if (protocol instanceof RelyType && subtype(resource, protocol.rely())) {
@@ -670,6 +708,7 @@ module TypeChecker {
         // failed to step
         return null;
     }
+    */
 
 };
 
