@@ -105,21 +105,33 @@ var WebWorker;
             + (ast.last_line + 1) + ':' + ast.last_col + ' ' + ast.kind
             + res + '\n';
     };
-    var printConformance = function (cf) {
+    function printConformance(cf) {
         var tmp = '<table class="typing_conformance"><tr>' +
             '<th>#</th>' +
             '<th>State</th>' +
             '<th>P</th><th>Q</th>' +
             '</tr>';
         for (var i = 0; i < cf.length; ++i) {
-            tmp += '<tr>' + '<td>' + i + '</td>' +
-                '<td>' + toHTML(cf[i].resource) + '</td>' +
-                '<td>' + toHTML(cf[i].protocol) + '</td>' +
-                '<td>' + toHTML(cf[i].stationary) + '</td>' +
-                '</tr>';
+            try {
+                var _a = cf[i], s = _a.s, p = _a.p, q = _a.q;
+                tmp += '<tr>' + '<td>' + i + '</td>' +
+                    '<td>' + toHTML(s) + '</td>' +
+                    '<td>' + toHTML(p) + '</td>' +
+                    '<td>' + toHTML(q) + '</td>' +
+                    '</tr>';
+            }
+            catch (e) {
+                var _b = cf[i], s = _b.resource, p = _b.protocol, q = _b.stationary, o = _b.order;
+                tmp += '<tr>' + '<td>' + i + '</td>' +
+                    '<td>' + toHTML(s) + '</td>' +
+                    '<td>' + toHTML(o === 0 ? p : q) + '</td>' +
+                    '<td>' + toHTML(o === 0 ? q : p) + '</td>' +
+                    '</tr>';
+            }
         }
         return tmp + '</table>';
-    };
+    }
+    ;
     var printEnvironment = function (env) {
         var gamma = _printEnvironment(env);
         gamma = gamma.join(',\n    ');

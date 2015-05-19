@@ -146,7 +146,7 @@ var TypeChecker;
     }
     ;
     function checkConformance(g, s, p, q) {
-        return checkConformanceAux([Work(s, p, q)], []);
+        return cf(s, p, q, []);
     }
     TypeChecker.checkConformance = checkConformance;
     ;
@@ -310,41 +310,53 @@ var TypeChecker;
         }
     }
     ;
-    function C(res, p, q) {
-        return { resource: res, protocol: p, stationary: q };
-    }
+    var Order;
+    (function (Order) {
+        Order[Order["L"] = 0] = "L";
+        Order[Order["R"] = 1] = "R";
+    })(Order || (Order = {}));
+    ;
     function cf(s, p, q, visited) {
-        var v1 = stp(s, p, q, visited);
-        if (v1 == null)
+        var v1 = stp(s, p, q, Order.L, visited);
+        if (v1 === null)
             return null;
-        var v2 = stp(s, q, p, v1);
+        var v2 = stp(s, q, p, Order.R, v1);
         if (v2 === null)
             return null;
         return v2;
     }
     ;
-    function stp(resource, protocol, stationary, visited) {
+    function _cf(s, p, q, o, visited) {
+        return cf(s, o === Order.L ? p : q, o === Order.L ? q : p, visited);
+    }
+    ;
+    function stp(resource, protocol, stationary, order, visited) {
+        function add(p, q) {
+            if (p === void 0) { p = protocol; }
+            if (q === void 0) { q = stationary; }
+            return visited.concat({
+                resource: resource,
+                protocol: p,
+                stationary: q,
+                order: order
+            });
+        }
         for (var _i = 0; _i < visited.length; _i++) {
-            var c = visited[_i];
-            if (TypeChecker.subtype(resource, c.resource) &&
-                TypeChecker.subtype(c.protocol, protocol) &&
-                TypeChecker.subtype(c.stationary, stationary))
+            var _a = visited[_i], r = _a.resource, p = _a.protocol, s = _a.stationary, o = _a.order;
+            if (o === order &&
+                TypeChecker.subtype(resource, r) &&
+                TypeChecker.subtype(p, protocol) &&
+                TypeChecker.subtype(s, stationary))
                 return visited;
         }
-        if (resource instanceof TypeChecker.DefinitionType) {
-            return stp(TypeChecker.unfold(resource), protocol, stationary, visited);
-        }
-        if (protocol instanceof TypeChecker.DefinitionType) {
-            return stp(resource, TypeChecker.unfold(protocol), stationary, visited);
-        }
         if (protocol instanceof TypeChecker.NoneType) {
-            return cf(resource, TypeChecker.None, stationary, visited.concat([C(resource, protocol, stationary)]));
+            return _cf(resource, TypeChecker.None, stationary, order, add());
         }
         if (resource instanceof TypeChecker.AlternativeType) {
             var v = visited;
-            for (var _a = 0, _b = resource.inner(); _a < _b.length; _a++) {
-                var a = _b[_a];
-                var tmp = stp(a, protocol, stationary, v);
+            for (var _b = 0, _c = resource.inner(); _b < _c.length; _b++) {
+                var a = _c[_b];
+                var tmp = stp(a, protocol, stationary, order, v);
                 if (tmp === null) {
                     v = null;
                     break;
@@ -355,26 +367,26 @@ var TypeChecker;
                 return v;
         }
         if (resource instanceof TypeChecker.IntersectionType) {
-            for (var _c = 0, _d = resource.inner(); _c < _d.length; _c++) {
-                var r = _d[_c];
-                var tmp = stp(r, protocol, stationary, visited);
+            for (var _d = 0, _e = resource.inner(); _d < _e.length; _d++) {
+                var r = _e[_d];
+                var tmp = stp(r, protocol, stationary, order, visited);
                 if (tmp !== null)
                     return tmp;
             }
         }
         if (protocol instanceof TypeChecker.AlternativeType) {
-            for (var _e = 0, _f = protocol.inner(); _e < _f.length; _e++) {
-                var p = _f[_e];
-                var tmp = stp(resource, p, stationary, visited);
+            for (var _f = 0, _g = protocol.inner(); _f < _g.length; _f++) {
+                var p = _g[_f];
+                var tmp = stp(resource, p, stationary, order, visited);
                 if (tmp !== null)
                     return tmp;
             }
         }
         if (protocol instanceof TypeChecker.IntersectionType) {
             var v = visited;
-            for (var _g = 0, _h = protocol.inner(); _g < _h.length; _g++) {
-                var p = _h[_g];
-                var tmp = stp(resource, p, stationary, v);
+            for (var _h = 0, _j = protocol.inner(); _h < _j.length; _h++) {
+                var p = _j[_h];
+                var tmp = stp(resource, p, stationary, order, v);
                 if (tmp === null) {
                     v = null;
                     break;
@@ -385,20 +397,35 @@ var TypeChecker;
                 return v;
         }
         if (isProtocol(resource)) {
+            if (protocol instanceof TypeChecker.RelyType && TypeChecker.subtype(resource, protocol.rely())) {
+                var b = protocol.guarantee();
+                if (b instanceof TypeChecker.GuaranteeType) {
+                    return _cf(b.guarantee(), b.rely(), stationary, order, add());
+                }
+                else {
+                    return _cf(b, TypeChecker.None, stationary, order, add());
+                }
+            }
         }
         else {
             if (TypeChecker.equals(resource, protocol)) {
-                return cf(TypeChecker.None, TypeChecker.None, stationary, visited.concat([C(resource, protocol, stationary)]));
+                return _cf(TypeChecker.None, TypeChecker.None, stationary, order, add());
             }
             if (protocol instanceof TypeChecker.RelyType && TypeChecker.subtype(resource, protocol.rely())) {
                 var b = protocol.guarantee();
                 if (b instanceof TypeChecker.GuaranteeType) {
-                    return cf(b.guarantee(), b.rely(), stationary, visited.concat([C(resource, protocol, stationary)]));
+                    return _cf(b.guarantee(), b.rely(), stationary, order, add());
                 }
                 else {
-                    return cf(b, TypeChecker.None, stationary, visited.concat([C(resource, protocol, stationary)]));
+                    return _cf(b, TypeChecker.None, stationary, order, add());
                 }
             }
+        }
+        if (resource instanceof TypeChecker.DefinitionType) {
+            return stp(TypeChecker.unfold(resource), protocol, stationary, order, visited);
+        }
+        if (protocol instanceof TypeChecker.DefinitionType) {
+            return stp(resource, TypeChecker.unfold(protocol), stationary, order, visited);
         }
         return null;
     }

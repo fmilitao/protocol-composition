@@ -80,7 +80,7 @@ module WebWorker {
         let ast: AST.Exp.Program = null;
         let info: [AST.Exp.Exp|AST.Type.Type, any][] = null;
 
-        function handleErrors(es : ErrorWrapper[]) {
+        function handleErrors(es: ErrorWrapper[]) {
             send.setErrorStatus('Error' + ((es.length > 1) ? 's (' + es.length + ')' : '') + '!');
 
             es.forEach(e => console.error(e.stack.toString()));
@@ -97,9 +97,9 @@ module WebWorker {
                     ast = parse(data);
 
                     const i = checker(ast);
-                    
+
                     const errors = i.info.filter(j => j instanceof ErrorWrapper);
-                    if( errors.length > 0 ){
+                    if (errors.length > 0) {
                         handleErrors(errors);
                         return;
                     }
@@ -122,28 +122,28 @@ module WebWorker {
                 }
             },
 
-            checker: function(pos : {row : number, column: number }) {
+            checker: function(pos: { row: number, column: number }) {
 
-                    let ptr = null;
+                let ptr = null;
 
-                    // search for closest one
-                    for (const [ast,table] of info) {
-                        if( ast.line === pos.row ){
-                                ptr = table;
-                                break;
-                        }
-
+                // search for closest one
+                for (const [ast, table] of info) {
+                    if (ast.line === pos.row) {
+                        ptr = table;
+                        break;
                     }
 
-                    if (ptr === null)
-                        return;
+                }
 
-                    send.clearAll();
-                    send.println(printConformance(ptr));
+                if (ptr === null)
+                    return;
+
+                send.clearAll();
+                send.println(printConformance(ptr));
 
 
-                    // ignores result...
-                    //send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
+                // ignores result...
+                //send.println('<b>Got:</b><br/>' + pr + '<br/>Done');
 
                 /*
                 //FIXME shown notations depending on the cursor position.
@@ -189,24 +189,32 @@ module WebWorker {
             + res + '\n';
     }
 
-    var printConformance = function(cf) {
-        var tmp = '<table class="typing_conformance"><tr>' +
+    function printConformance(cf) {
+        let tmp = '<table class="typing_conformance"><tr>' +
             '<th>#</th>' +
             '<th>State</th>' +
             '<th>P</th><th>Q</th>' +
             '</tr>';
-        for (var i = 0; i < cf.length; ++i) {
-            tmp += '<tr>' + '<td>' + i + '</td>' +
-            // '<td>' + toHTML(cf[i].s) + '</td>' +
-            // '<td>' + toHTML(cf[i].p) + '</td>' +
-            // '<td>' + toHTML(cf[i].q) + '</td>' +
-            '<td>' + toHTML(cf[i].resource) + '</td>' +
-            '<td>' + toHTML(cf[i].protocol) + '</td>' +
-            '<td>' + toHTML(cf[i].stationary) + '</td>' +
-            '</tr>';
+        for (let i = 0; i < cf.length; ++i) {
+            try {
+                const {s: s, p: p, q: q} = cf[i];
+                tmp += '<tr>' + '<td>' + i + '</td>' +
+                '<td>' + toHTML(s) + '</td>' +
+                '<td>' + toHTML(p) + '</td>' +
+                '<td>' + toHTML(q) + '</td>' +
+                '</tr>';
+//HACK:
+            }catch(e){
+                const {resource: s, protocol: p, stationary: q, order : o} = cf[i];
+                tmp += '<tr>' + '<td>' + i + '</td>' +
+                '<td>' + toHTML(s) + '</td>' +
+                '<td>' + toHTML(o === 0 ? p : q) + '</td>' +
+                '<td>' + toHTML(o === 0 ? q : p) + '</td>' +
+                '</tr>';
+            }
         }
         return tmp + '</table>';
-    }
+    };
 
     var printEnvironment = function(env) {
         var gamma: any = _printEnvironment(env);

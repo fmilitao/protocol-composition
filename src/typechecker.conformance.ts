@@ -5,11 +5,11 @@ module TypeChecker {
 
     // does distinction between R and S grammar kinds.
     function isProtocol(t: Type, trail?: Set<string>): boolean {
-        if (t instanceof NoneType || t instanceof RelyType){
+        if (t instanceof NoneType || t instanceof RelyType) {
             return true;
         }
 
-        if (t instanceof ExistsType){
+        if (t instanceof ExistsType) {
             return isProtocol(t.inner(), trail);
         }
 
@@ -118,7 +118,7 @@ module TypeChecker {
                 step.inner(), shift(state, 0, 1));
         }
 
-        if (step instanceof GuaranteeType){
+        if (step instanceof GuaranteeType) {
             return unify(id, step.guarantee(), state);
         }
 
@@ -158,7 +158,7 @@ module TypeChecker {
 
     type Configuration = { s: Type, p: Type, q: Type };
 
-    function contains(visited: Configuration[], {s : ws, p : wp, q : wq}: Configuration): boolean {
+    function contains(visited: Configuration[], {s: ws, p: wp, q: wq}: Configuration): boolean {
         for (const {s: vs, p: vp, q: vq } of visited) {
             // must assume that all types were normalized to have their
             // indexes compacted in order to ensure termination.
@@ -177,19 +177,11 @@ module TypeChecker {
         return { s: s, p: p, q: q };
     };
 
-    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type): Configuration[] {
+    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type) {
         // we can ignore 'g' because of using indexes
-        return checkConformanceAux(
-            [Work(s, p, q)], // initial work to do.
-            [] // initial empty visited set.
-            );
+        //return checkConformanceAux( [Work(s, p, q)], [] );
+        return cf(s, p, q, []);
     };
-
-/*
-    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type): Conf[] {
-        // we can ignore 'g' because of using indexes
-        return cf( s, p, q,[] );
-    }; */
 
     function checkConformanceAux(work: Configuration[], visited: Configuration[]): Configuration[] {
 
@@ -199,8 +191,8 @@ module TypeChecker {
 
             if (!contains(visited, w)) {
 
-                const left = step( s, p, q, true);
-                const right = step( s, q, p, false);
+                const left = step(s, p, q, true);
+                const right = step(s, q, p, false);
                 if (left === null || right === null)
                     return null; // fails
 
@@ -292,11 +284,11 @@ module TypeChecker {
     };
 
     // may return null on failed stepping, or set of new configurations
-    function singleStep(s : Type, p : Type, q : Type, isLeft : boolean) : Configuration[] {
+    function singleStep(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[] {
 
         // note that this is a closure (uses 'q')
-        function R(s : Type, p : Type) : Configuration {
-            const [_s,_p,_q] = reIndex(s, p, q);
+        function R(s: Type, p: Type): Configuration {
+            const [_s, _p, _q] = reIndex(s, p, q);
 
             return isLeft ? Work(_s, _p, _q) : Work(_s, _q, _p);
         };
@@ -313,7 +305,7 @@ module TypeChecker {
             // by (ps:ExistsType) and by (ps:ExistsLoc)
             if (s instanceof ExistsType && p instanceof ExistsType) {
 
-                if (s.id().type !== p.id().type && !equals( s.bound(), p.bound() ))
+                if (s.id().type !== p.id().type && !equals(s.bound(), p.bound()))
                     return null; // type mismatch
 
                 // must shift index in 'q' to match depth of the opened existential
@@ -328,7 +320,7 @@ module TypeChecker {
                 const gs = <ForallType>((<RelyType>s).guarantee());
                 const gp = <ForallType>((<RelyType>p).guarantee());
 
-                if (gs.id().type !== gp.id().type || !equals( gs.bound(), gp.bound() ))
+                if (gs.id().type !== gp.id().type || !equals(gs.bound(), gp.bound()))
                     return null;
 
                 s = new RelyType(shift((<RelyType>s).rely(), 0, 1), gs.inner());
@@ -348,7 +340,7 @@ module TypeChecker {
 
                 // find the guarantee:
                 let g = p.guarantee();
-                if (g instanceof GuaranteeType){
+                if (g instanceof GuaranteeType) {
                     g = (<GuaranteeType>g).guarantee();
                 }
                 // else the next step was omitted.
@@ -409,7 +401,7 @@ module TypeChecker {
                 var x = unifyRely(i, t, shift(s, 0, 1));
 
                 // fails to unify
-                if (x === false || !subtype(<Type>x, p.bound()) )
+                if (x === false || !subtype(<Type>x, p.bound()))
                     return null;
                 // is some valid unification
                 if (x !== true) {
@@ -454,11 +446,13 @@ module TypeChecker {
 
     // NEW VERSION ======== BROKEN.
 
-    type Conf = {resource : Type, protocol: Type, stationary: Type};
-
-    function C(res : Type, p : Type, q : Type ) : Conf {
-        return { resource: res, protocol: p, stationary: q };
-    }
+    type Conf = {
+        resource: Type,
+        protocol: Type,
+        stationary: Type,
+        order: Order
+    };
+    enum Order { L, R };
 
     // s >> p || q
     function cf(
@@ -469,54 +463,64 @@ module TypeChecker {
         ): Conf[] {
 
         // (cf:Step)
-        const v1 = stp( s, p, q, visited);
-        if (v1 == null)
+        const v1 = stp(s, p, q, Order.L, visited);
+        if (v1 === null)
             return null; // fails
-        const v2 = stp( s, q, p, v1);
-        if (v2 === null )
+        const v2 = stp(s, q, p, Order.R, v1);
+        if (v2 === null)
             return null; // fails
 
-        return  v2;
+        return v2;
+    };
+
+    function _cf(
+        s: Type,
+        p: Type,
+        q: Type,
+        o: Order,
+        visited: Conf[]
+        ): Conf[] {
+        return cf(s, o === Order.L ? p : q, o === Order.L ? q : p, visited);
     };
 
     function stp(
-        resource : Type,
-        protocol : Type,
-        stationary : Type,
+        resource: Type,
+        protocol: Type,
+        stationary: Type,
+        order: Order,
         visited: Conf[]
-        ) : Conf[] {
+        ): Conf[] {
+
+        function add(p: Type = protocol, q: Type = stationary): Conf[] {
+            return visited.concat({
+                resource: resource,
+                protocol: p,
+                stationary: q,
+                order: order
+            });
+        }
 
         // (cf-rs:Weakening)
-        for (const c of visited) {
-            if (subtype(resource, c.resource) &&
-                subtype(c.protocol, protocol) &&
-                subtype(c.stationary, stationary))
+        for (const {resource: r, protocol: p, stationary: s, order: o} of visited) {
+            if (o === order &&
+                subtype(resource, r) &&
+                subtype(p, protocol) &&
+                subtype(s, stationary))
                 return visited;
-        }
-
-        // (eq:Rec)
-        if( resource instanceof DefinitionType ){
-            return stp(unfold(resource), protocol, stationary, visited);
-        }
-        if (protocol instanceof DefinitionType) {
-            return stp(resource, unfold(protocol), stationary, visited);
         }
 
         // (cf-rs:None)
         if (protocol instanceof NoneType) {
-            return cf(resource, None, stationary,
-                // add visited step
-                visited.concat([C(resource, protocol, stationary)])
-                );
+            return _cf(resource, None, stationary, order, add());
         }
 
         // on the resource
         // (cf-rs:StateAlternative)
-        if( resource instanceof AlternativeType ){
-            let v: Conf[] = visited;
+        if (resource instanceof AlternativeType) {
+            let v = visited;
             // protocol must consider *all* cases
             for (const a of resource.inner()) {
-                const tmp = stp(a, protocol, stationary, v);
+                const tmp = stp(a, protocol, stationary, order, v);
                 // if one fails to step, they all do.
                 if (tmp === null) {
                     v = null; // signal fail
@@ -531,10 +535,10 @@ module TypeChecker {
         }
 
         // (cf-rs:StateIntersection)
-        if( resource instanceof IntersectionType ){
+        if (resource instanceof IntersectionType) {
             // protocol only needs to consider *one* case
             for (const r of resource.inner()) {
-                const tmp = stp(r, protocol, stationary, visited);
+                const tmp = stp(r, protocol, stationary, order, visited);
                 // one steps, we are done
                 if (tmp !== null)
                     return tmp; //FIXME concat outter too
@@ -543,10 +547,10 @@ module TypeChecker {
 
         // on the protocol
         // (cf-rs:ProtocolAlternative)
-        if( protocol instanceof AlternativeType ){
+        if (protocol instanceof AlternativeType) {
             // protocol only needs to consider *one* case
             for (const p of protocol.inner()) {
-                const tmp = stp(resource, p, stationary, visited);
+                const tmp = stp(resource, p, stationary, order, visited);
                 // one steps, we are done
                 if (tmp !== null)
                     return tmp; //FIXME concat outter too
@@ -556,11 +560,11 @@ module TypeChecker {
         }
 
         // (cf-rs:ProtocolIntersection)
-        if( protocol instanceof IntersectionType ){
-            let v: Conf[] = visited;
+        if (protocol instanceof IntersectionType) {
+            let v = visited;
             // protocol must consider *all* cases
             for (const p of protocol.inner()) {
-                const tmp = stp(resource, p, stationary, v);
+                const tmp = stp(resource, p, stationary, order, v);
                 // one failed!
                 if (tmp === null) {
                     v = null;
@@ -583,24 +587,49 @@ module TypeChecker {
             // (cf-ps:ForallType)
             // (cf-ps:LocApp)
             // (cf-ps:TypeApp)
-            // (cf-ps:Step)
             
-        }else{
+            // (cf-ps:Step)
+            if (protocol instanceof RelyType && subtype(resource, protocol.rely())) {
+                let b = protocol.guarantee();
+                if (b instanceof GuaranteeType) {
+                    // single step of the protocol
+                    return _cf(
+                        b.guarantee(), // new resource
+                        b.rely(), // new protocol
+                        stationary, // stationary protocol
+                        order,
+                        add() // add visited step
+                        );
+                } else {
+                    // assume case is that of omitted '; none' and that 'b' is the new state.
+                    // assume that type was previously checked to be well-formed.
+                    return _cf(
+                        b, // new resource
+                        None, // new protocol
+                        stationary, // stationary protocol
+                        order,
+                        add() // add visited step
+                        );
+                }
+            }
+            
+        } else {
             // resource stepping
             
             // (cf-ss:Recovery)
             if (equals(resource, protocol)) {
-                return cf(
+                return _cf(
                     None, // new resource
                     None, // new protocol
                     stationary, // stationary protocol
-                    // add visited step
-                    visited.concat([C(resource, protocol, stationary)])
+                    order,
+                    add() // add visited step
                     );
             }
 
             // (cf-ss:OpenLoc)
             // (cf-ss:OpenType)
+            
             // (cf-ss:ForallLoc)
             // (cf-ss:ForallType)
 
@@ -609,25 +638,33 @@ module TypeChecker {
                 let b = protocol.guarantee();
                 if (b instanceof GuaranteeType) {
                     // single step of the protocol
-                    return  cf(
+                    return _cf(
                         b.guarantee(), // new resource
                         b.rely(), // new protocol
                         stationary, // stationary protocol
-                        // add visited step
-                        visited.concat([C(resource, protocol, stationary)])
+                        order,
+                        add() // add visited step
                         );
                 } else {
                     // assume case is that of omitted '; none' and that 'b' is the new state.
                     // assume that type was previously checked to be well-formed.
-                    return cf(
+                    return _cf(
                         b, // new resource
                         None, // new protocol
                         stationary, // stationary protocol
-                        // add visited step
-                        visited.concat([C(resource, protocol, stationary)])
+                        order,
+                        add() // add visited step
                         );
                 }
             }
+        }
+
+        // (eq:Rec)
+        if (resource instanceof DefinitionType) {
+            return stp(unfold(resource), protocol, stationary, order, visited);
+        }
+        if (protocol instanceof DefinitionType) {
+            return stp(resource, unfold(protocol), stationary, order, visited);
         }
 
         // failed to step
