@@ -129,3 +129,14 @@ typedef Future[t] =
 	( ( (rw t Done#int) => (rw t int) ; (rw t int) ) & ( exists Y.( (rw t Done#Y) => (rw t Done#Y) ; Future[t] ) ) )
 
 <q> share (rw q Empty#[]) as Future[q] || Join[q]
+
+// === FAIL CHECK ===
+
+typedef Fail_E[p] = exists X.( (rw p !X) => (rw p !X) ; Fail_E[p] )
+typedef Fail_F[X,p] = rw p X => forall Y.( rw p Y ; Fail_F[Y,p] )
+
+<p> not share (rw p int) as Fail_E[p] || Fail_F[int,p]
+
+
+
+
