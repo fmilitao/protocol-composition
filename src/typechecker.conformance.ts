@@ -177,37 +177,74 @@ module TypeChecker {
         return { s: s, p: p, q: q };
     };
 
-    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type) {
-        // we can ignore 'g' because of using indexes
-        return checkConformanceAux([Work(s, p, q)], []);
+    function multiply(a: Configuration[][], b: Configuration[][]): Configuration[][] {
+        const res = [];
+        for (const aa of a) {
+            for (const bb of b) {
+                res.push(aa.concat(bb));
+            }
+        }
+        return res;
     };
 
-    function checkConformanceAux(work: Configuration[], visited: Configuration[]): Configuration[] {
+    function compact(a: Configuration[][], b: Configuration[][]): Configuration[][] {
+        let res: Configuration[] = [];
+        for (const aa of a) {
+            res = res.concat(aa);
+        }
+        for (const bb of b) {
+            res = res.concat(bb);
+        }
+        return [res];
+    };
+
+    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type) {
+        // we can ignore 'g' because of using indexes
+        //debugger
+        return checkConformanceAux([[Work(s, p, q)]], []);
+    };
+
+    function checkConformanceAux(work: Configuration[][], visited: Configuration[]): Configuration[] {
         if (work.length === 0)
             return visited;
 
-        let next = [];
-        let v = [].concat(visited);
-        for (const w of work) {
-            const {s: s, p: p, q: q} = w;
+        // tries each choice
+        for (const choice of work) {
 
-            if (!contains(v, w)) {
+            let next: Configuration[][] = [];
+            let v: Configuration[] = [].concat(visited);
+            let failed = false;
+            for (const w of choice) { // attempts all work of that choice
+                const {s: s, p: p, q: q} = w;
 
-                const left = step(s, p, q, true);
-                const right = step(s, q, p, false);
-                if (left === null || right === null)
-                    return null; // fails
+                if (!contains(v, w)) {
 
-                next = next.concat(left).concat(right);
+                    const left = step(s, p, q, true);
+                    const right = step(s, q, p, false);
+                    if (left === null || right === null){
+                        failed = true;
+                        break; // fails this choice
+                    }
 
-                v.push(w);
+                    //next = next.concat(left).concat(right);
+                    next = next.concat(multiply(left, right));
+
+                    v.push(w);
+                }
+            }
+
+            if (!failed) {
+                const result = checkConformanceAux(next, v);
+                if (result !== null)
+                    return result;
             }
         }
 
-        return checkConformanceAux(next, v);
+        // all choices failed!
+        return null;
     };
 
-    function step(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[] {
+    function step(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[][] {
 
         const res = singleStep(s, p, q, isLeft);
         if (res !== null)
@@ -217,7 +254,7 @@ module TypeChecker {
 
         // by (rs:StateAlternative)
         if (s instanceof AlternativeType) {
-            let res: Configuration[] = [];
+            let res: Configuration[][] = [];
             // protocol must consider *all* cases
             for (const ss of s.inner()) {
                 const tmp = step(ss, p, q, isLeft);
@@ -226,7 +263,7 @@ module TypeChecker {
                     res = null; // signal fail
                     break;
                 }
-                res = res.concat(tmp);
+                res = compact(res, tmp); // merge all cases into one
             }
 
             if (res !== null)
@@ -236,7 +273,7 @@ module TypeChecker {
 
         // by (rs:ProtocolIntersection)
         if (p instanceof IntersectionType) {
-            let res: Configuration[] = [];
+            let res: Configuration[][] = [];
             // protocol must consider *all* cases
             for (const pp of p.inner()) {
                 var tmp = step(s, pp, q, isLeft);
@@ -245,7 +282,7 @@ module TypeChecker {
                     res = null;
                     break;
                 }
-                res = res.concat(tmp);
+                res = compact(res, tmp); // merge all cases into one
             }
             if (res !== null)
                 return res;
@@ -254,26 +291,32 @@ module TypeChecker {
 
         // by (rs:ProtocolAlternative)
         if (p instanceof AlternativeType) {
-            // protocol only needs to consider *one* case
+            let res: Configuration[][] = [];
             for (const pp of p.inner()) {
                 const tmp = step(s, pp, q, isLeft);
-                // one steps, we are done
-                if (tmp !== null)
-                    return tmp;
+                if (tmp !== null){
+                    res = res.concat(tmp);
+                }
             }
+            if (res.length > 0)
+                return res;
 
             // did not find a good step, fall through.
         }
 
         // by (rs:StateIntersection)
         if (s instanceof IntersectionType) {
-            // protocol only needs to consider *one* case
+            let res: Configuration[][] = [];
+            // protocol only needs to consider *one* case, 
+            // but we must remember the other choices for completeness
             for (const ss of s.inner()) {
                 const tmp = step(ss, p, q, isLeft);
-                // one steps, we are done
-                if (tmp !== null)
-                    return tmp;
+                if (tmp !== null){
+                    res = res.concat(tmp);
+                }
             }
+            if (res.length > 0)
+                return res;
 
             // did not find a good step, fall through.
         }
@@ -291,7 +334,7 @@ module TypeChecker {
     };
 
     // may return null on failed stepping, or set of new configurations
-    function singleStep(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[] {
+    function singleStep(s: Type, p: Type, q: Type, isLeft: boolean): Configuration[][] {
 
         // note that this is a closure (uses 'q')
         function R(s: Type, p: Type): Configuration {
@@ -302,8 +345,7 @@ module TypeChecker {
 
         // by (rs:None)
         if (p instanceof NoneType) {
-            // no need to add new work, we already know this configuration steps
-            return [];
+            return [[R(s, p)]]; // spins, could also just return []
         }
 
         if (isProtocol(s)) {
@@ -384,7 +426,7 @@ module TypeChecker {
 
                 // guarantee state must match
                 if (subtype((<GuaranteeType>gp).guarantee(), (<GuaranteeType>gs).guarantee())) {
-                    return [R((<GuaranteeType>gs).rely(), (<GuaranteeType>gp).rely())];
+                    return [[R((<GuaranteeType>gs).rely(), (<GuaranteeType>gp).rely())]];
                 }
             }
 
@@ -394,8 +436,8 @@ module TypeChecker {
             // STATE STEPPING
 
             // by (ss:Recovery)
-            if (equals(s, p)) {
-                return [R(None, None)];
+            if (subtype(s, p)) {
+                return [[R(None, None)]];
             }
 
             // by (ss:OpenType) and by (ss:OpenLoc)
@@ -439,11 +481,11 @@ module TypeChecker {
                 const b = p.guarantee();
                 if (b instanceof GuaranteeType) {
                     // single step of the protocol
-                    return [R(b.guarantee(), b.rely())];
+                    return [[R(b.guarantee(), b.rely())]];
                 } else {
                     // assume case is that of omitted '; none' and that 'b' is the new state.
                     // assume that type was previously checked to be well-formed.
-                    return [R(b, None)];
+                    return [[R(b, None)]];
                 }
             }
 

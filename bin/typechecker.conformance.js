@@ -145,29 +145,65 @@ var TypeChecker;
         return { s: s, p: p, q: q };
     }
     ;
+    function multiply(a, b) {
+        var res = [];
+        for (var _i = 0; _i < a.length; _i++) {
+            var aa = a[_i];
+            for (var _a = 0; _a < b.length; _a++) {
+                var bb = b[_a];
+                res.push(aa.concat(bb));
+            }
+        }
+        return res;
+    }
+    ;
+    function compact(a, b) {
+        var res = [];
+        for (var _i = 0; _i < a.length; _i++) {
+            var aa = a[_i];
+            res = res.concat(aa);
+        }
+        for (var _a = 0; _a < b.length; _a++) {
+            var bb = b[_a];
+            res = res.concat(bb);
+        }
+        return [res];
+    }
+    ;
     function checkConformance(g, s, p, q) {
-        return checkConformanceAux([Work(s, p, q)], []);
+        return checkConformanceAux([[Work(s, p, q)]], []);
     }
     TypeChecker.checkConformance = checkConformance;
     ;
     function checkConformanceAux(work, visited) {
         if (work.length === 0)
             return visited;
-        var next = [];
-        var v = [].concat(visited);
         for (var _i = 0; _i < work.length; _i++) {
-            var w = work[_i];
-            var s = w.s, p = w.p, q = w.q;
-            if (!contains(v, w)) {
-                var left = step(s, p, q, true);
-                var right = step(s, q, p, false);
-                if (left === null || right === null)
-                    return null;
-                next = next.concat(left).concat(right);
-                v.push(w);
+            var choice = work[_i];
+            var next = [];
+            var v = [].concat(visited);
+            var failed = false;
+            for (var _a = 0; _a < choice.length; _a++) {
+                var w = choice[_a];
+                var s = w.s, p = w.p, q = w.q;
+                if (!contains(v, w)) {
+                    var left = step(s, p, q, true);
+                    var right = step(s, q, p, false);
+                    if (left === null || right === null) {
+                        failed = true;
+                        break;
+                    }
+                    next = next.concat(multiply(left, right));
+                    v.push(w);
+                }
+            }
+            if (!failed) {
+                var result = checkConformanceAux(next, v);
+                if (result !== null)
+                    return result;
             }
         }
-        return checkConformanceAux(next, v);
+        return null;
     }
     ;
     function step(s, p, q, isLeft) {
@@ -183,7 +219,7 @@ var TypeChecker;
                     res_1 = null;
                     break;
                 }
-                res_1 = res_1.concat(tmp_1);
+                res_1 = compact(res_1, tmp_1);
             }
             if (res_1 !== null)
                 return res_1;
@@ -197,26 +233,34 @@ var TypeChecker;
                     res_2 = null;
                     break;
                 }
-                res_2 = res_2.concat(tmp);
+                res_2 = compact(res_2, tmp);
             }
             if (res_2 !== null)
                 return res_2;
         }
         if (p instanceof TypeChecker.AlternativeType) {
+            var res_3 = [];
             for (var _d = 0, _e = p.inner(); _d < _e.length; _d++) {
                 var pp = _e[_d];
                 var tmp_2 = step(s, pp, q, isLeft);
-                if (tmp_2 !== null)
-                    return tmp_2;
+                if (tmp_2 !== null) {
+                    res_3 = res_3.concat(tmp_2);
+                }
             }
+            if (res_3.length > 0)
+                return res_3;
         }
         if (s instanceof TypeChecker.IntersectionType) {
+            var res_4 = [];
             for (var _f = 0, _g = s.inner(); _f < _g.length; _f++) {
                 var ss = _g[_f];
                 var tmp_3 = step(ss, p, q, isLeft);
-                if (tmp_3 !== null)
-                    return tmp_3;
+                if (tmp_3 !== null) {
+                    res_4 = res_4.concat(tmp_3);
+                }
             }
+            if (res_4.length > 0)
+                return res_4;
         }
         if (s instanceof TypeChecker.DefinitionType) {
             return step(TypeChecker.unfold(s), p, q, isLeft);
@@ -234,7 +278,7 @@ var TypeChecker;
         }
         ;
         if (p instanceof TypeChecker.NoneType) {
-            return [];
+            return [[R(s, p)]];
         }
         if (isProtocol(s)) {
             if (s instanceof TypeChecker.ExistsType && p instanceof TypeChecker.ExistsType) {
@@ -281,14 +325,14 @@ var TypeChecker;
                     gp = new TypeChecker.GuaranteeType(gp, TypeChecker.None);
                 }
                 if (TypeChecker.subtype(gp.guarantee(), gs.guarantee())) {
-                    return [R(gs.rely(), gp.rely())];
+                    return [[R(gs.rely(), gp.rely())]];
                 }
             }
             return null;
         }
         else {
-            if (TypeChecker.equals(s, p)) {
-                return [R(TypeChecker.None, TypeChecker.None)];
+            if (TypeChecker.subtype(s, p)) {
+                return [[R(TypeChecker.None, TypeChecker.None)]];
             }
             if (p instanceof TypeChecker.ExistsType) {
                 var i = p.id();
@@ -308,10 +352,10 @@ var TypeChecker;
             if (p instanceof TypeChecker.RelyType && TypeChecker.subtype(s, p.rely())) {
                 var b = p.guarantee();
                 if (b instanceof TypeChecker.GuaranteeType) {
-                    return [R(b.guarantee(), b.rely())];
+                    return [[R(b.guarantee(), b.rely())]];
                 }
                 else {
-                    return [R(b, TypeChecker.None)];
+                    return [[R(b, TypeChecker.None)]];
                 }
             }
             return null;
