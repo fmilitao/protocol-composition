@@ -259,7 +259,7 @@ a:visited {
 }
 
 .b1_load {
-	background: rgba(255,255,255,0.3) url('../lib/ajax-loader.gif') no-repeat center center;
+	background: rgba(255,255,255,0.3) url('lib/ajax-loader.gif') no-repeat center center;
 	color: gray;
 }
 
