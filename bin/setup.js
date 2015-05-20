@@ -61,6 +61,7 @@ var Setup;
         importScript(WORKER_JS);
         console.log('done.');
     }
+    var OUTPUT_STYLES;
     function onResize(ev) {
         // note that all these constants must be set through javascript
         // or they will not be accessible to use in these computations.
@@ -81,10 +82,15 @@ var Setup;
         controls.style.width = w + "px";
         controls.style.height = (controls_h) + "px";
         controls.style.top = (h - controls_h) + "px";
+        OUTPUT_STYLES = {
+            defaultTop: (h - console_h - controls_h),
+            defaultHeight: (console_h),
+            maxHeight: (h - controls_h - top_bar)
+        };
         var output = document.getElementById(OUTPUT);
         output.style.width = w + "px";
-        output.style.height = (console_h) + "px";
-        output.style.top = (h - console_h - controls_h) + "px";
+        output.style.height = OUTPUT_STYLES.defaulHeight + "px";
+        output.style.top = OUTPUT_STYLES.defaultTop + "px";
     }
     ;
     function onReady() {
@@ -206,8 +212,41 @@ var Setup;
             var $status = $('#status');
             var OK_CLASS = 'ok_status';
             var ER_CLASS = 'error_status';
+            o.animate({
+                "top": OUTPUT_STYLES.defaultTop + "px",
+                "height": OUTPUT_STYLES.defaultHeight + "px",
+            }, 0);
+            o.attr('title', 'click to close');
+            o.click(function () {
+                o.hide();
+                editor.focus();
+            });
+            var t;
+            o.hover(function () {
+                var top = Math.min(OUTPUT_STYLES.defaultTop + (OUTPUT_STYLES.defaultHeight - o[0].scrollHeight), OUTPUT_STYLES.maxHeight);
+                var s = o[0].scrollHeight < OUTPUT_STYLES.defaultHeight ?
+                    OUTPUT_STYLES.defaultHeight :
+                    Math.min(OUTPUT_STYLES.maxHeight, o[0].scrollHeight);
+                window.clearTimeout(t);
+                t = window.setTimeout(function () {
+                    o.animate({
+                        "top": Math.min(top, OUTPUT_STYLES.defaultTop) + "px",
+                        'height': s + 'px'
+                    }, 'fast');
+                }, 500);
+            });
+            o.mouseleave(function () {
+                window.clearTimeout(t);
+                t = window.setTimeout(function () {
+                    o.animate({
+                        "top": OUTPUT_STYLES.defaultTop + "px",
+                        "height": OUTPUT_STYLES.defaultHeight + "px",
+                    }, 'fast');
+                }, 250);
+            });
             function clearAll() {
                 o.html('');
+                o.hide();
             }
             ;
             function printError(error) {
@@ -218,6 +257,7 @@ var Setup;
                 var old = o.html();
                 o.html((old ? old + '\n' : '') + val.toString());
                 refreshTypeListners();
+                o.show();
             }
             ;
             var marker = [];

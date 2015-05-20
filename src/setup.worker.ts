@@ -91,6 +91,7 @@ module WebWorker {
             eval: function(data: string) {
                 try {
                     ast = null;
+                    info = null;
                     send.clearAll();
                     send.setStatus('Type checking...');
 
@@ -123,7 +124,9 @@ module WebWorker {
             },
 
             checker: function(pos: { row: number, column: number }) {
-
+                if (info === null)
+                    return; // nothing to show
+                    
                 let ptr = null;
 
                 // search for closest one
@@ -135,10 +138,10 @@ module WebWorker {
 
                 }
 
+                send.clearAll();
+
                 if (ptr === null)
                     return;
-
-                send.clearAll();
                 send.println(printConformance(ptr));
 
 

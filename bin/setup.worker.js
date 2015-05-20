@@ -54,6 +54,7 @@ var WebWorker;
             eval: function (data) {
                 try {
                     ast = null;
+                    info = null;
                     send.clearAll();
                     send.setStatus('Type checking...');
                     ast = parse(data);
@@ -75,6 +76,8 @@ var WebWorker;
                 }
             },
             checker: function (pos) {
+                if (info === null)
+                    return;
                 var ptr = null;
                 for (var _i = 0; _i < info.length; _i++) {
                     var _a = info[_i], ast_1 = _a[0], table = _a[1];
@@ -83,9 +86,9 @@ var WebWorker;
                         break;
                     }
                 }
+                send.clearAll();
                 if (ptr === null)
                     return;
-                send.clearAll();
                 send.println(printConformance(ptr));
             }
         };

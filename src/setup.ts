@@ -51,7 +51,7 @@ module Setup {
         for (const parameter of parameters) {
             const tmp = parameter.split('=');
             if (tmp.length > 1) {
-                const [option,value] = tmp;
+                const [option, value] = tmp;
                 switch (option) {
                     case 'file': // loads file
                         default_file = value;
@@ -77,11 +77,12 @@ module Setup {
 
     if (!worker_enabled) {
         console.log('importing scripts to run locally...');
-        importScript.apply(null,IMPORTS);
+        importScript.apply(null, IMPORTS);
         importScript(WORKER_JS);
         console.log('done.');
     }
 
+    let OUTPUT_STYLES;
     // lays all UI components, also useful when resizing window
     function onResize(ev: UIEvent): any {
         // note that all these constants must be set through javascript
@@ -113,11 +114,17 @@ module Setup {
         controls.style.height = (controls_h) + "px";
         controls.style.top = (h - controls_h) + "px";
 
+        OUTPUT_STYLES = {
+            defaultTop: (h - console_h - controls_h),
+            defaultHeight: (console_h),
+            maxHeight: (h - controls_h - top_bar)
+        };
+
         let output = document.getElementById(OUTPUT);
         //output.style.left = split+"px";
         output.style.width = w + "px";
-        output.style.height = (console_h) + "px";
-        output.style.top = (h - console_h - controls_h) + "px";
+        output.style.height = OUTPUT_STYLES.defaulHeight + "px";
+        output.style.top = OUTPUT_STYLES.defaultTop + "px";
 
         /*
         let typing = document.getElementById(TYPING);
@@ -288,73 +295,73 @@ module Setup {
                 " title=" + title + "><b>" + text + "</b></button></div>");
         };
 
-/*
-// TODO: convert this to use output panel, instead of typing panel.
-
-        var typeinfo = true;
-        (function() { // Typing-information panel.
-            actionButton("Typing Information: ", "typeinfo",
-                "Type information is shown when the cursor is placed at the beginning of a construct.",
-                "SHOW");
-
-            var button = $(_TYPEINFO_);
-            var panel = $(_TYPING_);
-
-            // toggle button.
-            button.click(function(event) {
-                typeinfo = !typeinfo;
-                if (typeinfo) {
-                    button.html("<b>SHOW</b>");
-                    if (panel.html() != '')
-                        panel.show();
-                }
-                else {
-                    button.html("HIDE");
-                    panel.fadeOut('fast');
-                }
-                editor.focus();
-            });
-
-            // quick way to hide just the panel.
-            panel.click(function() {
-                panel.fadeOut('fast');
-                editor.focus();
-            });
-
-            var t;
-            panel.hover(function() {
-                window.clearTimeout(t);
-                t = window.setTimeout(function() {
-                    //panel.animate({"max-width": TYPE_INFO_WIDTHS.limit }, 'fast');
-                    //panel.css('max-width',TYPE_INFO_WIDTHS.limit);
-                    //panel.removeClass('typing_style');
-                    //panel.addClass('typing_show');
-                    panel.animate({
-                        "left": TYPE_INFO_WIDTHS.minLeft,
-                        "max-width": TYPE_INFO_WIDTHS.maxWidth,
-                        "width": TYPE_INFO_WIDTHS.maxWidth,
-                        "opacity": TYPE_INFO_WIDTHS.maxOpacity
-                    }, 'fast');
-                }, 500);
-            });
-            panel.mouseleave(function() {
-                window.clearTimeout(t);
-                t = window.setTimeout(function() {
-                    //panel.css('max-width',TYPE_INFO_WIDTHS.max);
-                    panel.animate({
-                        "left": TYPE_INFO_WIDTHS.defaultLeft,
-                        "max-width": TYPE_INFO_WIDTHS.defaultWidth,
-                        "width": "auto",
-                        "opacity": TYPE_INFO_WIDTHS.defaultOpacity
-                    }, 'slow');
-                    //panel.animate({"max-width": TYPE_INFO_WIDTHS.max }, 'slow');
-                    //panel.removeClass('typing_show');
-                    //panel.addClass('typing_style');
-                }, 250);
-            });
-
-        })();
-*/
+        /*
+        // TODO: convert this to use output panel, instead of typing panel.
+        
+                var typeinfo = true;
+                (function() { // Typing-information panel.
+                    actionButton("Typing Information: ", "typeinfo",
+                        "Type information is shown when the cursor is placed at the beginning of a construct.",
+                        "SHOW");
+        
+                    var button = $(_TYPEINFO_);
+                    var panel = $(_TYPING_);
+        
+                    // toggle button.
+                    button.click(function(event) {
+                        typeinfo = !typeinfo;
+                        if (typeinfo) {
+                            button.html("<b>SHOW</b>");
+                            if (panel.html() != '')
+                                panel.show();
+                        }
+                        else {
+                            button.html("HIDE");
+                            panel.fadeOut('fast');
+                        }
+                        editor.focus();
+                    });
+        
+                    // quick way to hide just the panel.
+                    panel.click(function() {
+                        panel.fadeOut('fast');
+                        editor.focus();
+                    });
+        
+                    var t;
+                    panel.hover(function() {
+                        window.clearTimeout(t);
+                        t = window.setTimeout(function() {
+                            //panel.animate({"max-width": TYPE_INFO_WIDTHS.limit }, 'fast');
+                            //panel.css('max-width',TYPE_INFO_WIDTHS.limit);
+                            //panel.removeClass('typing_style');
+                            //panel.addClass('typing_show');
+                            panel.animate({
+                                "left": TYPE_INFO_WIDTHS.minLeft,
+                                "max-width": TYPE_INFO_WIDTHS.maxWidth,
+                                "width": TYPE_INFO_WIDTHS.maxWidth,
+                                "opacity": TYPE_INFO_WIDTHS.maxOpacity
+                            }, 'fast');
+                        }, 500);
+                    });
+                    panel.mouseleave(function() {
+                        window.clearTimeout(t);
+                        t = window.setTimeout(function() {
+                            //panel.css('max-width',TYPE_INFO_WIDTHS.max);
+                            panel.animate({
+                                "left": TYPE_INFO_WIDTHS.defaultLeft,
+                                "max-width": TYPE_INFO_WIDTHS.defaultWidth,
+                                "width": "auto",
+                                "opacity": TYPE_INFO_WIDTHS.defaultOpacity
+                            }, 'slow');
+                            //panel.animate({"max-width": TYPE_INFO_WIDTHS.max }, 'slow');
+                            //panel.removeClass('typing_show');
+                            //panel.addClass('typing_style');
+                        }, 250);
+                    });
+        
+                })();
+        */
 
         //
         // Boxing Types
@@ -402,9 +409,57 @@ module Setup {
             const OK_CLASS = 'ok_status';
             const ER_CLASS = 'error_status';
 
+            // if I do not do this, then the first showing of 'o' is too short
+            // if the element requires less than defaultHeight to show correctly
+            o.animate({
+                "top": OUTPUT_STYLES.defaultTop + "px",
+                "height": OUTPUT_STYLES.defaultHeight + "px",
+            }, 0);
+            o.attr('title', 'click to close');
+            o.click(function() {
+                o.hide();
+                editor.focus();
+            });
+
+            //----
+            let t;
+            o.hover(function() {
+
+                const top = Math.min(
+                    OUTPUT_STYLES.defaultTop + (OUTPUT_STYLES.defaultHeight - o[0].scrollHeight),
+                    OUTPUT_STYLES.maxHeight
+                    );
+
+                const s = o[0].scrollHeight < OUTPUT_STYLES.defaultHeight ?
+                    // if scrollHeight too small
+                    OUTPUT_STYLES.defaultHeight :
+                    // if scrollHeight too large
+                    Math.min(OUTPUT_STYLES.maxHeight, o[0].scrollHeight);
+
+                window.clearTimeout(t);
+                t = window.setTimeout(function() {
+                    o.animate({
+                        "top": Math.min(top, OUTPUT_STYLES.defaultTop) + "px",
+                        'height' : s + 'px'
+                    }, 'fast');
+                }, 500);
+            });
+            o.mouseleave(function() {
+
+                window.clearTimeout(t);
+                t = window.setTimeout(function() {
+                    o.animate({
+                        "top": OUTPUT_STYLES.defaultTop + "px",
+                        "height": OUTPUT_STYLES.defaultHeight + "px",
+                    }, 'fast');
+                }, 250);
+            });
+            // ------
+
             // aux functions
             function clearAll() {
                 o.html('');
+                o.hide();
             };
 
             function printError(error) {
@@ -416,6 +471,7 @@ module Setup {
                 let old = o.html();
                 o.html((old ? old + '\n' : '') + val.toString());
                 refreshTypeListners();
+                o.show();
             };
 
             let marker = [];
@@ -424,20 +480,20 @@ module Setup {
 
                 // marker stores the last hightlight mark or null if none exists
                 if (marker.length !== 0) {
-                    for(const m of marker ){
+                    for (const m of marker) {
                         session.removeMarker(m);
                     }
                     marker = [];
                 }
                 
                 // clears old annotations
-                if( a === null ){
+                if (a === null) {
                     session.clearAnnotations();
                     return;
                 }
 
                 const aux = a.map(
-                    function(i : Annotation) {
+                    function(i: Annotation) {
                         return {
                             row: i.line,
                             column: i.col,
@@ -462,9 +518,9 @@ module Setup {
             return {
 
                 // note that wrapping function is need because of 'this' in 'log', etc.
-                log: function(msg:string){ console.log(msg); },
-                debug: function(msg:string){ console.debug(msg);},
-                error: function(msg:string){ console.error(msg); },
+                log: function(msg: string) { console.log(msg); },
+                debug: function(msg: string) { console.debug(msg); },
+                error: function(msg: string) { console.error(msg); },
 
                 //
                 // info
@@ -479,8 +535,8 @@ module Setup {
                 //
 
                 // WARNING: assumes JSONed object
-                errorHandler: function(es : ErrorWrapper[]) {
-                    let annotations : Annotation[] = [];
+                errorHandler: function(es: ErrorWrapper[]) {
+                    let annotations: Annotation[] = [];
                     for (const e of es) {
                         let msg = "";
 
@@ -529,7 +585,7 @@ module Setup {
                     updateAnnotations(annotations);
                 },
 
-                clearAnnotations: function(){
+                clearAnnotations: function() {
                     updateAnnotations(null);
                 },
 
@@ -561,7 +617,7 @@ module Setup {
         Comm.MainThread.setLocalEditor(handler);
 
         // js source code for worker, or null if local
-        const cc = Comm.MainThread.getRemoteWorker( worker_enabled ? WORKER_JS : null );
+        const cc = Comm.MainThread.getRemoteWorker(worker_enabled ? WORKER_JS : null);
 
         // reset worker button.
         if (worker_enabled) {
@@ -591,7 +647,7 @@ module Setup {
         function onChange(e) {
             // simply re-do everything, ignore diff.
             // more efficient incremental parser left as future work...
-            cc.eval(editor.getSession().getValue() );
+            cc.eval(editor.getSession().getValue());
         };
 
         editor.selection.on("changeCursor", onCursorChange);
