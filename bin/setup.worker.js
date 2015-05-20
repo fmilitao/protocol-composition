@@ -112,22 +112,12 @@ var WebWorker;
             '<th>P</th><th>Q</th>' +
             '</tr>';
         for (var i = 0; i < cf.length; ++i) {
-            try {
-                var _a = cf[i], s = _a.s, p = _a.p, q = _a.q;
-                tmp += '<tr>' + '<td>' + i + '</td>' +
-                    '<td>' + toHTML(s) + '</td>' +
-                    '<td>' + toHTML(p) + '</td>' +
-                    '<td>' + toHTML(q) + '</td>' +
-                    '</tr>';
-            }
-            catch (e) {
-                var _b = cf[i], s = _b.resource, p = _b.protocol, q = _b.stationary, o = _b.order;
-                tmp += '<tr>' + '<td>' + i + '</td>' +
-                    '<td>' + toHTML(s) + '</td>' +
-                    '<td>' + toHTML(o === 0 ? p : q) + '</td>' +
-                    '<td>' + toHTML(o === 0 ? q : p) + '</td>' +
-                    '</tr>';
-            }
+            var _a = cf[i], s = _a.s, p = _a.p, q = _a.q;
+            tmp += '<tr>' + '<td>' + i + '</td>' +
+                '<td>' + toHTML(s) + '</td>' +
+                '<td>' + toHTML(p) + '</td>' +
+                '<td>' + toHTML(q) + '</td>' +
+                '</tr>';
         }
         return tmp + '</table>';
     }

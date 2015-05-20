@@ -196,22 +196,12 @@ module WebWorker {
             '<th>P</th><th>Q</th>' +
             '</tr>';
         for (let i = 0; i < cf.length; ++i) {
-            try {
-                const {s: s, p: p, q: q} = cf[i];
-                tmp += '<tr>' + '<td>' + i + '</td>' +
-                '<td>' + toHTML(s) + '</td>' +
-                '<td>' + toHTML(p) + '</td>' +
-                '<td>' + toHTML(q) + '</td>' +
-                '</tr>';
-//HACK:
-            }catch(e){
-                const {resource: s, protocol: p, stationary: q, order : o} = cf[i];
-                tmp += '<tr>' + '<td>' + i + '</td>' +
-                '<td>' + toHTML(s) + '</td>' +
-                '<td>' + toHTML(o === 0 ? p : q) + '</td>' +
-                '<td>' + toHTML(o === 0 ? q : p) + '</td>' +
-                '</tr>';
-            }
+            const {s: s, p: p, q: q} = cf[i];
+            tmp += '<tr>' + '<td>' + i + '</td>' +
+            '<td>' + toHTML(s) + '</td>' +
+            '<td>' + toHTML(p) + '</td>' +
+            '<td>' + toHTML(q) + '</td>' +
+            '</tr>';
         }
         return tmp + '</table>';
     };
