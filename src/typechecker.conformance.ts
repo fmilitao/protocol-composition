@@ -402,10 +402,10 @@ module TypeChecker {
             if (p instanceof ExistsType) {
                 // attempts to find matching type/location to open existential
                 // correctness of type bound is checked inside 'unifyExists'
-                var i = p.id();
-                var t = p.inner();
+                let i = p.id();
+                let t = p.inner();
                 // shifts 's' to the same depth as 't'
-                var x = unifyRely(i, t, shift(s, 0, 1));
+                let x = unifyRely(i, t, shift(s, 0, 1));
 
                 // fails to unify
                 if (x === false || !subtype(<Type>x, p.bound()))
@@ -436,7 +436,7 @@ module TypeChecker {
 
             // by (ss:Step)
             if (p instanceof RelyType && subtype(s, p.rely())) {
-                var b = p.guarantee();
+                const b = p.guarantee();
                 if (b instanceof GuaranteeType) {
                     // single step of the protocol
                     return [R(b.guarantee(), b.rely())];

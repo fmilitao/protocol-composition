@@ -255,21 +255,21 @@ var TypeChecker;
             }
             if (s instanceof TypeChecker.RelyType && (s.guarantee() instanceof TypeChecker.ForallType) &&
                 p instanceof TypeChecker.RelyType && !(p.guarantee() instanceof TypeChecker.ForallType)) {
-                var b_1 = s.guarantee();
-                var i_1 = b_1.id();
-                var t_1 = b_1.inner();
+                var b = s.guarantee();
+                var i = b.id();
+                var t = b.inner();
                 var g = p.guarantee();
                 if (g instanceof TypeChecker.GuaranteeType) {
                     g = g.guarantee();
                 }
-                var x_1 = unifyGuarantee(i_1, t_1, TypeChecker.shift(g, 0, 1));
-                if (x_1 === false || !TypeChecker.subtype(x_1, b_1.bound()))
+                var x = unifyGuarantee(i, t, TypeChecker.shift(g, 0, 1));
+                if (x === false || !TypeChecker.subtype(x, b.bound()))
                     return null;
-                if (x_1 !== true) {
-                    t_1 = TypeChecker.substitution(t_1, i_1, x_1);
+                if (x !== true) {
+                    t = TypeChecker.substitution(t, i, x);
                 }
-                t_1 = TypeChecker.shift(t_1, 0, -1);
-                return step(new TypeChecker.RelyType(s.rely(), t_1), p, q, isLeft);
+                t = TypeChecker.shift(t, 0, -1);
+                return step(new TypeChecker.RelyType(s.rely(), t), p, q, isLeft);
             }
             if (s instanceof TypeChecker.RelyType && p instanceof TypeChecker.RelyType && TypeChecker.subtype(s.rely(), p.rely())) {
                 var gs = s.guarantee();
