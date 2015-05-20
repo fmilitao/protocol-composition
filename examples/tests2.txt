@@ -123,7 +123,6 @@ typedef IncOnly[p] =  NN[p] => PP[p] ; IncOnly[p]
 typedef Any[p] = NN[p] => PP[p]; PP[p] => NN[p] ; Any[p]
 
 typedef M0[p] = NN[p] => PP[p] ; M1[p]
-// this is not well formed due to the choices being ambiguous.
 typedef M1[p] = ( PP[p] => NN[p] ; M0[p] ) & ( NN[p] => PP[p] ; M1[p] )
 
 <t> share NN[t] as IncOnly[t] || Any[t]

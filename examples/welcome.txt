@@ -1,5 +1,9 @@
 
-// Welcome file, TODO: welcome message.
+/*
+ * Welcome file, includes some small examples.
+ * You have more examples in the other files, linked above.
+ * We do not check for bottom types nor enforce the lock-set wf condition.
+ */
 
 typedef A = int
 typedef X = exists A.forall B.( a#A + b#B )
@@ -60,13 +64,6 @@ typedef Head[p] = ( Node[p] => Node[p] ; Node[p] ) (+)
 
 	 share none as none || none
 <l> share Empty[l] as Head[l] || Tail[l]
-
-
-
-
-
-
-
 
 
 
