@@ -4,7 +4,7 @@
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
-[Version b30bb0f9..](https://cdn.rawgit.com/fmilitao/protocol-conformance/b30bb0f9fae99603724b4e902875dc3dcfbe5b16/editor.html) (hosted @[rawgit](https://rawgit.com/))
+[Version 26c8005ed7..](https://cdn.rawgit.com/fmilitao/protocol-conformance/26c8005ed7ffe282ea112e90435cffc472f44881/editor.html) (hosted @[rawgit](https://rawgit.com/))
 
 
 *NOTE*: We currently do not enforce lock-set well-formedness condition, nor check for bottom types.
