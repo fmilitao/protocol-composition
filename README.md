@@ -4,16 +4,10 @@
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
-*NOTE*: We currently do not enforce all well-formedness conditions on types. If a type is not well-formed the algorithm may not terminate.
-
-(Work in progress... not done.)
+[Version b30bb0f9..](https://cdn.rawgit.com/fmilitao/protocol-conformance/b30bb0f9fae99603724b4e902875dc3dcfbe5b16/editor.html) (hosted @[rawgit](https://rawgit.com/))
 
 
-##FIXMES##
-
-- missing failure tests on conformance on 'test2.txt'
-- define error constants/enum instead of having constants spread out through the code.
-
+*NOTE*: We currently do not enforce lock-set well-formedness condition, nor check for bottom types.
 
 ##Extra Credits##
 
