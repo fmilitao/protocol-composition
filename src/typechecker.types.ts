@@ -37,7 +37,10 @@ module TypeChecker {
 
     export interface Type {
         match<T>(m: MatchType<T>): T;
-        toString(n: boolean): string; //FIXME wtf is 'n' ??
+        // indexesOnly (undefined is considered false), if true
+        // prints only the indexes of type variables not their name
+        // thus, will only use their DeBruijn index when outputing the string
+        toString(indexesOnly: boolean): string;
         type: string;
     };
 
