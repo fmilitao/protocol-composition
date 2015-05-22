@@ -17,7 +17,7 @@ var TypeChecker;
             }
             return true;
         }
-        if (t instanceof TypeChecker.DefinitionType) {
+        if (t instanceof TypeChecker.RecursiveType) {
             if (trail === undefined) {
                 trail = new Set();
             }
@@ -262,10 +262,10 @@ var TypeChecker;
             if (res_4.length > 0)
                 return res_4;
         }
-        if (s instanceof TypeChecker.DefinitionType) {
+        if (s instanceof TypeChecker.RecursiveType) {
             return step(TypeChecker.unfold(s), p, q, isLeft);
         }
-        if (p instanceof TypeChecker.DefinitionType) {
+        if (p instanceof TypeChecker.RecursiveType) {
             return step(s, TypeChecker.unfold(p), q, isLeft);
         }
         return null;

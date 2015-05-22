@@ -294,9 +294,9 @@ var TypeChecker;
     })(BaseType);
     TypeChecker.GuaranteeType = GuaranteeType;
     ;
-    var DefinitionType = (function (_super) {
-        __extends(DefinitionType, _super);
-        function DefinitionType(definition_name, arg, typedef) {
+    var RecursiveType = (function (_super) {
+        __extends(RecursiveType, _super);
+        function RecursiveType(definition_name, arg, typedef) {
             _super.call(this);
             this.definition = function () { return definition_name; };
             this.args = function () { return arg; };
@@ -310,9 +310,9 @@ var TypeChecker;
                 return typedef;
             };
         }
-        return DefinitionType;
+        return RecursiveType;
     })(BaseType);
-    TypeChecker.DefinitionType = DefinitionType;
+    TypeChecker.RecursiveType = RecursiveType;
     ;
     unsafe_addNewType(FunctionType);
     unsafe_addNewType(BangType);
@@ -334,7 +334,7 @@ var TypeChecker;
     unsafe_addNewType(PrimitiveType);
     unsafe_addNewType(RelyType);
     unsafe_addNewType(GuaranteeType);
-    unsafe_addNewType(DefinitionType);
+    unsafe_addNewType(RecursiveType);
     function wrap(t, v) {
         if (t.type === TypeChecker.types.ReferenceType ||
             t.type === TypeChecker.types.FunctionType ||
@@ -438,7 +438,7 @@ var TypeChecker;
                         res.push(wrap(fields[i], v));
                     return "[" + res.join() + "]";
                 };
-            case TypeChecker.types.DefinitionType:
+            case TypeChecker.types.RecursiveType:
                 return function (v) {
                     if (this.args().length > 0) {
                         var args = this.args();

@@ -62,7 +62,7 @@ module TypeChecker {
         PrimitiveType(x: PrimitiveType): T;
         RelyType(x: RelyType): T;
         GuaranteeType(x: GuaranteeType): T;
-        DefinitionType(x: DefinitionType): T;
+        RecursiveType(x: RecursiveType): T;
     };
 
     class BaseType implements Type {
@@ -344,7 +344,7 @@ module TypeChecker {
         }
     };
 
-    export class DefinitionType extends BaseType {
+    export class RecursiveType extends BaseType {
         public definition: () => string;
         public args: () => Type[];
         public getDefinition: () => Type;
@@ -388,7 +388,7 @@ module TypeChecker {
     unsafe_addNewType(PrimitiveType);
     unsafe_addNewType(RelyType);
     unsafe_addNewType(GuaranteeType);
-    unsafe_addNewType(DefinitionType);
+    unsafe_addNewType(RecursiveType);
 
     // append 'toString' method to types
     // toString( indexesOnly ) // undefined means false
@@ -514,7 +514,7 @@ module TypeChecker {
                     return "[" + res.join() + "]";
                 };
 
-            case types.DefinitionType:
+            case types.RecursiveType:
                 return function(v) {
                     if (this.args().length > 0) {
                         var args = this.args();

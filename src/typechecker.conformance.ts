@@ -20,7 +20,7 @@ module TypeChecker {
             return true;
         }
 
-        if (t instanceof DefinitionType) {
+        if (t instanceof RecursiveType) {
             // lazy use of 'trail' since it should not be needed.
             if (trail === undefined) {
                 trail = new Set<string>();
@@ -322,10 +322,10 @@ module TypeChecker {
         }
 
         // expands recursion (assuming non-bottom types)
-        if (s instanceof DefinitionType) {
+        if (s instanceof RecursiveType) {
             return step(unfold(s), p, q, isLeft);
         }
-        if (p instanceof DefinitionType) {
+        if (p instanceof RecursiveType) {
             return step(s, unfold(p), q, isLeft);
         }
 

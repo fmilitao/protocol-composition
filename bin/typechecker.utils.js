@@ -11,8 +11,8 @@ var TypeChecker;
         if (x.type === t.type && x.index() === t.index() && ((x.type === TypeChecker.types.LocationVariable && a.type === TypeChecker.types.LocationVariable) ||
             (x.type === TypeChecker.types.TypeVariable && a.type !== TypeChecker.types.LocationVariable)))
             return a;
-        var deft = t.type === TypeChecker.types.DefinitionType;
-        var defa = a.type === TypeChecker.types.DefinitionType;
+        var deft = t.type === TypeChecker.types.RecursiveType;
+        var defa = a.type === TypeChecker.types.RecursiveType;
         if (deft || defa) {
             var key = t.toString(true) + a.toString(true);
             if (trail.has(key))
@@ -238,12 +238,12 @@ var TypeChecker;
                 }
                 return r;
             }
-            case TypeChecker.types.DefinitionType: {
+            case TypeChecker.types.RecursiveType: {
                 var fs = t.args();
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
                     tmp[i] = shift(fs[i], c, d);
-                return new TypeChecker.DefinitionType(t.definition(), tmp, t.getTypeDef());
+                return new TypeChecker.RecursiveType(t.definition(), tmp, t.getTypeDef());
             }
             case TypeChecker.types.LocationVariable:
             case TypeChecker.types.TypeVariable:
@@ -294,8 +294,8 @@ var TypeChecker;
     function equalsAux(t1, t2, trail) {
         if (t1 === t2)
             return true;
-        var def1 = t1.type === TypeChecker.types.DefinitionType;
-        var def2 = t2.type === TypeChecker.types.DefinitionType;
+        var def1 = t1.type === TypeChecker.types.RecursiveType;
+        var def2 = t2.type === TypeChecker.types.RecursiveType;
         if (def1 || def2) {
             var key = keyF(t1, t2);
             if (trail.has(key))
@@ -468,12 +468,12 @@ var TypeChecker;
                 }
                 return r;
             }
-            case TypeChecker.types.DefinitionType: {
+            case TypeChecker.types.RecursiveType: {
                 var fs = t.args();
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
                     tmp[i] = rec(fs[i]);
-                return new TypeChecker.DefinitionType(t.definition(), tmp, t.getTypeDef());
+                return new TypeChecker.RecursiveType(t.definition(), tmp, t.getTypeDef());
             }
             case TypeChecker.types.LocationVariable:
             case TypeChecker.types.TypeVariable:
@@ -502,8 +502,8 @@ var TypeChecker;
         if (t1 instanceof TypeChecker.PrimitiveType && t2 instanceof TypeChecker.PrimitiveType) {
             return t1.name() === t2.name();
         }
-        var def1 = t1 instanceof TypeChecker.DefinitionType;
-        var def2 = t2 instanceof TypeChecker.DefinitionType;
+        var def1 = t1 instanceof TypeChecker.RecursiveType;
+        var def2 = t2 instanceof TypeChecker.RecursiveType;
         if (def1 || def2) {
             var key = keyF(t1, t2);
             if (trail.has(key))
@@ -702,7 +702,7 @@ var TypeChecker;
     TypeChecker.isFree = isFree;
     ;
     function isFreeAux(x, t, trail) {
-        if (t.type === TypeChecker.types.DefinitionType) {
+        if (t.type === TypeChecker.types.RecursiveType) {
             var key = t.toString(true);
             if (trail.has(key))
                 return true;
@@ -774,7 +774,7 @@ var TypeChecker;
     }
     ;
     function unfold(t) {
-        while (t.type === TypeChecker.types.DefinitionType) {
+        while (t.type === TypeChecker.types.RecursiveType) {
             t = unfoldDefinition(t);
         }
         return t;
@@ -782,7 +782,7 @@ var TypeChecker;
     TypeChecker.unfold = unfold;
     ;
     function unfoldDefinition(d) {
-        if (d instanceof TypeChecker.DefinitionType) {
+        if (d instanceof TypeChecker.RecursiveType) {
             var t = d.getDefinition();
             var args = d.args();
             var pars = d.getParams();
@@ -873,7 +873,7 @@ var TypeChecker;
                 }
                 return;
             }
-            case TypeChecker.types.DefinitionType: {
+            case TypeChecker.types.RecursiveType: {
                 var ts = t.args();
                 for (var i = 0; i < ts.length; ++i) {
                     indexSetAux(ts[i], c, set);

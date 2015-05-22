@@ -154,7 +154,7 @@ module TypeChecker {
                     var type = ast.typedefs[i];
                     var x = typedef.getDefinition(type.id);
                     var set = new Set();
-                    while (x.type === types.DefinitionType) {
+                    while (x.type === types.RecursiveType) {
                         // note that we use the string-indexOnly representation of the type
                         set.add(x.toString(false));
                         x = unfoldDefinition(x);
@@ -373,7 +373,7 @@ module TypeChecker {
             // look for type definitions with 0 arguments
             var lookup_args = typedef.getType(label);
             if (lookup_args !== undefined && lookup_args.length === 0)
-                return new DefinitionType(label, [], typedef);
+                return new RecursiveType(label, [], typedef);
 
             assert(ERROR.UnknownType(label, ast));
         },
@@ -448,7 +448,7 @@ module TypeChecker {
                 arguments[i] = tmp;
             }
 
-            return new DefinitionType(id, arguments, typedef);
+            return new RecursiveType(id, arguments, typedef);
         },
 
         Primitive: ast => (c, env) => {

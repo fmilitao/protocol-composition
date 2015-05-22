@@ -26,9 +26,9 @@ module TypeChecker {
             (x.type === types.TypeVariable && a.type !== types.LocationVariable)))
             return a;
 
-        // if mismatch on DefinitionType
-        var deft = t.type === types.DefinitionType;
-        var defa = a.type === types.DefinitionType;
+        // if mismatch on RecursiveType
+        var deft = t.type === types.RecursiveType;
+        var defa = a.type === types.RecursiveType;
 
         if (deft || defa) {
             var key = t.toString(true) + a.toString(true);
@@ -363,12 +363,12 @@ module TypeChecker {
                 return r;
             }
 
-            case types.DefinitionType: {
+            case types.RecursiveType: {
                 var fs = t.args();
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
                     tmp[i] = shift(fs[i], c, d);
-                return new DefinitionType(t.definition(), tmp, t.getTypeDef());
+                return new RecursiveType(t.definition(), tmp, t.getTypeDef());
             }
 
             case types.LocationVariable:
@@ -431,9 +431,9 @@ module TypeChecker {
         if (t1 === t2)
             return true;
 
-        // if mismatch on DefinitionType
-        var def1 = t1.type === types.DefinitionType;
-        var def2 = t2.type === types.DefinitionType;
+        // if mismatch on RecursiveType
+        var def1 = t1.type === types.RecursiveType;
+        var def2 = t2.type === types.RecursiveType;
 
         if (def1 || def2) {
 
@@ -653,12 +653,12 @@ module TypeChecker {
                 }
                 return r;
             }
-            case types.DefinitionType: {
+            case types.RecursiveType: {
                 var fs = t.args();
                 var tmp = new Array(fs.length);
                 for (var i = 0; i < fs.length; ++i)
                     tmp[i] = rec(fs[i]);
-                return new DefinitionType(t.definition(), tmp, t.getTypeDef());
+                return new RecursiveType(t.definition(), tmp, t.getTypeDef());
             }
 
             // these remain UNCHANGED
@@ -707,8 +707,8 @@ module TypeChecker {
         }
 
         // (eq:Rec) & (st:Weakening)
-        const def1 = t1 instanceof DefinitionType;
-        const def2 = t2 instanceof DefinitionType;
+        const def1 = t1 instanceof RecursiveType;
+        const def2 = t2 instanceof RecursiveType;
 
         if (def1 || def2) {
 
@@ -999,7 +999,7 @@ module TypeChecker {
 
     function isFreeAux(x, t, trail: Set<string>): boolean {
 
-        if (t.type === types.DefinitionType) {
+        if (t.type === types.RecursiveType) {
             var key = t.toString(true);
 
             // if there is a cycle, assume 'x' is free
@@ -1083,18 +1083,18 @@ module TypeChecker {
         }
     };
 
-    // unfolds DefinitionType until it reaches some useful type
+    // unfolds RecursiveType until it reaches some useful type
     // NOTE: we previously checked for infinitely recursive definitions
     // therefore this function should always terminate.
     export function unfold(t: Type): Type {
-        while (t.type === types.DefinitionType) {
+        while (t.type === types.RecursiveType) {
             t = unfoldDefinition(t);
         }
         return t;
     };
 
     export function unfoldDefinition(d: Type): Type {
-        if (d instanceof DefinitionType) {
+        if (d instanceof RecursiveType) {
             var t = d.getDefinition();
             var args = d.args();
             var pars = d.getParams();
@@ -1189,7 +1189,7 @@ module TypeChecker {
                 }
                 return;
             }
-            case types.DefinitionType: {
+            case types.RecursiveType: {
                 var ts = t.args();
                 for (var i = 0; i < ts.length; ++i) {
                     indexSetAux(ts[i], c, set);

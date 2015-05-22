@@ -468,7 +468,7 @@ module WebWorker {
             case types.TopType:
                 return '<b>top</b>';
 
-            case types.DefinitionType: {
+            case types.RecursiveType: {
                 var t_def = '<span class="type_definition">' + t.definition() + '</span>';
                 if (t.args().length === 0)
                     return wq(t_def);

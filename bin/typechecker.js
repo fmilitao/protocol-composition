@@ -249,7 +249,7 @@ var TypeChecker;
             }
             var lookup_args = typedef.getType(label);
             if (lookup_args !== undefined && lookup_args.length === 0)
-                return new TypeChecker.DefinitionType(label, [], typedef);
+                return new TypeChecker.RecursiveType(label, [], typedef);
             assert(ERROR.UnknownType(label, ast));
         }; },
         Reference: function (ast) { return function (c, env) {
@@ -309,7 +309,7 @@ var TypeChecker;
                 }
                 arguments[i] = tmp;
             }
-            return new TypeChecker.DefinitionType(id, arguments, typedef);
+            return new TypeChecker.RecursiveType(id, arguments, typedef);
         }; },
         Primitive: function (ast) { return function (c, env) {
             return new TypeChecker.PrimitiveType(ast.text);
