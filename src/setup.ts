@@ -22,8 +22,6 @@ module Setup {
     const _OUTPUT_ = "#" + OUTPUT;
     const _EXAMPLES_ = "#" + EXAMPLES;
     const _CURSOR_ = "#cursor-position";
-    //const _TYPEINFO_ = '#' + TYPEINFO;
-    //const _TYPING_ = '#' + TYPING;
     const _RESET_ = '#reset';
 
     const IMPORTS = [
@@ -41,8 +39,6 @@ module Setup {
     let worker_enabled = true;
     let default_file = 'examples/welcome.txt';
     let default_style = 'ace/theme/mono_industrial'; //NOTE: cannot be wrapped in quotes.
-
-    //let TYPE_INFO_WIDTHS = null;
 
     //loads options given as URL parameters
     let parameters = document.URL.split('?');
@@ -84,7 +80,7 @@ module Setup {
 
     let OUTPUT_STYLES;
     // lays all UI components, also useful when resizing window
-    function onResize(ev: UIEvent): any {
+    function onResize(ev: UIEvent) {
         // note that all these constants must be set through javascript
         // or they will not be accessible to use in these computations.
         // the values are just empirically picked to look OK in chrome.
@@ -93,23 +89,21 @@ module Setup {
         const h = window.innerHeight;
 
         // all values in pixels
-        let controls_h = 20;
-        let console_h = 80;
+        const controls_h = 20;
+        const console_h = 80;
         //let split = 270;
-        let top_bar = 35;
+        const top_bar = 35;
 
-        let info = document.getElementById(INFO);
+        const info = document.getElementById(INFO);
         info.style.width = w + "px";
         info.style.height = top_bar + "px";
 
-        let editor = document.getElementById(EDITOR);
-        //editor.style.left = split+"px";
+        const editor = document.getElementById(EDITOR);
         editor.style.width = (w) + "px";
         editor.style.height = (h - controls_h - top_bar) + "px";
         editor.style.top = top_bar + "px";
 
-        let controls = document.getElementById(STATUS_BAR);
-        //controls.style.left = split+"px";
+        const controls = document.getElementById(STATUS_BAR);
         controls.style.width = w + "px";
         controls.style.height = (controls_h) + "px";
         controls.style.top = (h - controls_h) + "px";
@@ -120,26 +114,11 @@ module Setup {
             maxHeight: (h - controls_h - top_bar)
         };
 
-        let output = document.getElementById(OUTPUT);
-        //output.style.left = split+"px";
+        const output = document.getElementById(OUTPUT);
         output.style.width = w + "px";
         output.style.height = OUTPUT_STYLES.defaulHeight + "px";
         output.style.top = OUTPUT_STYLES.defaultTop + "px";
 
-        /*
-        let typing = document.getElementById(TYPING);
-        typing.style.top = top_bar + "px";
-        typing.style.left = (w / 2) + "px";
-        typing.style.maxHeight = h + "px";
-        typing.style.maxWidth = (w / 2) + "px";
-        typing.style.opacity = '0.8';
-
-        TYPE_INFO_WIDTHS = {
-            maxWidth: w, defaultWidth: w / 2,
-            minLeft: 0, defaultLeft: (w / 2),
-            maxOpacity: 1, defaultOpacity: 0.8
-        };
-        */
     };
 
 
@@ -198,11 +177,10 @@ module Setup {
         });
 
 
-        //
-
-        let editor: any = ace.edit(EDITOR);
-        editor.$blockScrolling = Infinity; // FIXME on warning. useful?
-        let Range = ace.require("ace/range").Range;
+        // ace editor's type is not complete, must restort to 'any'
+        const editor: any = ace.edit(EDITOR);
+        editor.$blockScrolling = Infinity; // This is necessary to remove warning.
+        const Range = ace.require("ace/range").Range;
 
         //
         // theme selector
@@ -210,14 +188,14 @@ module Setup {
 
         editor.setTheme(default_style);
         // selected="selected"
-        var STYLE_LIST = $("#editor-style");
+        const STYLE_LIST = $("#editor-style");
         $.get("lib/ace/ace-themes-list", function(data) {
-            var themes = data.split('\n');
-            for (var i = 0; i < themes.length; ++i) {
-                var name = themes[i];
+            const themes = data.split('\n');
+            for (let i = 0; i < themes.length; ++i) {
+                let name = themes[i];
                 name = name.replace('-', '/');
                 name = name.replace('.js', '');
-                var option = $('<option/>', {
+                const option = $('<option/>', {
                     value: name,
                     text: name
                 });
@@ -226,7 +204,7 @@ module Setup {
         });
 
         STYLE_LIST.change(function() {
-            var style = $(this).val();
+            const style = $(this).val();
             if (style != '')
                 editor.setTheme("ace/" + style);
         });
@@ -237,131 +215,66 @@ module Setup {
         editor.setShowPrintMargin(false);
         editor.getSession().setTabSize(3);
 
+        //
+        // Examples buttons.
+        //
 
-        (function() { // Examples buttons.
-            var setEditor = function(text) {
-                // disable event handlers while updating content
-                // to avoid having to handle incomplete events
-                editor.selection.removeListener('changeCursor', onCursorChange);
-                editor.removeListener('change', onChange);
+        function setEditor(text) {
+            // disable event handlers while updating content
+            // to avoid having to handle incomplete events
+            editor.selection.removeListener('changeCursor', onCursorChange);
+            editor.removeListener('change', onChange);
 
-                // set new source code and gain focus.
-                editor.getSession().setValue(text);
-                editor.focus();
+            // set new source code and gain focus.
+            editor.getSession().setValue(text);
+            editor.focus();
 
-                // re-enable event handlers
-                editor.selection.on("changeCursor", onCursorChange);
-                editor.on("change", onChange);
-                onChange(null); // FIXME: warning!
-            }
-
-            var addExample = function(file, name) {
-                name = name.replace('.txt', '');
-                var button = $('<span/>', {
-                    class: 'b1',
-                    text: name,
-                    title: 'load example',
-                    click: function() {
-                        //button.text(name+' (Loading...)');
-                        button.addClass('b1_load');
-
-                        $.get(file, function(data) {
-                            setEditor(data);
-                            //button.text(name);
-                            button.removeClass('b1_load');
-                        });
-                    }
-                });
-                $(_EXAMPLES_).append(button);
-            }
-
-            $.get("examples/examples-list", function(data) {
-                var examples = data.split('\n');
-                for (var i = 0; i < examples.length; ++i) {
-                    if (examples[i][0] != '#') // ignore commented stuff
-                        addExample('examples/' + examples[i], examples[i]);
-                }
-            });
-
-            // setup editor with default file.
-            $.get(default_file, function(data) { setEditor(data); });
-
-
-        })();
-
-        var actionButton = function(label, id, title, text) {
-            var ctr = $('#controls');
-            ctr.prepend("<div class='action'>" + label + "<button class='exbuttong' id=" + id +
-                " title=" + title + "><b>" + text + "</b></button></div>");
+            // re-enable event handlers
+            editor.selection.on("changeCursor", onCursorChange);
+            editor.on("change", onChange);
+            onChange(null); // FIXME: warning!
         };
 
-        /*
-        // TODO: convert this to use output panel, instead of typing panel.
-        
-                var typeinfo = true;
-                (function() { // Typing-information panel.
-                    actionButton("Typing Information: ", "typeinfo",
-                        "Type information is shown when the cursor is placed at the beginning of a construct.",
-                        "SHOW");
-        
-                    var button = $(_TYPEINFO_);
-                    var panel = $(_TYPING_);
-        
-                    // toggle button.
-                    button.click(function(event) {
-                        typeinfo = !typeinfo;
-                        if (typeinfo) {
-                            button.html("<b>SHOW</b>");
-                            if (panel.html() != '')
-                                panel.show();
-                        }
-                        else {
-                            button.html("HIDE");
-                            panel.fadeOut('fast');
-                        }
-                        editor.focus();
+        function addExample(file, name) {
+            name = name.replace('.txt', '');
+            const button = $('<span/>', {
+                class: 'b1',
+                text: name,
+                title: 'load example',
+                click: function() {
+                    //button.text(name+' (Loading...)');
+                    button.addClass('b1_load');
+
+                    $.get(file, function(data) {
+                        setEditor(data);
+                        //button.text(name);
+                        button.removeClass('b1_load');
                     });
-        
-                    // quick way to hide just the panel.
-                    panel.click(function() {
-                        panel.fadeOut('fast');
-                        editor.focus();
-                    });
-        
-                    var t;
-                    panel.hover(function() {
-                        window.clearTimeout(t);
-                        t = window.setTimeout(function() {
-                            //panel.animate({"max-width": TYPE_INFO_WIDTHS.limit }, 'fast');
-                            //panel.css('max-width',TYPE_INFO_WIDTHS.limit);
-                            //panel.removeClass('typing_style');
-                            //panel.addClass('typing_show');
-                            panel.animate({
-                                "left": TYPE_INFO_WIDTHS.minLeft,
-                                "max-width": TYPE_INFO_WIDTHS.maxWidth,
-                                "width": TYPE_INFO_WIDTHS.maxWidth,
-                                "opacity": TYPE_INFO_WIDTHS.maxOpacity
-                            }, 'fast');
-                        }, 500);
-                    });
-                    panel.mouseleave(function() {
-                        window.clearTimeout(t);
-                        t = window.setTimeout(function() {
-                            //panel.css('max-width',TYPE_INFO_WIDTHS.max);
-                            panel.animate({
-                                "left": TYPE_INFO_WIDTHS.defaultLeft,
-                                "max-width": TYPE_INFO_WIDTHS.defaultWidth,
-                                "width": "auto",
-                                "opacity": TYPE_INFO_WIDTHS.defaultOpacity
-                            }, 'slow');
-                            //panel.animate({"max-width": TYPE_INFO_WIDTHS.max }, 'slow');
-                            //panel.removeClass('typing_show');
-                            //panel.addClass('typing_style');
-                        }, 250);
-                    });
-        
-                })();
-        */
+                }
+            });
+            $(_EXAMPLES_).append(button);
+        };
+
+        $.get("examples/examples-list", function(data) {
+            const examples = data.split('\n');
+            for (let i = 0; i < examples.length; ++i) {
+                if (examples[i][0] != '#') // ignore commented stuff
+                    addExample('examples/' + examples[i], examples[i]);
+            }
+        });
+
+        // setup editor with default file.
+        $.get(default_file, function(data) { setEditor(data); });
+
+
+        //
+        // Action buttons.
+        //
+
+        function actionButton(label, id, title, text) {
+            $('#controls').prepend("<div class='action'>" + label + "<button class='exbuttong' id=" + id +
+                " title=" + title + "><b>" + text + "</b></button></div>");
+        };
 
         //
         // Boxing Types
@@ -440,7 +353,7 @@ module Setup {
                 t = window.setTimeout(function() {
                     o.animate({
                         "top": Math.min(top, OUTPUT_STYLES.defaultTop) + "px",
-                        'height' : s + 'px'
+                        'height': s + 'px'
                     }, 'fast');
                 }, 500);
             });

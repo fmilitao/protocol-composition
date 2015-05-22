@@ -129,12 +129,12 @@ var Setup;
         $.get("lib/ace/ace-themes-list", function (data) {
             var themes = data.split('\n');
             for (var i = 0; i < themes.length; ++i) {
-                var name = themes[i];
-                name = name.replace('-', '/');
-                name = name.replace('.js', '');
+                var name_1 = themes[i];
+                name_1 = name_1.replace('-', '/');
+                name_1 = name_1.replace('.js', '');
                 var option = $('<option/>', {
-                    value: name,
-                    text: name
+                    value: name_1,
+                    text: name_1
                 });
                 STYLE_LIST.append(option);
             }
@@ -148,46 +148,46 @@ var Setup;
         editor.getSession().setMode("ace/mode/grammar");
         editor.setShowPrintMargin(false);
         editor.getSession().setTabSize(3);
-        (function () {
-            var setEditor = function (text) {
-                editor.selection.removeListener('changeCursor', onCursorChange);
-                editor.removeListener('change', onChange);
-                editor.getSession().setValue(text);
-                editor.focus();
-                editor.selection.on("changeCursor", onCursorChange);
-                editor.on("change", onChange);
-                onChange(null);
-            };
-            var addExample = function (file, name) {
-                name = name.replace('.txt', '');
-                var button = $('<span/>', {
-                    class: 'b1',
-                    text: name,
-                    title: 'load example',
-                    click: function () {
-                        button.addClass('b1_load');
-                        $.get(file, function (data) {
-                            setEditor(data);
-                            button.removeClass('b1_load');
-                        });
-                    }
-                });
-                $(_EXAMPLES_).append(button);
-            };
-            $.get("examples/examples-list", function (data) {
-                var examples = data.split('\n');
-                for (var i = 0; i < examples.length; ++i) {
-                    if (examples[i][0] != '#')
-                        addExample('examples/' + examples[i], examples[i]);
+        function setEditor(text) {
+            editor.selection.removeListener('changeCursor', onCursorChange);
+            editor.removeListener('change', onChange);
+            editor.getSession().setValue(text);
+            editor.focus();
+            editor.selection.on("changeCursor", onCursorChange);
+            editor.on("change", onChange);
+            onChange(null);
+        }
+        ;
+        function addExample(file, name) {
+            name = name.replace('.txt', '');
+            var button = $('<span/>', {
+                class: 'b1',
+                text: name,
+                title: 'load example',
+                click: function () {
+                    button.addClass('b1_load');
+                    $.get(file, function (data) {
+                        setEditor(data);
+                        button.removeClass('b1_load');
+                    });
                 }
             });
-            $.get(default_file, function (data) { setEditor(data); });
-        })();
-        var actionButton = function (label, id, title, text) {
-            var ctr = $('#controls');
-            ctr.prepend("<div class='action'>" + label + "<button class='exbuttong' id=" + id +
+            $(_EXAMPLES_).append(button);
+        }
+        ;
+        $.get("examples/examples-list", function (data) {
+            var examples = data.split('\n');
+            for (var i = 0; i < examples.length; ++i) {
+                if (examples[i][0] != '#')
+                    addExample('examples/' + examples[i], examples[i]);
+            }
+        });
+        $.get(default_file, function (data) { setEditor(data); });
+        function actionButton(label, id, title, text) {
+            $('#controls').prepend("<div class='action'>" + label + "<button class='exbuttong' id=" + id +
                 " title=" + title + "><b>" + text + "</b></button></div>");
-        };
+        }
+        ;
         var triggers = 'Q';
         var changers = 'q';
         function refreshTypeListners() {
