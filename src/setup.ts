@@ -23,6 +23,8 @@ module Setup {
     const _EXAMPLES_ = "#" + EXAMPLES;
     const _CURSOR_ = "#cursor-position";
     const _RESET_ = '#reset';
+    const _CONFIG_ = '#config';
+    const _GEAR_ = '#gear';
 
     const IMPORTS = [
         'lib/jison.js',
@@ -128,7 +130,19 @@ module Setup {
 
         if (!window.chrome) {
             // warn that it is not chrome
-            document.getElementById("chrome_warn").className = "chrome_show";
+            const chrm = $('#chrome_warn');
+            chrm.removeClass('chrome_hide');
+            chrm.addClass('chrome_show');
+            chrm.hover(
+                // mouse leave
+                function() {
+                    chrm.html('⚠ designed for <a href="http://www.google.com/chrome" target= "_blank"> Google Chrome</a>!');
+                },
+                // mouse enter
+                function() {
+                    chrm.html('⚠');
+                });
+
         }
 
         //
@@ -145,7 +159,7 @@ module Setup {
 
         // configuration gear
 
-        const panel = $("#config");
+        const panel = $(_CONFIG_);
         let entered = false;
 
         panel.mouseenter(function() {
@@ -160,7 +174,7 @@ module Setup {
             //panel.fadeOut('fast');
         });
 
-        $("#gear").click(function() {
+        $(_GEAR_).click(function() {
 
             const position = $(this).offset();
             const y = position.top;
@@ -232,7 +246,7 @@ module Setup {
             // re-enable event handlers
             editor.selection.on("changeCursor", onCursorChange);
             editor.on("change", onChange);
-            onChange(null); // FIXME: warning!
+            onChange();
         };
 
         function addExample(file, name) {
@@ -557,7 +571,7 @@ module Setup {
             }
         };
 
-        function onChange(e) {
+        function onChange(event?) {
             // simply re-do everything, ignore diff.
             // more efficient incremental parser left as future work...
             cc.eval(editor.getSession().getValue());
@@ -567,7 +581,7 @@ module Setup {
         editor.on("change", onChange);
 
         // the initial run to parse the example text.
-        onChange(null); //trigger dummy change
+        onChange(); //trigger dummy change
         // editor apparently automatically gets focused, even without this.
         editor.focus();
 

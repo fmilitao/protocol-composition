@@ -16,6 +16,8 @@ var Setup;
     var _EXAMPLES_ = "#" + EXAMPLES;
     var _CURSOR_ = "#cursor-position";
     var _RESET_ = '#reset';
+    var _CONFIG_ = '#config';
+    var _GEAR_ = '#gear';
     var IMPORTS = [
         'lib/jison.js',
         'bin/setup.comm.js',
@@ -96,11 +98,18 @@ var Setup;
     function onReady() {
         $.ajaxSetup({ cache: !DEBUG_MSG });
         if (!window.chrome) {
-            document.getElementById("chrome_warn").className = "chrome_show";
+            var chrm = $('#chrome_warn');
+            chrm.removeClass('chrome_hide');
+            chrm.addClass('chrome_show');
+            chrm.hover(function () {
+                chrm.html('⚠ designed for <a href="http://www.google.com/chrome" target= "_blank"> Google Chrome</a>!');
+            }, function () {
+                chrm.html('⚠');
+            });
         }
         window.onresize = onResize;
         onResize(null);
-        var panel = $("#config");
+        var panel = $(_CONFIG_);
         var entered = false;
         panel.mouseenter(function () {
             entered = true;
@@ -111,7 +120,7 @@ var Setup;
                 entered = false;
             }
         });
-        $("#gear").click(function () {
+        $(_GEAR_).click(function () {
             var position = $(this).offset();
             var y = position.top;
             var x = position.left;
@@ -155,7 +164,7 @@ var Setup;
             editor.focus();
             editor.selection.on("changeCursor", onCursorChange);
             editor.on("change", onChange);
-            onChange(null);
+            onChange();
         }
         ;
         function addExample(file, name) {
@@ -380,13 +389,13 @@ var Setup;
             }
         }
         ;
-        function onChange(e) {
+        function onChange(event) {
             cc.eval(editor.getSession().getValue());
         }
         ;
         editor.selection.on("changeCursor", onCursorChange);
         editor.on("change", onChange);
-        onChange(null);
+        onChange();
         editor.focus();
     }
     Setup.onReady = onReady;

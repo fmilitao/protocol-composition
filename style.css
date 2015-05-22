@@ -336,16 +336,12 @@ a:visited {
 	color: purple;
 }
 
-
-
 .chrome_show{
-	font-size: 8pt;
+	font-size: 10pt;
 	text-align: center;
-	border: 2px solid #FF0000;
+	border: 2px solid #f06e6e;
 	background: #EE5757;
 	border-radius: 5px;
-	padding: 2px;
-	margin: 5px;
 }
 
 .chrome_hide{
