@@ -158,7 +158,7 @@ var TypeChecker;
             var type = c.checkType(ast.type, env);
             var to = c.checkType(ast.to, env);
             var from = c.checkType(ast.from, env);
-            assert((from.type === TypeChecker.types.LocationVariable || from.type === TypeChecker.types.TypeVariable)
+            assert((from instanceof TypeChecker.LocationVariable) || (from instanceof TypeChecker.TypeVariable)
                 || ERROR.InvalidSubstitution(from, ast.from));
             return TypeChecker.substitution(type, from, to);
         }; },
@@ -234,7 +234,7 @@ var TypeChecker;
         Capability: function (ast) { return function (c, env) {
             var id = ast.id;
             var loc = env.getTypeByName(id);
-            assert((loc !== undefined && loc.type === TypeChecker.types.LocationVariable) ||
+            assert((loc !== undefined && (loc instanceof TypeChecker.LocationVariable)) ||
                 ERROR.UnknownLocation(id, ast));
             return new TypeChecker.CapabilityType(loc.copy(env.getNameIndex(id)), c.checkType(ast.type, env));
         }; },
@@ -243,8 +243,8 @@ var TypeChecker;
             var typedef = env.getTypeDef();
             var tmp = env.getTypeByName(label);
             if (tmp !== undefined &&
-                (tmp.type === TypeChecker.types.TypeVariable ||
-                    tmp.type === TypeChecker.types.LocationVariable)) {
+                ((tmp instanceof TypeChecker.TypeVariable) ||
+                    (tmp instanceof TypeChecker.LocationVariable))) {
                 return tmp.copy(env.getNameIndex(label));
             }
             var lookup_args = typedef.getType(label);
@@ -255,7 +255,7 @@ var TypeChecker;
         Reference: function (ast) { return function (c, env) {
             var id = ast.text;
             var loc = env.getTypeByName(id);
-            assert((loc !== undefined && loc.type === TypeChecker.types.LocationVariable) ||
+            assert((loc !== undefined && (loc instanceof TypeChecker.LocationVariable)) ||
                 ERROR.UnknownLocation(id, ast));
             return new TypeChecker.ReferenceType(loc.copy(env.getNameIndex(id)));
         }; },
@@ -299,12 +299,12 @@ var TypeChecker;
             var arguments = new Array(args.length);
             for (var i = 0; i < args.length; ++i) {
                 var tmp = c.checkType(args[i], env);
-                if (t_args[i].type === TypeChecker.types.LocationVariable) {
-                    assert((tmp.type === TypeChecker.types.LocationVariable) ||
+                if (t_args[i] instanceof TypeChecker.LocationVariable) {
+                    assert((tmp instanceof TypeChecker.LocationVariable) ||
                         ERROR.ExpectingLocation(i, tmp, args[i]));
                 }
-                if (t_args[i].type === TypeChecker.types.TypeVariable) {
-                    assert((tmp.type !== TypeChecker.types.LocationVariable) ||
+                if (t_args[i] instanceof TypeChecker.TypeVariable) {
+                    assert(!(tmp instanceof TypeChecker.LocationVariable) ||
                         ERROR.UnexpectedLocation(i, args[i]));
                 }
                 arguments[i] = tmp;

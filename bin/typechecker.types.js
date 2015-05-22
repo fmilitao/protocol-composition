@@ -453,8 +453,9 @@ var TypeChecker;
             case TypeChecker.types.LocationVariable:
             case TypeChecker.types.TypeVariable:
                 return function (v) {
-                    if (!v)
+                    if (!v) {
                         return this.name() + '^' + this.index();
+                    }
                     var str = '';
                     if (this.type === TypeChecker.types.TypeVariable) {
                         var b = this.bound();

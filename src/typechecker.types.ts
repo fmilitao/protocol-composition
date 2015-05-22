@@ -11,8 +11,8 @@ module TypeChecker {
     // these are program assertions and should never be seen by users
     // unless there is a major malfunction in the code (bug...)
     export function error(msg: string|boolean) {
-        if( !(typeof (msg) === 'boolean' && msg) )
-            throw new ErrorWrapper( msg.toString(), 'BUG ALERT');
+        if (!(typeof (msg) === 'boolean' && msg))
+            throw new ErrorWrapper(msg.toString(), 'BUG ALERT');
     };
 
     //
@@ -435,9 +435,9 @@ module TypeChecker {
 
             case types.SumType:
                 return function(v) {
-                    var tags = this.tags();
-                    var res = [];
-                    for (var i in tags) {
+                    const tags = this.tags();
+                    const res = [];
+                    for (let i in tags) {
                         res.push(tags[i] + '#' + wrap(this.inner(tags[i]), v));
                     }
                     return res.join('+');
@@ -445,27 +445,27 @@ module TypeChecker {
 
             case types.StarType:
                 return function(v) {
-                    var inners = this.inner();
-                    var res = [];
-                    for (var i = 0; i < inners.length; ++i)
+                    const inners = this.inner();
+                    const res = [];
+                    for (let i = 0; i < inners.length; ++i)
                         res.push(wrap(inners[i], v));
                     return res.join(' * ');
                 };
 
             case types.AlternativeType:
                 return function(v) {
-                    var inners = this.inner();
-                    var res = [];
-                    for (var i = 0; i < inners.length; ++i)
+                    const inners = this.inner();
+                    const res = [];
+                    for (let i = 0; i < inners.length; ++i)
                         res.push(wrap(inners[i], v));
                     return res.join(' (+) ');
                 };
 
             case types.IntersectionType:
                 return function(v) {
-                    var inners = this.inner();
-                    var res = [];
-                    for (var i = 0; i < inners.length; ++i)
+                    const inners = this.inner();
+                    const res = [];
+                    for (let i = 0; i < inners.length; ++i)
                         res.push(wrap(inners[i], v));
                     return res.join(' & ');
                 };
@@ -501,18 +501,18 @@ module TypeChecker {
 
             case types.RecordType:
                 return function(v) {
-                    var res = [];
-                    var fields = this.fields();
-                    for (var i in fields)
+                    const res = [];
+                    const fields = this.fields();
+                    for (let i in fields)
                         res.push(i + ": " + wrap(fields[i], v));
                     return "[" + res.join() + "]";
                 };
 
             case types.TupleType:
                 return function(v) {
-                    var res = [];
-                    var fields = this.inner();
-                    for (var i in fields)
+                    const res = [];
+                    const fields = this.inner();
+                    for (let i in fields)
                         res.push(wrap(fields[i], v));
                     return "[" + res.join() + "]";
                 };
@@ -520,9 +520,9 @@ module TypeChecker {
             case types.RecursiveType:
                 return function(v) {
                     if (this.args().length > 0) {
-                        var args = this.args();
-                        var tmp = [];
-                        for (var i = 0; i < args.length; ++i) {
+                        const args = this.args();
+                        const tmp = [];
+                        for (let i = 0; i < args.length; ++i) {
                             tmp.push(wrap(args[i], v));
                         }
                         return wrap(this.definition(), v) + '[' + tmp.join() + ']';
@@ -533,13 +533,14 @@ module TypeChecker {
             case types.LocationVariable:
             case types.TypeVariable:
                 return function(v) {
-                    if (!v)
+                    if (!v) {
                         return this.name() + '^' + this.index();
+                    }
 
-                    var str = '';
+                    let str = '';
                     // only add type bound if it is a TypeVariable
                     if (this.type === types.TypeVariable) {
-                        var b = this.bound();
+                        const b = this.bound();
                         // with a valid bound
                         if (b !== null) {
                             // for clarity we use '$' instead of '<:'
@@ -566,8 +567,8 @@ module TypeChecker {
 
     // attach 'toString' to all types
     for (let i in types) {
-        let t = types[i];
-        let fun = setupToString(t);
+        const t = types[i];
+        const fun = setupToString(t);
         error(!fct[t].hasOwnProperty('toString') || ("Duplicated " + t));
         fct[t].prototype.toString = fun;
     }

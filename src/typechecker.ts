@@ -132,7 +132,7 @@ module TypeChecker {
                 for (var i = 0; i < ast.typedefs.length; ++i) {
                     var type = ast.typedefs[i];
                     var tmp_env = env;
-                    var args: any = typedef.getType(type.id);
+                    var args = typedef.getType(type.id);
 
                     // sets the variables, if there are any to setup
                     if (args !== null) {
@@ -252,7 +252,7 @@ module TypeChecker {
             const to = c.checkType(ast.to, env);
             const from = c.checkType(ast.from, env);
 
-            assert((from.type === types.LocationVariable || from.type === types.TypeVariable)
+            assert((from instanceof LocationVariable) || (from instanceof TypeVariable)
                 || ERROR.InvalidSubstitution(from, ast.from));
 
             // check above ensures that 'from' is either LocationVariable or TypeVariable.
@@ -307,7 +307,7 @@ module TypeChecker {
 
         Sum: ast => (c, env) => {
             const sum = new SumType();
-            for (let t of ast.sums) {
+            for (const t of ast.sums) {
                 assert(sum.add(t.tag, c.checkType(t.type, env)) ||
                     ERROR.DuplicatedTag(t.tag, t));
             }
@@ -316,7 +316,7 @@ module TypeChecker {
 
         Star: ast => (c, env) => {
             const star = new StarType();
-            for (let t of ast.types) {
+            for (const t of ast.types) {
                 star.add(c.checkType(t, env));
             }
             return star;
@@ -324,7 +324,7 @@ module TypeChecker {
 
         Alternative: ast => (c, env) => {
             const alt = new AlternativeType();
-            for (let t of ast.types) {
+            for (const t of ast.types) {
                 alt.add(c.checkType(t, env));
             }
             return alt;
@@ -332,7 +332,7 @@ module TypeChecker {
 
         Intersection: ast => (c, env) => {
             const alt = new IntersectionType();
-            for (let t of ast.types) {
+            for (const t of ast.types) {
                 alt.add(c.checkType(t, env));
             }
             return alt;
@@ -340,16 +340,16 @@ module TypeChecker {
 
         Function: ast => (c, env) => {
             return new FunctionType(
-                c.checkType(ast.arg, env),
-                c.checkType(ast.exp, env)
+                c.checkType(ast.arg, env), // argument
+                c.checkType(ast.exp, env) // return
                 );
         },
 
         Capability: ast => (c, env) => {
-            let id = ast.id;
-            let loc = env.getTypeByName(id);
+            const id = ast.id;
+            const loc = env.getTypeByName(id);
 
-            assert((loc !== undefined && loc.type === types.LocationVariable) ||
+            assert((loc !== undefined && (loc instanceof LocationVariable)) ||
                 ERROR.UnknownLocation(id, ast));
 
             return new CapabilityType((<LocationVariable>loc).copy(env.getNameIndex(id)), c.checkType(ast.type, env));
@@ -365,13 +365,13 @@ module TypeChecker {
             // access to type variables and location variables using this
             // AST.kind --- all other uses are assumed to be recursives.
             if (tmp !== undefined &&
-                (tmp.type === types.TypeVariable ||
-                    tmp.type === types.LocationVariable)) {
+                ((tmp instanceof TypeVariable) ||
+                    (tmp instanceof LocationVariable))) {
                 return (<LocationVariable|TypeVariable>tmp).copy(env.getNameIndex(label));
             }
 
             // look for type definitions with 0 arguments
-            var lookup_args = typedef.getType(label);
+            const lookup_args = typedef.getType(label);
             if (lookup_args !== undefined && lookup_args.length === 0)
                 return new RecursiveType(label, [], typedef);
 
@@ -379,10 +379,10 @@ module TypeChecker {
         },
 
         Reference: ast => (c, env) => {
-            var id = ast.text;
-            var loc = env.getTypeByName(id);
+            const id = ast.text;
+            const loc = env.getTypeByName(id);
 
-            assert((loc !== undefined && loc.type === types.LocationVariable) ||
+            assert((loc !== undefined && (loc instanceof LocationVariable)) ||
                 ERROR.UnknownLocation(id, ast));
 
             return new ReferenceType((<LocationVariable>loc).copy(env.getNameIndex(id)));
@@ -393,11 +393,11 @@ module TypeChecker {
         },
 
         Record: ast => (c, env) => {
-            var rec = new RecordType();
-            for (var i = 0; i < ast.exp.length; ++i) {
-                var field = ast.exp[i];
-                var id = field.id;
-                var value = c.checkType(field.exp, env);
+            const rec = new RecordType();
+            for (let i = 0; i < ast.exp.length; ++i) {
+                const field = ast.exp[i];
+                const id = field.id;
+                const value = c.checkType(field.exp, env);
                 assert(rec.add(id, value) || ERROR.DuplicatedField(id, rec, field));
             }
             return rec;
@@ -412,8 +412,8 @@ module TypeChecker {
         },
 
         Tagged: ast => (c, env): Type => {
-            var sum = new SumType();
-            var exp = c.checkType(ast.type, env);
+            const sum = new SumType();
+            const exp = c.checkType(ast.type, env);
             sum.add(ast.tag, exp);
             return sum;
         },
@@ -423,25 +423,25 @@ module TypeChecker {
         },
 
         Definition: ast => (c, env) => {
-            var typedef = env.getTypeDef();
-            var id = ast.name;
-            var args = ast.args;
-            var t_args = typedef.getType(id);
+            const typedef = env.getTypeDef();
+            const id = ast.name;
+            const args = ast.args;
+            const t_args = typedef.getType(id);
 
             assert(t_args !== undefined || ERROR.UnknownType(id, ast));
             assert(t_args.length === args.length || ERROR.ArgumentMismatch(args.length, t_args.length, ast));
 
-            var arguments = new Array(args.length);
-            for (var i = 0; i < args.length; ++i) {
-                var tmp = c.checkType(args[i], env);
+            const arguments = new Array(args.length);
+            for (let i = 0; i < args.length; ++i) {
+                const tmp = c.checkType(args[i], env);
 
-                if (t_args[i].type === types.LocationVariable) {
-                    assert((tmp.type === types.LocationVariable) ||
+                if (t_args[i] instanceof LocationVariable) {
+                    assert((tmp instanceof LocationVariable) ||
                         ERROR.ExpectingLocation(i, tmp, args[i]));
                 }
 
-                if (t_args[i].type === types.TypeVariable) {
-                    assert((tmp.type !== types.LocationVariable) ||
+                if (t_args[i] instanceof TypeVariable) {
+                    assert(!(tmp instanceof LocationVariable) ||
                         ERROR.UnexpectedLocation(i, args[i]));
                 }
 
