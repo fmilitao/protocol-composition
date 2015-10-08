@@ -4,7 +4,7 @@
 Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
-[http://fmilitao.github.io/protocol-conformance/editor.html](Online Version)
+[Online Version](http://fmilitao.github.io/protocol-conformance/editor.html)
 
 
 *NOTE*: We currently do not enforce lock-set well-formedness condition, nor check for bottom types.
