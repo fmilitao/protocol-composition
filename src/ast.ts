@@ -45,6 +45,17 @@ module AST {
         obj.prototype['kind'] = obj.name;
     };
 
+    interface AST_Node {
+
+        line: number;
+        col: number;
+        last_line: number;
+        last_col: number;
+
+        kind: string;
+    };
+
+
     // convenient but hacky class for adding a match to both Exp and Types
     class BaseAST {
 
@@ -87,7 +98,7 @@ module AST {
 
     export module Exp {
 
-        export interface Exp {
+        export interface Exp extends AST_Node {
             match<T>(m: MatchExp<T>): T;
         };
 
@@ -185,7 +196,7 @@ module AST {
 
     export module Type {
 
-        export interface Type {
+        export interface Type extends AST_Node {
             match<T>(m: MatchType<T>): T;
         };
 

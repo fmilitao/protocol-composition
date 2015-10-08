@@ -343,3 +343,4 @@ var WebWorker;
         }
     };
 })(WebWorker || (WebWorker = {}));
+//# sourceMappingURL=setup.worker.js.map

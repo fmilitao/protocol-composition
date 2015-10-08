@@ -6,7 +6,9 @@
         "noImplicitAny": false,
         "removeComments": true,
         "outDir": "bin/",
-        "noLib": false
+        "noLib": false,
+        "suppressImplicitAnyIndexErrors": true,
+        "sourceMap": true
     },
     "filesGlob": [
         "./**/*.ts",
@@ -24,9 +26,9 @@
         "./src/setup.comm.ts",
         "./src/setup.ts",
         "./src/setup.worker.ts",
+        "./src/typechecker.conformance.ts",
         "./src/typechecker.ts",
         "./src/typechecker.types.ts",
-        "./src/typechecker.utils.ts",
-        "./src/typechecker.conformance.ts"
+        "./src/typechecker.utils.ts"
     ]
 }

@@ -1,10 +1,9 @@
 // Copyright (C) 2013-2015 Filipe Militao <filipe.militao@cs.cmu.edu>
 // GPL v3 Licensed http://www.gnu.org/licenses/
-var __extends = this.__extends || function (d, b) {
+var __extends = (this && this.__extends) || function (d, b) {
     for (var p in b) if (b.hasOwnProperty(p)) d[p] = b[p];
     function __() { this.constructor = d; }
-    __.prototype = b.prototype;
-    d.prototype = new __();
+    d.prototype = b === null ? Object.create(b) : (__.prototype = b.prototype, new __());
 };
 var ErrorWrapper = (function () {
     function ErrorWrapper(message, kind, ast, debug, stack) {
@@ -43,6 +42,7 @@ var AST;
     function unsafe_addKind(obj) {
         obj.prototype['kind'] = obj.name;
     }
+    ;
     ;
     var BaseAST = (function () {
         function BaseAST(info) {
@@ -418,3 +418,4 @@ var AST;
     ;
 })(AST || (AST = {}));
 ;
+//# sourceMappingURL=ast.js.map

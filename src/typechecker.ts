@@ -245,7 +245,10 @@ module TypeChecker {
     // MATCH TYPE
     //
 
-    const matchType: MatchType = {
+    // auxiliary type for common Forall/Exists code
+    type AUX_TYPE = (ctr: any, ast: AST.Type.Exists | AST.Type.Forall) => (c: EvalContext, env: Gamma) => Type;
+
+    const matchType: MatchType & {_aux_ : AUX_TYPE }= {
 
         Substitution: ast => (c, env) => {
             const type = c.checkType(ast.type, env);
@@ -465,7 +468,7 @@ module TypeChecker {
     // only exports checking function.
     export function checker(ast: AST.Exp.Program): { time: number, info: any[] } {
 
-        const log = { 
+        const log = {
             // timer start
             time: (new Date().getTime()),
             // info place_holder

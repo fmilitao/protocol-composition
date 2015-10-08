@@ -402,3 +402,4 @@ var Setup;
 })(Setup || (Setup = {}));
 ;
 $(document).ready(Setup.onReady);
+//# sourceMappingURL=setup.js.map
