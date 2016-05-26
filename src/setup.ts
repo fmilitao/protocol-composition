@@ -33,7 +33,7 @@ module Setup {
         'bin/parser.js',
         'bin/typechecker.types.js',
         'bin/typechecker.utils.js',
-        'bin/typechecker.conformance.js',
+        'bin/typechecker.composition.js',
         'bin/typechecker.js'];
     const WORKER_JS = 'bin/setup.worker.js';
 
@@ -412,7 +412,7 @@ module Setup {
                     }
                     marker = [];
                 }
-                
+
                 // clears old annotations
                 if (a === null) {
                     session.clearAnnotations();

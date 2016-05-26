@@ -300,16 +300,16 @@ a:visited {
 	/* font-size: 12pt; //TODO multimap symbol is messed up */
 }
 
-.typing_conformance tr:hover {
+.typing_composition tr:hover {
 	background-color:#d4f161;
 }
-.typing_conformance, tr, td {
+.typing_composition, tr, td {
 	border-collapse:collapse;
 	border:1px solid #f1a261;
 	padding: 3px;
 	text-align: center;
 }
-.typing_conformance th {
+.typing_composition th {
 	background-color:#f1c661;
 }
 

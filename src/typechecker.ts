@@ -180,13 +180,13 @@ module TypeChecker {
             const left = c.checkType(ast.a, env);
             const right = c.checkType(ast.b, env);
 
-            // Protocol conformance, goes through all possible "protocol
+            // Protocol composition, goes through all possible "protocol
             // interleaving" and ensures that all those possibilities are
             // considered in both protocols.
 
-            const table = checkConformance(env, cap, left, right);
+            const table = checkComposition(env, cap, left, right);
             const res = table !== null; // is valid if table not null
-            // checkProtocolConformance(cap, left, right, ast);
+            // checkProtocolComposition(cap, left, right, ast);
 
             return assert(
                 ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast),

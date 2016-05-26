@@ -1,5 +1,5 @@
 
-/* === CONFORMANCE TESTS === */
+/* === COMPOSITION TESTS === */
 
 share none as none || none
 
@@ -9,10 +9,10 @@ typedef W[f,c] = (rw f Raw#[]) * (rw c int)
 typedef K[f,c] = (rw f Done#[]) * (rw c boolean)
 
 typedef Receiver   [f,c] = G[f,c] => W[f,c]
-typedef Compressor [f,c] = ( G[f,c] => G[f,c] ; Compressor[f,c] ) (+) 
+typedef Compressor [f,c] = ( G[f,c] => G[f,c] ; Compressor[f,c] ) (+)
 									( W[f,c] => K[f,c] )
 
-typedef Storer  [f,c] = ( G[f,c] => G[f,c] ; Storer[f,c] ) (+) Storer_[f,c] 
+typedef Storer  [f,c] = ( G[f,c] => G[f,c] ; Storer[f,c] ) (+) Storer_[f,c]
 typedef Storer_ [f,c] = ( W[f,c] => W[f,c] ; Storer_[f,c] ) (+) ( K[f,c] => none )
 
 typedef TMP  [f,c] = ( G[f,c] => G[f,c] ; TMP[f,c] ) (+) TMP_[f,c]
@@ -104,7 +104,7 @@ typedef UN[t] = (rw t NE#[]) => (rw t NE#[]) ; UN[t]
 // FIXME: old version use just for testing, but protocol is not well-formed! recovery is wrong!
 // Pipe
 typedef Head[p] =	( rw p !(Empty#[]) => rw p !(Empty#[]) ; Head[p] ) (+)
-					( rw p !(Closed#[]) => none ) (+) 
+					( rw p !(Closed#[]) => none ) (+)
 					( rw p (Node#[int,exists q.(!ref q :: Head[q] )]) => none )
 
 typedef Tail[p] =  (rw p !Empty#[]) => ( (rw p !Closed#[]) (+) (rw p Node#[int,exists q.(!ref q :: Head[q])]) )
@@ -130,6 +130,3 @@ typedef M1[p] = ( PP[p] => NN[p] ; M0[p] ) & ( NN[p] => PP[p] ; M1[p] )
 
 <t> share IncOnly[t] as IncOnly[t] || IncOnly[t]
 <t> not share Any[t] as Any[t] || Any[t]
-
-
-

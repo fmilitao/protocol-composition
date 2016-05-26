@@ -119,7 +119,7 @@ var TypeChecker;
             var cap = c.checkType(ast.type, env);
             var left = c.checkType(ast.a, env);
             var right = c.checkType(ast.b, env);
-            var table = TypeChecker.checkConformance(env, cap, left, right);
+            var table = TypeChecker.checkComposition(env, cap, left, right);
             var res = table !== null;
             return assert(ast.value === res || ERROR.UnexpectedResult(res, ast.value, ast), function () { return [[ast, table]]; });
         }; },

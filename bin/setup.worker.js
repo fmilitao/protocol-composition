@@ -8,7 +8,7 @@ var IMPORTS = [
     'parser.js',
     'typechecker.types.js',
     'typechecker.utils.js',
-    'typechecker.conformance.js',
+    'typechecker.composition.js',
     'typechecker.js'];
 if (isWorker) {
     var console = function () {
@@ -89,7 +89,7 @@ var WebWorker;
                 send.clearAll();
                 if (ptr === null)
                     return;
-                send.println(printConformance(ptr));
+                send.println(printComposition(ptr));
             }
         };
     })();
@@ -98,7 +98,7 @@ var WebWorker;
         var res = '';
         if (r !== undefined && r !== null) {
             if (r instanceof Array) {
-                res = '\n\nConformance: ' + printConformance(r);
+                res = '\n\nComposition: ' + printComposition(r);
             }
             else {
                 res = '\n\nType: ' + toHTML(r) + '\n Str: ' + r.toString(true);
@@ -108,8 +108,8 @@ var WebWorker;
             + (ast.last_line + 1) + ':' + ast.last_col + ' ' + ast.kind
             + res + '\n';
     };
-    function printConformance(cf) {
-        var tmp = '<table class="typing_conformance"><tr>' +
+    function printComposition(cf) {
+        var tmp = '<table class="typing_composition"><tr>' +
             '<th>#</th>' +
             '<th>State</th>' +
             '<th>P</th><th>Q</th>' +
@@ -194,8 +194,8 @@ var WebWorker;
             var ptr = indexes[i];
             var as = printAST(type_info[ptr].ast, type_info[ptr].res);
             var ev = printEnvironment(type_info[ptr].env);
-            var cf = type_info[ptr].conformance;
-            cf = (cf !== undefined ? printConformance(cf) : '');
+            var cf = type_info[ptr].composition;
+            cf = (cf !== undefined ? printComposition(cf) : '');
             var seen = false;
             for (var j = 0; !seen && j < res.length; ++j) {
                 var jj = res[j];

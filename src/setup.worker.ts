@@ -13,7 +13,7 @@ const IMPORTS = [
     'parser.js',
     'typechecker.types.js',
     'typechecker.utils.js',
-    'typechecker.conformance.js',
+    'typechecker.composition.js',
     'typechecker.js'];
 
 if (isWorker) {
@@ -126,7 +126,7 @@ module WebWorker {
             checker: function(pos: { row: number, column: number }) {
                 if (info === null)
                     return; // nothing to show
-                    
+
                 let ptr = null;
 
                 // search for closest one
@@ -142,7 +142,7 @@ module WebWorker {
 
                 if (ptr === null)
                     return;
-                send.println(printConformance(ptr));
+                send.println(printComposition(ptr));
 
 
                 // ignores result...
@@ -181,7 +181,7 @@ module WebWorker {
         var res = '';
         if (r !== undefined && r !== null) {
             if (r instanceof Array) {
-                res = '\n\nConformance: ' + printConformance(r);
+                res = '\n\nComposition: ' + printComposition(r);
             } else {
                 res = '\n\nType: ' + toHTML(r) + '\n Str: ' + r.toString(true);
             }
@@ -192,8 +192,8 @@ module WebWorker {
             + res + '\n';
     }
 
-    function printConformance(cf) {
-        let tmp = '<table class="typing_conformance"><tr>' +
+    function printComposition(cf) {
+        let tmp = '<table class="typing_composition"><tr>' +
             '<th>#</th>' +
             '<th>State</th>' +
             '<th>P</th><th>Q</th>' +
@@ -317,8 +317,8 @@ module WebWorker {
                 continue;*/
             var as = printAST(type_info[ptr].ast, type_info[ptr].res);
             var ev = printEnvironment(type_info[ptr].env);
-            var cf = type_info[ptr].conformance;
-            cf = (cf !== undefined ? printConformance(cf) : '');
+            var cf = type_info[ptr].composition;
+            cf = (cf !== undefined ? printComposition(cf) : '');
 
             // group all those that have the same environment
             var seen = false;
@@ -328,7 +328,7 @@ module WebWorker {
                     // already seen
                     jj.ast += '<br/>' + as;
                     if (jj.cf === '')
-                        jj.cf += cf; // in case there is more than 1 conformance
+                        jj.cf += cf; // in case there is more than 1 composition
                     seen = true;
                     break;
                 }

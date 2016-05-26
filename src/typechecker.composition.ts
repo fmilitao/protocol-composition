@@ -153,7 +153,7 @@ module TypeChecker {
     };
 
     //
-    // Protocol Conformance
+    // Protocol Composition
     //
 
     type Configuration = { s: Type, p: Type, q: Type };
@@ -198,13 +198,13 @@ module TypeChecker {
         return [res];
     };
 
-    export function checkConformance(g: Gamma, s: Type, p: Type, q: Type) {
+    export function checkComposition(g: Gamma, s: Type, p: Type, q: Type) {
         // we can ignore 'g' because of using indexes
         //debugger
-        return checkConformanceAux([[Work(s, p, q)]], []);
+        return checkCompositionAux([[Work(s, p, q)]], []);
     };
 
-    function checkConformanceAux(work: Configuration[][], visited: Configuration[]): Configuration[] {
+    function checkCompositionAux(work: Configuration[][], visited: Configuration[]): Configuration[] {
         if (work.length === 0)
             return visited;
 
@@ -234,7 +234,7 @@ module TypeChecker {
             }
 
             if (!failed) {
-                const result = checkConformanceAux(next, v);
+                const result = checkCompositionAux(next, v);
                 if (result !== null)
                     return result;
             }
@@ -307,7 +307,7 @@ module TypeChecker {
         // by (rs:StateIntersection)
         if (s instanceof IntersectionType) {
             let res: Configuration[][] = [];
-            // protocol only needs to consider *one* case, 
+            // protocol only needs to consider *one* case,
             // but we must remember the other choices for completeness
             for (const ss of s.inner()) {
                 const tmp = step(ss, p, q, isLeft);
@@ -494,4 +494,3 @@ module TypeChecker {
     };
 
 };
-

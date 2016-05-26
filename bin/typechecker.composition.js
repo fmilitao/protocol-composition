@@ -170,12 +170,12 @@ var TypeChecker;
         return [res];
     }
     ;
-    function checkConformance(g, s, p, q) {
-        return checkConformanceAux([[Work(s, p, q)]], []);
+    function checkComposition(g, s, p, q) {
+        return checkCompositionAux([[Work(s, p, q)]], []);
     }
-    TypeChecker.checkConformance = checkConformance;
+    TypeChecker.checkComposition = checkComposition;
     ;
-    function checkConformanceAux(work, visited) {
+    function checkCompositionAux(work, visited) {
         if (work.length === 0)
             return visited;
         for (var _i = 0; _i < work.length; _i++) {
@@ -198,7 +198,7 @@ var TypeChecker;
                 }
             }
             if (!failed) {
-                var result = checkConformanceAux(next, v);
+                var result = checkCompositionAux(next, v);
                 if (result !== null)
                     return result;
             }
@@ -364,4 +364,4 @@ var TypeChecker;
     ;
 })(TypeChecker || (TypeChecker = {}));
 ;
-//# sourceMappingURL=typechecker.conformance.js.map
+//# sourceMappingURL=typechecker.composition.js.map
