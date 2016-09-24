@@ -1,7 +1,10 @@
 
 #Protocol Composition Checker#
 
-Grammar is limited to only check 'equals', 'subtype' and 'share' (and substitution).
+Paper describing the formal system: ["Composing Interfering Abstract Protocols"](http://www.cs.cmu.edu/~foliveir/papers/ecoop16-paper.pdf) ([DOI](http://dx.doi.org/10.4230/LIPIcs.ECOOP.2016.16)).
+
+This is not a full language implementation. Instead, it only implements the protocol composition algorithm.
+Grammar is limited to only check 'equals', 'subtype', and 'share' (and substitution).
 Instead of recursion, we have 'typedef' for clarity.
 
 [Online Version](http://fmilitao.github.io/protocol-composition/editor.html)
