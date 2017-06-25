@@ -1,5 +1,5 @@
 
-#Protocol Composition Checker#
+# Protocol Composition Checker #
 
 Paper describing the formal system: ["Composing Interfering Abstract Protocols"](http://www.cs.cmu.edu/~foliveir/papers/ecoop16-paper.pdf) ([DOI](http://dx.doi.org/10.4230/LIPIcs.ECOOP.2016.16)).
 
@@ -12,7 +12,7 @@ Instead of recursion, we have 'typedef' for clarity.
 
 *NOTE*: We currently do not enforce lock-set well-formedness condition, nor check for bottom types.
 
-##Extra Credits##
+## Extra Credits ##
 
 - Types and Programming Languages, Chapter 6 (for De Bruijn stuff).
 - Subtyping Recursive Types, for recursion checks.
